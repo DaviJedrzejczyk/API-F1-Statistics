@@ -1,3 +1,6 @@
+using Dao;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +9,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<ApiF1DB>(option =>
+{
+    option.UseSqlServer("name=ConnectionStrings:F1DBLocal");
+});
+
 
 var app = builder.Build();
 
