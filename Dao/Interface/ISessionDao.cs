@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Entities;
+using Shared.Responses;
 
 namespace Dao.Interface
 {
     public interface ISessionDao
     {
-
+       Task<Response> InsertTracksOfCurrentYear(List<Session> sessions);
     }
 }
