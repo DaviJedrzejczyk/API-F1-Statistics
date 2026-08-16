@@ -10,6 +10,7 @@ namespace Dao.Interface
     public interface IUnityOfWork
     {
         ISessionDao SessionDao { get; }
+        IMeetingDao MeetingDao { get; }
         Task<Response> Commit();
     }
 }

@@ -25,7 +25,7 @@
 
         public DateTimeOffset DateStart { get; set; }
 
-        public TimeSpan GmtOffset { get; set; }
+        public string GmtOffset { get; set; } = string.Empty;
 
         public bool IsCancelled { get; set; }
 

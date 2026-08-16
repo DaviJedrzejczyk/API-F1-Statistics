@@ -7,17 +7,17 @@ namespace Services.Impl
 {
     public class MeetingService : IMeetingService
     {
-        private readonly IMeetingDao _meetingDao;
-        public MeetingService(IMeetingDao meetingDao)
+        private readonly IUnityOfWork _unityOfWork;
+        public MeetingService(IUnityOfWork unityOfWork)
         {
-            this._meetingDao = meetingDao;
+            this._unityOfWork = unityOfWork;
         }
 
         public async Task<DataResponse<Meeting>> GetAllTracksOfCurrentYear(int year)
         {
             try
             {
-                return await _meetingDao.GetAllTracksOfCurrentYear(year);
+                return await _unityOfWork.MeetingDao.GetAllTracksOfCurrentYear(year);
             }
             catch (Exception ex)
             {
@@ -29,7 +29,16 @@ namespace Services.Impl
         {
             try
             {
-                return await _meetingDao.GetMeetingByKey(meetingKey);
+                if (meetingKey <= 0)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Meeting>("Meeting key must be greater than 0");
+
+                SingleResponse<Meeting> meeting = await _unityOfWork.MeetingDao.GetMeetingByKey(meetingKey);
+
+                if (meeting.Item == null)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Meeting>("No meeting found with the specified key.");
+
+                return meeting;
+                
             }
             catch (Exception ex)
             {
@@ -53,7 +62,19 @@ namespace Services.Impl
                     }
                 }
 
-                var result = await _meetingDao.InsertTracksOfCurrentYear(meetings);
+                if (meetings.Count == 0)
+                    return ResponseFactory.CreateInstance().CreateSuccessResponse("No new meetings to insert.");
+                
+                Response result = await _unityOfWork.MeetingDao.InsertTracksOfCurrentYear(meetings);
+
+                if (!result.HasSuccess)
+                   return ResponseFactory.CreateInstance().CreateFailureResponse(result.Message);
+
+                result = await _unityOfWork.Commit();
+
+                if (!result.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse(result.Message, result.Exception);
+
                 result.Message = "All meetings inserted successfully.";
                 return result;
             }

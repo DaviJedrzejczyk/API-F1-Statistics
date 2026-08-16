@@ -1,7 +1,8 @@
 ﻿using Dao;
-using Microsoft.EntityFrameworkCore;
-using Entities;
 using Dao.Impl;
+using Entities;
+using Microsoft.EntityFrameworkCore;
+using Moq;
 using Shared.Responses;
 
 namespace UnitTests.Dao
@@ -101,6 +102,58 @@ namespace UnitTests.Dao
             // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result!.Item.MeetingName, Is.EqualTo("Brazil GP"));
+        }
+
+        [Test]
+        public async Task ShouldReturnNullIfMeetingNotFound()
+        {
+            // Arrange
+            var service = new MeetingDao(_context);
+            
+            // Act
+            var result = await service.GetMeetingByKey(999); 
+            
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Item, Is.Null);
+        }
+
+        [Test]
+        public async Task ShouldBeReturnExceptionWhenGetMeetingByKey()
+        {
+            //Arrange
+            var dbContextMock = new Mock<ApiF1DB>();
+            var dbSetMock     = new Mock<DbSet<Meeting>>();
+            
+            dbSetMock.Setup(x => x.FindAsync(-1)).Throws(new Exception("Meeting key not found"));
+
+            MeetingDao service = new(dbContextMock.Object);
+            
+            //Act
+            SingleResponse<Meeting> result = await service.GetMeetingByKey(-1);
+
+            //Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Message, Does.Contain("An error has occurred when fetching the meeting: " + result.Exception.Message));
+        }
+
+        [Test]
+        public async Task ShouldBeReturnExceptionWhenFailToInsertNewMeeting()
+        {
+            //Arrange
+            var dbContextMock = new Mock<ApiF1DB>();
+            var dbSetMock = new Mock<DbSet<Meeting>>();
+
+            dbSetMock.Setup(x => x.AddRangeAsync()).Throws(new Exception("Cannot insert meetings"));
+
+            MeetingDao service = new(dbContextMock.Object);
+
+            //Act
+            Response result = await service.InsertTracksOfCurrentYear(new List<Meeting>());
+
+            //Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Message, Does.Contain("Failed to insert meetings: " + result.Exception.Message));
         }
 
         [TearDown]

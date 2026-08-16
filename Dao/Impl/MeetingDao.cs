@@ -22,7 +22,7 @@ namespace Dao.Impl
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Failed to fetch meetings: " + ex.Message, ex);
             }
         }
 
@@ -35,7 +35,7 @@ namespace Dao.Impl
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Meeting>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Meeting>("An error has occurred when fetching the meeting: " + ex.Message, ex);
             }
         }
 
@@ -48,7 +48,7 @@ namespace Dao.Impl
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert meetings.");
+                return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert meetings: " + ex.Message, ex);
             }
         }
     }

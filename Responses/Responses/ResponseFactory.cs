@@ -26,6 +26,12 @@ namespace Shared.Responses
             HasSuccess = false,
             Message = ResponsesConstants.MENSAGEM_FALHA
         };
+        public Response CreateFailureResponse(string message, Exception ex) => new()
+        {
+            HasSuccess = false,
+            Message = message,
+            Exception = ex
+        };
         public Response CreateFailureResponse(string message) => new()
         {
             HasSuccess = false,
@@ -50,10 +56,21 @@ namespace Shared.Responses
             HasSuccess = false,
             Message = ResponsesConstants.MENSAGEM_FALHA,
         };
+        public SingleResponse<T> CreateFailureSingleResponse<T>(string message, Exception ex) => new()
+        {
+            HasSuccess = false,
+            Message = message,
+            Exception = ex
+        };
+        public SingleResponse<T> CreateFailureSingleResponse<T>(string message) => new()
+        {
+            HasSuccess = false,
+            Message = message
+        };
         public SingleResponse<T> CreateFailureSingleResponse<T>(Exception ex) => new()
         {
             HasSuccess = false,
-            Message = ResponsesConstants.MENSAGEM_FALHA,
+            Message = ex.Message,
             Exception = ex
         };
         public DataResponse<T> CreateSuccessDataResponse<T>(List<T> Itens) => new()
@@ -66,6 +83,12 @@ namespace Shared.Responses
         {
             HasSuccess = false,
             Message = ResponsesConstants.MENSAGEM_FALHA,
+        };
+        public DataResponse<T> CreateFailureDataResponse<T>(string message, Exception ex) => new()
+        {
+            HasSuccess = false,
+            Message = message,
+            Exception = ex
         };
         public DataResponse<T> CreateFailureDataResponse<T>(string message) => new()
         {

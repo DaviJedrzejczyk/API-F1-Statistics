@@ -5,6 +5,8 @@ using System.Text.Json;
 
 namespace WebApi.Controllers.Sessions
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class SessionController : Controller
     {
         
