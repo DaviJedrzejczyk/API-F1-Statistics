@@ -27,6 +27,7 @@ namespace UnitTests.Service
         {
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = true});
+            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
 
             var service = await _service.InsertTracksOfCurrentYear(_meetings);
 
@@ -40,6 +41,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(2)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2))).ReturnsAsync(new Response() { HasSuccess = true });
+            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
 
             var service = await _service.InsertTracksOfCurrentYear(_meetings);
             
