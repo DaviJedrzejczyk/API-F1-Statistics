@@ -19,6 +19,7 @@ namespace Dao
         }
 
         public DbSet<Session> Sessions { get; set; }
+        public DbSet<Meeting> Meetings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,0 +1,112 @@
+﻿using Dao;
+using Microsoft.EntityFrameworkCore;
+using Entities;
+using Dao.Impl;
+using Shared.Responses;
+
+namespace UnitTests.Dao
+{
+    [TestFixture]
+    public class MeetingDaoTest
+    {
+        private ApiF1DB _context = null!;
+
+        [SetUp]
+        public void Setup()
+        {
+            var options = new DbContextOptionsBuilder<ApiF1DB>()
+                            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                            .Options;
+
+            _context = new ApiF1DB(options);
+        }
+
+        [Test]
+        public async Task ShouldBeReturnAllMeetingsOfCurrentYear() 
+        {
+            //Arrange
+            var currentYear = DateTime.Now.Year;
+
+            for (int i = 1; i <= 5; i++)
+            {
+                _context.Meetings.Add(new Meeting
+                {
+                    MeetingKey = i,
+                    MeetingName = $"Meeting {i}",
+                    Year = currentYear
+                });
+            }
+            await _context.SaveChangesAsync();
+
+            MeetingDao service = new(_context);
+
+            //Act
+            DataResponse<Meeting> result = await service.GetAllTracksOfCurrentYear(currentYear);
+
+            //Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result!.Itens, Has.Count.EqualTo(5));
+                Assert.That(result.Itens, Is.All.Matches<Meeting>(x => x.Year == DateTime.Now.Year));
+            });
+        }
+
+        [Test]
+        public async Task ShouldBeInsertAllMeetingsOfCurrentYear()
+        {
+            //Arrange
+            var currentYear = 2023;
+
+            List<Meeting> meetings = [
+                new Meeting { MeetingKey = 1, MeetingName = "Meeting 1", Year = currentYear },
+                new Meeting { MeetingKey = 2, MeetingName = "Meeting 2", Year = currentYear },
+                new Meeting { MeetingKey = 3, MeetingName = "Meeting 3", Year = currentYear }
+                ];
+
+            MeetingDao service = new(_context);
+
+            //Act
+            await service.InsertTracksOfCurrentYear(meetings);
+            await _context.SaveChangesAsync();
+
+            var result = await _context.Meetings.ToListAsync();  //service.GetAllTracksOfCurrentYear(currentYear);
+
+            //Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result!, Has.Count.EqualTo(3));
+                Assert.That(result!, Is.All.Matches<Meeting>(x => x.Year == currentYear));
+            });
+        }
+
+        [Test]
+        public async Task ShouldReturnMeetingById()
+        {
+            //Arrange
+            _context.Meetings.Add(new Meeting
+            {
+               MeetingKey = 1,
+               MeetingName = "Brazil GP"
+            });
+
+            await _context.SaveChangesAsync();
+
+            var service = new MeetingDao(_context);
+
+            // Act
+            var result = await service.GetMeetingByKey(1);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.Item.MeetingName, Is.EqualTo("Brazil GP"));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _context?.Dispose();
+        }
+    }
+}

@@ -7,17 +7,5 @@
         {
 
         }
-
-        [Test]
-        public void ShouldBeReturnAllTracksOfCurrentSeason()
-        {
-            Assert.Pass();
-        }
-
-        [Test]
-        public void ShouldBeGetAllTracksOfApiInCurrentSeasonAndInsert()
-        {
-
-        }
     }
 }

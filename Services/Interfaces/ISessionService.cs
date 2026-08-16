@@ -5,6 +5,6 @@ namespace Services.Interfaces
 {
     public interface ISessionService
     {
-        Task<Response> InsertTracksOfCurrentYear(List<Session> sessions);
+        
     }
 }

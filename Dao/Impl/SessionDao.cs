@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
 
 namespace Dao.Impl
@@ -10,19 +11,6 @@ namespace Dao.Impl
         public SessionDao(ApiF1DB db)
         {
             _db = db;
-        }
-
-        public async Task<Response> InsertTracksOfCurrentYear(List<Session> sessions)
-        {
-            try
-            {
-                await _db.Sessions.AddRangeAsync(sessions);
-                return ResponseFactory.CreateInstance().CreateSuccessResponse("All tracks inserted successfully.");
-            }
-            catch (Exception ex)
-            {
-                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
-            }
         }
     }
 }

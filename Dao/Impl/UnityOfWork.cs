@@ -8,10 +8,13 @@ namespace Dao.Impl
     {
         private readonly ApiF1DB _db;
         private ISessionDao? session = null;
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao)
+        private IMeetingDao? meeting = null;
+
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao)
         {
             _db = db;
             session = sessionDao;
+            meeting = meetingDao;
         }
 
         public async Task<Response> Commit()
@@ -32,6 +35,15 @@ namespace Dao.Impl
             {
                 session ??= new SessionDao(_db);
                 return session;
+            }
+        }
+
+        public IMeetingDao MeetingDao
+        {
+            get
+            {
+                meeting ??= new MeetingDao(_db);
+                return meeting;
             }
         }
 

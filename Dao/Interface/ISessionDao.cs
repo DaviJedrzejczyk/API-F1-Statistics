@@ -5,6 +5,6 @@ namespace Dao.Interface
 {
     public interface ISessionDao
     {
-       Task<Response> InsertTracksOfCurrentYear(List<Session> sessions);
+      
     }
 }
