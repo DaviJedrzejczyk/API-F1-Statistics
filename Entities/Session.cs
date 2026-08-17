@@ -16,7 +16,7 @@ namespace Entities
         public string CountryName { get; set; } = string.Empty;
         public DateTimeOffset DateStart { get; set; }
         public DateTimeOffset DateEnd { get; set; }
-        public TimeSpan GmtOffset { get; set; }
+        public string GmtOffset { get; set; } = string.Empty;
         public bool IsCancelled { get; set; }
         public string Location { get; set; } = string.Empty;
         public int MeetingKey { get; set; }

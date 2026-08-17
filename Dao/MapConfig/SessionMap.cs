@@ -45,6 +45,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.GmtOffset)
+                .HasMaxLength(15)
                 .IsRequired();
 
             builder.Property(x => x.IsCancelled)
