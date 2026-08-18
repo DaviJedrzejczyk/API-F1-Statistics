@@ -71,7 +71,7 @@ namespace UnitTests.Dao
             await service.InsertTracksOfCurrentYear(meetings);
             await _context.SaveChangesAsync();
 
-            var result = await _context.Meetings.ToListAsync();  //service.GetAllTracksOfCurrentYear(currentYear);
+            var result = await _context.Meetings.ToListAsync();
 
             //Assert
             Assert.That(result, Is.Not.Null);

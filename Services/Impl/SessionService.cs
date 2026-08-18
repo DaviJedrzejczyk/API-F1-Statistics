@@ -27,6 +27,12 @@ namespace Services.Impl
             }
         }
 
+        public Task<DataResponse<Session>> HighSpeedDriversInSession(int meetingKey, int sessionKey)
+        {
+            //TODO: Começar a implementar depois de externalizar a chamada da API.
+            throw new NotImplementedException(); 
+        }
+
         public async Task<Response> InsertSessions(List<Session> sessions)
         {
             try

@@ -27,6 +27,8 @@ namespace WebApi.Controllers.Sessions
         [HttpGet]
         public async Task<IActionResult> InsertSessionsInDataBase(int meetingKey)
         {
+            //TODO: Retirar todas as chamadas pra api externa e centralizar na biblioteca ExternalApi, que vai ser responsável por fazer todas as chamadas pra api externa e retornar os dados já deserializados.
+
             HttpResponseMessage responseMsg = await _httpClient.GetAsync("sessions?meeting_key=" + meetingKey);
 
             if (!responseMsg.IsSuccessStatusCode)
