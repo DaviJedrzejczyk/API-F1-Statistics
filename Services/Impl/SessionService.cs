@@ -1,5 +1,7 @@
 ﻿using Dao.Interface;
 using Entities;
+using ExternalApi.Impls;
+using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
 
@@ -8,7 +10,13 @@ namespace Services.Impl
     public class SessionService : ISessionService
     {
         private readonly IUnityOfWork _unityOfWork;
-        public SessionService(IUnityOfWork unityOfWork) => _unityOfWork = unityOfWork;
+        private readonly ISessionClient _sessionClient;
+
+        public SessionService(IUnityOfWork unityOfWork, ISessionClient sessionClient) 
+        {
+            _unityOfWork = unityOfWork;
+            _sessionClient = sessionClient;
+        }
 
         public async Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey)
         {
@@ -33,11 +41,16 @@ namespace Services.Impl
             throw new NotImplementedException(); 
         }
 
-        public async Task<Response> InsertSessions(List<Session> sessions)
+        public async Task<Response> InsertSessions(int meetingKey)
         {
             try
             {
-                Response response = await _unityOfWork.SessionDao.InsertSessions(sessions);
+                DataResponse<Session> sessions = await _sessionClient.GetSessionsByMeetingKey(meetingKey);
+                
+                if (!sessions.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to fetch sessions: " + sessions.Message);
+
+                Response response = await _unityOfWork.SessionDao.InsertSessions(sessions.Itens);
 
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert sessions.");

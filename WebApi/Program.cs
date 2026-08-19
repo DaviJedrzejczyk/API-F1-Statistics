@@ -3,6 +3,8 @@ using Dao;
 using Dao.Impl;
 using Dao.Interface;
 using Entities;
+using ExternalApi.Impls;
+using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Services.Impl;
 using Services.Interfaces;
@@ -39,9 +41,11 @@ builder.Services.AddTransient<ISessionService, SessionService>();
 builder.Services.AddTransient<IMeetingService, MeetingService>();
 builder.Services.AddTransient<IMeetingDao, MeetingDao>();
 builder.Services.AddTransient<IUnityOfWork, UnityOfWork>();
+builder.Services.AddTransient<ISessionClient, SessionClient>();
+builder.Services.AddTransient<IF1ApiClient, F1ApiClient>(); 
 
-builder.Services.AddHttpClient<HomeController>();
-builder.Services.AddHttpClient<SessionController>();
+
+builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
