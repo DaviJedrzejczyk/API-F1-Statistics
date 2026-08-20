@@ -13,14 +13,11 @@ namespace WebApi.Controllers.Meetings
     [Route("api/[controller]")]
     public class MeetingController : Controller
     {
-        private readonly HttpClient _httpClient;
         private readonly IMeetingService _meetingService;
         private readonly IMapper _mapper;
 
-        public MeetingController(HttpClient httpClient, IMeetingService meetingService, IMapper mapper)
+        public MeetingController(IMeetingService meetingService, IMapper mapper)
         {
-            httpClient.BaseAddress = new Uri(F1ApiURL.URL_API_F1);
-            _httpClient = httpClient;
             _meetingService = meetingService;
             _mapper = mapper;
         }
@@ -30,16 +27,7 @@ namespace WebApi.Controllers.Meetings
         {
             try
             {
-                HttpResponseMessage responseMsg = await _httpClient.GetAsync("meetings?year=" + DateTime.Now.Year.ToString());
-
-                if (!responseMsg.IsSuccessStatusCode)
-                    throw new Exception("Failed to retrieve tracks.");
-
-                string tracks = await responseMsg.Content.ReadAsStringAsync();
-
-                List<MeetingViewModel>? meetingViewModels = JsonSerializer.Deserialize<List<MeetingViewModel>>(tracks) ?? throw new Exception("Failed to deserialize tracks.");
-
-                Response response = await _meetingService.InsertTracksOfCurrentYear(_mapper.Map<List<Meeting>>(meetingViewModels));
+                Response response = await _meetingService.InsertTracksOfCurrentYear();
 
                 if (!response.HasSuccess)
                     return BadRequest(response.Message);

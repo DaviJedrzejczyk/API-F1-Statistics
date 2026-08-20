@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
 
@@ -8,15 +9,23 @@ namespace Services.Impl
     public class MeetingService : IMeetingService
     {
         private readonly IUnityOfWork _unityOfWork;
-        public MeetingService(IUnityOfWork unityOfWork)
+        private readonly IMeetingClient _meetingClient;
+        public MeetingService(IUnityOfWork unityOfWork, IMeetingClient meetingClient)
         {
             this._unityOfWork = unityOfWork;
+            this._meetingClient = meetingClient;
         }
 
         public async Task<DataResponse<Meeting>> GetAllTracksOfCurrentYear(int year)
         {
             try
             {
+                if (year.ToString().Length != 4)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Invalid year format.");
+
+                if (year < 1951 || year > DateTime.Now.Year)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Year must be between 1951 and the current year.");
+
                 return await _unityOfWork.MeetingDao.GetAllTracksOfCurrentYear(year);
             }
             catch (Exception ex)
@@ -47,25 +56,27 @@ namespace Services.Impl
             
         }
 
-        public async Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings)
+        public async Task<Response> InsertTracksOfCurrentYear()
         {
             try
             {
-                for (int i = 0; i < meetings.Count; i++)
+                DataResponse<Meeting> meetingsResponse = await _meetingClient.GetMeetingsByYear(DateTime.Now.Year);
+
+                for (int i = 0; i < meetingsResponse.Itens.Count; i++)
                 {
-                    Meeting meeting = meetings[i];
+                    Meeting meeting = meetingsResponse.Itens[i];
                     SingleResponse<Meeting> response = await GetMeetingByKey(meeting.MeetingKey) ?? throw new Exception("No meeting found with the specified key.");
                     if (response.Item != null)
                     {
-                        meetings.Remove(meeting);
+                        meetingsResponse.Itens.Remove(meeting);
                         i--;
                     }
                 }
 
-                if (meetings.Count == 0)
+                if (meetingsResponse.Itens.Count == 0)
                     return ResponseFactory.CreateInstance().CreateSuccessResponse("No new meetings to insert.");
                 
-                Response result = await _unityOfWork.MeetingDao.InsertTracksOfCurrentYear(meetings);
+                Response result = await _unityOfWork.MeetingDao.InsertTracksOfCurrentYear(meetingsResponse.Itens);
 
                 if (!result.HasSuccess)
                    return ResponseFactory.CreateInstance().CreateFailureResponse(result.Message);
