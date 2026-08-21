@@ -37,7 +37,7 @@ namespace Services.Impl
 
         public Task<DataResponse<Session>> HighSpeedDriversInSession(int meetingKey, int sessionKey)
         {
-            //TODO: Começar a implementar depois de externalizar a chamada da API.
+            //TODO: Começar a implementar depois de implementar as entidades CarData e o Driver  
             throw new NotImplementedException(); 
         }
 

@@ -12,24 +12,5 @@
         public int SessionKey { get; set; }
         public int Speed { get; set; }
         public int Throttle { get; set; }
-
-        public CarData()
-        {
-            
-        }
-
-        public CarData(int brake, DateTime date, int driveNumber, int drs, int meetingKey, int gear, int rpm, int sessionKey, int speed, int throttle)
-        {
-            Brake = brake;
-            Date = date;
-            DriveNumber = driveNumber;
-            Drs = drs;
-            MeetingKey = meetingKey;
-            Gear = gear;
-            Rpm = rpm;
-            SessionKey = sessionKey;
-            Speed = speed;
-            Throttle = throttle;
-        }
     }
 }

@@ -24,7 +24,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ApiF1DB>(option =>
 {
-    option.UseSqlServer("name=ConnectionStrings:F1DBLocal");
+    option.UseSqlServer(builder.Configuration.GetConnectionString("F1DBLocal"));
 });
 
 builder.Services.AddAutoMapper(cfg =>
@@ -43,7 +43,10 @@ builder.Services.AddTransient<IMeetingDao, MeetingDao>();
 builder.Services.AddTransient<IUnityOfWork, UnityOfWork>();
 builder.Services.AddTransient<ISessionClient, SessionClient>();
 builder.Services.AddTransient<IF1ApiClient, F1ApiClient>(); 
-
+builder.Services.AddTransient<IDriverDao, DriverDao>();
+builder.Services.AddTransient<IMeetingClient, MeetingClient>();
+builder.Services.AddTransient<IDriverService, DriverService>();
+builder.Services.AddTransient<IDriverClient, DriverClient>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

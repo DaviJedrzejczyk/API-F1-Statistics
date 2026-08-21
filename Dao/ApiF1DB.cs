@@ -13,18 +13,14 @@ namespace Dao
             
         }
 
-        public ApiF1DB()
-        {
-            
-        }
-
         public DbSet<Session> Sessions { get; set; }
         public DbSet<Meeting> Meetings { get; set; }
+        public DbSet<Driver> Drivers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
             base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         }
     }
 }
