@@ -39,6 +39,19 @@ namespace Dao.Impl
             }
         }
 
+        public async Task<SingleResponse<int>> GetRecentMeetingKey()
+        {
+            try
+            {
+                int meetingKey = await _db.Meetings.Where(x => x.DateStart <= DateTime.UtcNow).Select(x => x.MeetingKey).FirstOrDefaultAsync();
+                return ResponseFactory.CreateInstance().CreateSuccessSingleResponse<int>(meetingKey);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<int>(ex);
+            }
+        }
+
         public async Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings)
         {
             try
@@ -51,5 +64,7 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert meetings: " + ex.Message, ex);
             }
         }
+
+        
     }
 }

@@ -8,5 +8,6 @@ namespace Dao.Interface
         Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings);
         Task<DataResponse<Meeting>> GetAllTracksOfCurrentYear(int year);
         Task<SingleResponse<Meeting>> GetMeetingByKey(int meetingKey);
+        Task<SingleResponse<int>> GetRecentMeetingKey();
     }
 }

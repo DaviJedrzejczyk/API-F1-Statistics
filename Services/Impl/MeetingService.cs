@@ -56,11 +56,28 @@ namespace Services.Impl
             
         }
 
-        public async Task<Response> InsertTracksOfCurrentYear()
+        public async Task<SingleResponse<int>> GetRecentMeetingKey()
         {
             try
             {
-                DataResponse<Meeting> meetingsResponse = await _meetingClient.GetMeetingsByYear(DateTime.Now.Year);
+                SingleResponse<int> response = await _unityOfWork.MeetingDao.GetRecentMeetingKey();
+
+                if (!response.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<int>("An error has ocurred when try to find the last meeting: " + response.Message, response.Exception);
+
+                return response;
+            }
+            catch (Exception ex)
+            {  
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<int>(ex);
+            }
+        }
+
+        public async Task<Response> InsertTracksOfCurrentYear(int year)
+        {
+            try
+            {
+                DataResponse<Meeting> meetingsResponse = await _meetingClient.GetMeetingsByYear(year);
 
                 for (int i = 0; i < meetingsResponse.Itens.Count; i++)
                 {

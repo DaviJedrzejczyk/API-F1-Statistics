@@ -33,7 +33,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = true});
             _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
 
-            var service = await _service.InsertTracksOfCurrentYear();
+            var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
             Assert.That(service.Message, Is.EqualTo("All meetings inserted successfully."));
         }
@@ -48,7 +48,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2))).ReturnsAsync(new Response() { HasSuccess = true });
             _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
 
-            var service = await _service.InsertTracksOfCurrentYear();
+            var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
             Assert.That(service.Message, Is.EqualTo("All meetings inserted successfully."));
         }
@@ -62,7 +62,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2))).ThrowsAsync(new Exception("No meeting found with the specified key."));
             
-            Response ex = await _service.InsertTracksOfCurrentYear();
+            Response ex = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
             Assert.That(ex.Message, Is.EqualTo("No meeting found with the specified key."));
         }
@@ -74,7 +74,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ThrowsAsync(new Exception("Failed to insert meetings."));
             
-            Response ex = await _service.InsertTracksOfCurrentYear();
+            Response ex = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
             Assert.That(ex.Message, Is.EqualTo("Failed to insert meetings."));
         }
@@ -87,7 +87,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 2 } });
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 3 } });
          
-            var service = await _service.InsertTracksOfCurrentYear();
+            var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             Assert.That(service.Message, Is.EqualTo("No new meetings to insert."));
         }
 
@@ -131,7 +131,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to insert meetings." });
             
-            var service = await _service.InsertTracksOfCurrentYear();
+            var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
             Assert.That(service.Message, Is.EqualTo("Failed to insert meetings."));
         }
@@ -144,7 +144,7 @@ namespace UnitTests.Service
             _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = true });
             _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to save meetings." });
 
-            var service = await _service.InsertTracksOfCurrentYear();
+            var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
             Assert.That(service.Message, Is.EqualTo("Failed to save meetings."));
             Assert.That(service.HasSuccess, Is.False);
