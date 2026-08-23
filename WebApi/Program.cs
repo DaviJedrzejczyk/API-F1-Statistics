@@ -12,6 +12,7 @@ using WebApi.Controllers;
 using WebApi.Controllers.Meetings;
 using WebApi.Controllers.Sessions;
 using WebApi.ViewModels;
+using WebApi.ViewModels.Meetings;
 
 var builder = WebApplication.CreateBuilder(args);
 

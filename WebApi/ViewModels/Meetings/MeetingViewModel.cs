@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace WebApi.ViewModels
+namespace WebApi.ViewModels.Meetings
 {
     public class MeetingViewModel
     {
