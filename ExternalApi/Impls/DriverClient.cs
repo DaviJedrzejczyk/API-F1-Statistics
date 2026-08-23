@@ -27,9 +27,9 @@ namespace ExternalApi.Impls
                 if (!tracks.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(tracks.Message, tracks.Exception);
 
-                List<DriverViewModel>? meetingViewModels = JsonSerializer.Deserialize<List<DriverViewModel>>(tracks.Item) ?? throw new Exception("Failed to deserialize driver(s).");
+                List<DriverViewModel>? driverViewModels = JsonSerializer.Deserialize<List<DriverViewModel>>(tracks.Item) ?? throw new Exception("Failed to deserialize driver(s).");
 
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Driver>>(meetingViewModels));
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Driver>>(driverViewModels));
             }
 			catch (Exception ex)
 			{
