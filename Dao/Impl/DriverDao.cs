@@ -1,6 +1,8 @@
 ﻿using Dao.Interface;
 using Entities;
+using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Dao.Impl
 {
@@ -12,29 +14,56 @@ namespace Dao.Impl
             _db = db;
         }
 
-        public Task<Response> InsertDriver(Driver driver)
+        public async Task<Response> InsertDrivers(List<Driver> drivers)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _db.Drivers.AddRangeAsync(drivers);
+                return ResponseFactory.CreateInstance().CreateSuccessResponse("Drivers inserted successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
         }
 
-        public Task<Response> InsertDriver(List<Driver> drivers)
+        public async Task<Response> DeleteDriver(Driver driver)
         {
-            throw new NotImplementedException();
+            try
+            {
+                _db.Drivers.Remove(driver);
+                return ResponseFactory.CreateInstance().CreateSuccessResponse("Driver has been removed.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
         }
 
-        public Task<Response> DeleteDriver(int id)
+        public async Task<SingleResponse<Driver>> GetDriverById(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                Driver? response = await _db.Drivers.FindAsync(id);
+                return ResponseFactory.CreateInstance().CreateSuccessSingleResponse<Driver>(response);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Driver>(ex);
+            }
         }
 
-        public Task<SingleResponse<Driver>> GetDriverById(int id)
+        public async Task<Response> UpdateDriver(Driver driver)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<Response> UpdateDriver(Driver driver)
-        {
-            throw new NotImplementedException();
+            try
+            {
+                _db.Drivers.Update(driver);
+                return ResponseFactory.CreateInstance().CreateSuccessResponse("Driver has been updated.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
         }
     }
 }

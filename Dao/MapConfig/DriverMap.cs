@@ -12,9 +12,6 @@ namespace Dao.MapConfig
 
             builder.HasKey(x => x.DriverKey);
 
-            builder.Property(x => x.DriverKey)
-                .ValueGeneratedNever();
-
             builder.Property(x => x.DriveNumber)
                 .IsRequired();
 
