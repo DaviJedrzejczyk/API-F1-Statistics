@@ -64,7 +64,5 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert meetings: " + ex.Message, ex);
             }
         }
-
-        
     }
 }
