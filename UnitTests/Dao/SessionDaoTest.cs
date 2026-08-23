@@ -2,11 +2,10 @@ using Dao;
 using Dao.Impl;
 using Entities;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 
 namespace UnitTests.Dao
 {
-    public class SessionDaoTests
+    public class SessionDaoTest
     {
         private ApiF1DB _context = null!;
         SessionDao _sessionDao = null!;

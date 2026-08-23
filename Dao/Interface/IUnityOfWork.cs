@@ -11,6 +11,7 @@ namespace Dao.Interface
     {
         ISessionDao SessionDao { get; }
         IMeetingDao MeetingDao { get; }
+        IDriverDao DriverDao { get; }
         Task<Response> Commit();
     }
 }

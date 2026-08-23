@@ -9,12 +9,14 @@ namespace Dao.Impl
         private readonly ApiF1DB _db;
         private ISessionDao? session = null;
         private IMeetingDao? meeting = null;
+        private IDriverDao? driver = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao)
         {
             _db = db;
             session = sessionDao;
             meeting = meetingDao;
+            driver = driverDao;
         }
 
         public async Task<Response> Commit()
@@ -44,6 +46,15 @@ namespace Dao.Impl
             {
                 meeting ??= new MeetingDao(_db);
                 return meeting;
+            }
+        }
+
+        public IDriverDao DriverDao
+        {
+            get
+            {
+                driver ??= new DriverDao(_db);
+                return driver;
             }
         }
 
