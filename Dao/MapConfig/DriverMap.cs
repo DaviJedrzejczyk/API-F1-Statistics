@@ -14,7 +14,7 @@ namespace Dao.MapConfig
 
             builder.Property(x => x.SessionKey).ValueGeneratedOnAdd();
 
-            builder.Property(x => x.DriveNumber)
+            builder.Property(x => x.DriverNumber)
                 .IsRequired();
 
             builder.Property(x => x.BroadcastName)

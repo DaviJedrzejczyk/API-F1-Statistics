@@ -77,7 +77,7 @@ namespace Services.Impl
                     DriverName = driversList.Itens[i].LastName,
                     MeetingKey = meetingKey,
                     SessionKey = sessionKey,
-                    DriverNumber = driversList.Itens[i].DriveNumber,
+                    DriverNumber = driversList.Itens[i].DriverNumber,
                     Speed = carDataResponse.Item.Speed,
                 });
             }
