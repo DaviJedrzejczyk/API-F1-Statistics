@@ -18,44 +18,44 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.BroadcastName)
-                .HasMaxLength(100)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(100);
 
             builder.Property(x => x.FirstName)
-                .HasMaxLength(100)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(100);
 
             builder.Property(x => x.FullName)
-                .HasMaxLength(200)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(200);
 
             builder.Property(x => x.HeadshotUrl)
-                .HasMaxLength(500)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(500);
 
             builder.Property(x => x.LastName)
-                .HasMaxLength(100)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(100);
 
             builder.Property(x => x.MeetingKey)
                 .ValueGeneratedNever()
                 .IsRequired();
 
             builder.Property(x => x.NameAcronym)
-                .HasMaxLength(3)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(3);
 
             builder.Property(x => x.SessionKey)
                 .ValueGeneratedNever()
                 .IsRequired();
 
             builder.Property(x => x.TeamColour)
-                .HasMaxLength(10)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(10);
 
             builder.Property(x => x.TeamName)
-                .HasMaxLength(100)
-                .IsRequired();
+                .IsRequired(false)
+                .HasMaxLength(100);
 
             builder.HasIndex(x => x.DriverKey);
 

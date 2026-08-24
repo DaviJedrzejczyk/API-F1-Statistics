@@ -5,7 +5,7 @@
 namespace Dao.Migrations
 {
     /// <inheritdoc />
-    public partial class add_f1_drivers_table : Migration
+    public partial class change_columnsNotRequired_f1_drivers : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,16 +17,16 @@ namespace Dao.Migrations
                     DriverKey = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     DriverNumber = table.Column<int>(type: "int", nullable: false),
-                    BroadcastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    HeadshotUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    BroadcastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    HeadshotUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     MeetingKey = table.Column<int>(type: "int", nullable: false),
-                    NameAcronym = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    NameAcronym = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: true),
                     SessionKey = table.Column<int>(type: "int", nullable: false),
-                    TeamColour = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    TeamName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    TeamColour = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    TeamName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
