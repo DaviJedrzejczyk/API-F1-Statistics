@@ -2,7 +2,7 @@
 
 namespace ExternalApi.ViewModels
 {
-    public class DriverViewModel
+    public class DriverDto
     {
         [JsonIgnore]
         public int DriverKey { get; set; }

@@ -2,6 +2,7 @@
 {
     public class CarData
     {
+        public long Id { get; set; }
         public int Brake { get; set; }
         public DateTime Date { get; set; }
         public int DriveNumber { get; set; }

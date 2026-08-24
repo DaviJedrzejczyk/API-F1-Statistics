@@ -5,14 +5,13 @@ using Dao.Interface;
 using Entities;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
+using ExternalApi.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Services.Impl;
 using Services.Interfaces;
-using WebApi.Controllers;
 using WebApi.Controllers.Meetings;
-using WebApi.Controllers.Sessions;
-using WebApi.ViewModels;
-using WebApi.ViewModels.Meetings;
+using WebApi.ViewModels.MeetingsViews;
+using WebApi.ViewModels.SessionsViews;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +29,28 @@ builder.Services.AddDbContext<ApiF1DB>(option =>
 
 builder.Services.AddAutoMapper(cfg =>
 {
+    //Web API
     cfg.CreateMap<Meeting, MeetingViewModel>();
     cfg.CreateMap<MeetingViewModel, Meeting>();
 
     cfg.CreateMap<Session, SessionViewModel>();
     cfg.CreateMap<SessionViewModel, Session>();
+
+
+
+
+    //External Api
+    cfg.CreateMap<CarDataDto, CarData>();
+    cfg.CreateMap<CarData, CarDataDto>();
+
+    cfg.CreateMap<Meeting, MeetingDto>();
+    cfg.CreateMap<MeetingDto, Meeting>();
+
+    cfg.CreateMap<Session, SessionDto>();
+    cfg.CreateMap<SessionDto, Session>();
+
+    cfg.CreateMap<DriverDto,  Driver>();
+    cfg.CreateMap<Driver, DriverDto>();
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -48,6 +64,9 @@ builder.Services.AddTransient<IDriverDao, DriverDao>();
 builder.Services.AddTransient<IMeetingClient, MeetingClient>();
 builder.Services.AddTransient<IDriverService, DriverService>();
 builder.Services.AddTransient<IDriverClient, DriverClient>();
+builder.Services.AddTransient<ICarDataClient, CarDataClient>();
+builder.Services.AddTransient<ICarDataDao, CarDataDao>();
+builder.Services.AddTransient<ICarDataService, CarDataService>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

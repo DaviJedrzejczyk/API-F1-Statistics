@@ -4,6 +4,7 @@ using Dao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    partial class ApiF1DBModelSnapshot : ModelSnapshot
+    [Migration("20260823212832_InitialF1_CARDATAS_Migration")]
+    partial class InitialF1_CARDATAS_Migration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,8 +66,6 @@ namespace Dao.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DriveNumber");
-
-                    b.HasIndex("Id");
 
                     b.HasIndex("MeetingKey");
 
@@ -131,8 +132,6 @@ namespace Dao.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("DriverKey");
-
-                    b.HasIndex("DriverKey");
 
                     b.HasIndex("MeetingKey");
 

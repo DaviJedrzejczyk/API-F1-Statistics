@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Dao;
+﻿using Dao;
 using Dao.Impl;
 using Entities;
 using Microsoft.EntityFrameworkCore;
-using NUnit.Framework;
-using Shared.Responses;
 
 namespace UnitTests
 {
@@ -141,43 +136,6 @@ namespace UnitTests
 
             // Act
             var response = await dao.GetDriverById(1);
-
-            // Assert
-            Assert.IsFalse(response.HasSuccess);
-            Assert.IsNotNull(response.Exception);
-        }
-
-        [Test]
-        public async Task UpdateDriver_WhenCalled_MarksModifiedAndReturnsSuccess()
-        {
-            // Arrange
-            await using var context = new ApiF1DB(_options);
-            var driver = new Driver { DriverKey = 7, FirstName = "Before" };
-            context.Drivers.Add(driver);
-
-            driver.FirstName = "After";
-            var dao = new DriverDao(context);
-
-            // Act
-            var response = await dao.UpdateDriver(driver);
-
-            // Assert
-            Assert.IsTrue(response.HasSuccess);
-            var state = context.Entry(driver).State;
-            Assert.That(state, Is.EqualTo(EntityState.Modified));
-        }
-
-        [Test]
-        public async Task UpdateDriver_DbDriversNull_ReturnsFailureResponse()
-        {
-            // Arrange
-            await using var context = new ApiF1DB(_options);
-            context.Drivers = null!;
-            var dao = new DriverDao(context);
-            var driver = new Driver { DriverKey = 8 };
-
-            // Act
-            var response = await dao.UpdateDriver(driver);
 
             // Assert
             Assert.IsFalse(response.HasSuccess);

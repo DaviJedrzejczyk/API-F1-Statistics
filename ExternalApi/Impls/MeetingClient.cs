@@ -22,12 +22,12 @@ namespace ExternalApi.Impls
         {
             try
             {
-                SingleResponse<string> tracks = await _f1ApiClient.Get("meetings", "year=" + year.ToString());
+                SingleResponse<string> tracks = await _f1ApiClient.Get("meetings?", "year=" + year.ToString());
 
                 if (!tracks.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>(tracks.Message, tracks.Exception);
 
-                List<MeetingViewModel>? meetingViewModels = JsonSerializer.Deserialize<List<MeetingViewModel>>(tracks.Item) ?? throw new Exception("Failed to deserialize tracks.");
+                List<MeetingDto>? meetingViewModels = JsonSerializer.Deserialize<List<MeetingDto>>(tracks.Item) ?? throw new Exception("Failed to deserialize tracks.");
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Meeting>>(meetingViewModels));
             }

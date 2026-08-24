@@ -12,6 +12,8 @@ namespace Dao.MapConfig
 
             builder.HasKey(x => x.DriverKey);
 
+            builder.Property(x => x.SessionKey).ValueGeneratedOnAdd();
+
             builder.Property(x => x.DriveNumber)
                 .IsRequired();
 
@@ -36,6 +38,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.MeetingKey)
+                .ValueGeneratedNever()
                 .IsRequired();
 
             builder.Property(x => x.NameAcronym)
@@ -43,6 +46,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.SessionKey)
+                .ValueGeneratedNever()
                 .IsRequired();
 
             builder.Property(x => x.TeamColour)
@@ -52,6 +56,8 @@ namespace Dao.MapConfig
             builder.Property(x => x.TeamName)
                 .HasMaxLength(100)
                 .IsRequired();
+
+            builder.HasIndex(x => x.DriverKey);
 
             builder.HasIndex(x => x.MeetingKey);
 

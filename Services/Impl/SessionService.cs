@@ -1,9 +1,11 @@
 ﻿using Dao.Interface;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
+using System.Runtime.ExceptionServices;
 
 namespace Services.Impl
 {
@@ -33,12 +35,6 @@ namespace Services.Impl
             {
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Session>("Error occurred while fetching session: " + ex.Message, ex);
             }
-        }
-
-        public Task<DataResponse<Session>> HighSpeedDriversInSession(int meetingKey, int sessionKey)
-        {
-            //TODO: Começar a implementar depois de implementar as entidades CarData e o Driver  
-            throw new NotImplementedException(); 
         }
 
         public async Task<Response> InsertSessions(int meetingKey)

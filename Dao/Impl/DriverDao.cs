@@ -2,7 +2,6 @@
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Dao.Impl
 {
@@ -52,17 +51,16 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Driver>(ex);
             }
         }
-
-        public async Task<Response> UpdateDriver(Driver driver)
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int meetingKey, int sessionKey)
         {
             try
             {
-                _db.Drivers.Update(driver);
-                return ResponseFactory.CreateInstance().CreateSuccessResponse("Driver has been updated.");
+                List<Driver> drivers = await _db.Drivers.Where(x => x.SessionKey == sessionKey && x.MeetingKey == meetingKey).AsNoTracking().ToListAsync();
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Driver>(drivers);
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);
             }
         }
     }

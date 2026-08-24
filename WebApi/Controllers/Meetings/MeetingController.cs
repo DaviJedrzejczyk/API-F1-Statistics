@@ -3,11 +3,9 @@ using Entities;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
-using System.Text.Json;
-using WebApi.Controllers.Constants;
-using WebApi.ViewModels.Errors;
-using WebApi.ViewModels.Meetings;
-using WebApi.ViewModels.Success;
+using WebApi.ViewModels.ErrorsViews;
+using WebApi.ViewModels.MeetingsViews;
+using WebApi.ViewModels.SuccessViews;
 
 namespace WebApi.Controllers.Meetings
 {

@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
-using WebApi.ViewModels.Errors;
-using WebApi.ViewModels.Success;
+using WebApi.ViewModels.ErrorsViews;
+using WebApi.ViewModels.SessionsViews;
+using WebApi.ViewModels.SuccessViews;
 
 namespace WebApi.Controllers.Sessions
 {
@@ -32,18 +33,18 @@ namespace WebApi.Controllers.Sessions
         /// 200 OK with a SuccessViewModel when insertion succeeds.
         /// 400 BadRequest when insertion fails.
         /// </returns>
-        [HttpGet("InsertSessions")]
+        [HttpPost("insert-sessions")]
         [ProducesResponseType(typeof(SuccessViewModel), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> InsertSessionsInDataBase(int meetingKey)
+        public async Task<IActionResult> InsertSessionsInDataBase(SessionKeyViewModel sessionKeyViewModel)
         {
             try
             {
-                var response = await _sessionService.InsertSessions(meetingKey);
+                var response = await _sessionService.InsertSessions(sessionKeyViewModel.SessionKey);
 
                 if (!response.HasSuccess)
-                    return BadRequest(response.Message);
+                    return BadRequest(new ErrorViewModel(){ Message = response.Message, StatusCode = 400});
 
                 return Ok(new SuccessViewModel() { StatusCode = 200, Message = response.Message });
             }
@@ -53,21 +54,19 @@ namespace WebApi.Controllers.Sessions
             }
         }
 
-        /// <summary>
-        /// Retrieves high-speed data for a specified session within a meeting.
-        /// </summary>
-        /// <param name="sessionKey">Identifier of the session.</param>
-        /// <param name="meetingKey">Identifier of the meeting the session belongs to.</param>
-        /// <returns>
-        /// 200 OK with the high-speed data when implemented.
-        /// </returns>
-        [HttpGet("HighSpeed")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [HttpGet("{sessionId}")]
+        [ProducesResponseType(typeof(SuccessViewModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public Task<IActionResult> HighSpeedInSession(int sessionKey, int meetingKey)
+        public async Task<IActionResult> GetSessionById(int meetingkey, int sessionId)
         {
-            // Implementation for getting high-speed data in a session
-            throw new NotImplementedException();
+            var response = await _sessionService.GetSessionByMeetingKeySessionKey(meetingkey, sessionId);
+
+            if (!response.HasSuccess && response.Item == null) return NotFound(new ErrorViewModel() { Message = response.Message, StatusCode = 404});
+            if (!response.HasSuccess && response.Exception != null) return BadRequest(new ErrorViewModel() { Message = response.Message, StatusCode = 404 });
+
+            return Ok(new SuccessViewModel() { Message = response.Message, StatusCode = 200});
         }
     }
 }

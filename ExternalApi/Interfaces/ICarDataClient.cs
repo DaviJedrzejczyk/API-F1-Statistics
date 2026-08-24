@@ -1,9 +1,10 @@
-﻿using Shared.Responses;
+﻿using Entities;
+using Shared.Responses;
 
 namespace ExternalApi.Interfaces
 {
     public interface ICarDataClient
     {
-        Task<SingleResponse<string>> GetHighSpeedsDriverSession(int meetingKey, int sessionKey, int driverKey, int minimunSpeed); 
+        Task<DataResponse<CarData>> GetHighSpeedsDriverSession(int sessionKey, int driverNumber, int minimunSpeed); 
     }
 }

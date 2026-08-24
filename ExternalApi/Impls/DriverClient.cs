@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using ExternalApi.ViewModels;
 using Shared.Responses;
@@ -18,16 +19,16 @@ namespace ExternalApi.Impls
             _mapper = mapper;
         }
 
-        public async Task<DataResponse<Driver>> GetAllDriversRecentMeeting(int meetingKey)
+        public async Task<DataResponse<Driver>> GetAllDriversSessionSelected(DriverInsertDTO driverInsertDTO)
         {
 			try
 			{
-                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers", "meetingKey=" + meetingKey.ToString());
+                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers?", $"meeting_key={driverInsertDTO.MeetingKey}&session_key={driverInsertDTO.SessionKey}");
 
                 if (!tracks.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(tracks.Message, tracks.Exception);
 
-                List<DriverViewModel>? driverViewModels = JsonSerializer.Deserialize<List<DriverViewModel>>(tracks.Item) ?? throw new Exception("Failed to deserialize driver(s).");
+                List<DriverDto>? driverViewModels = JsonSerializer.Deserialize<List<DriverDto>>(tracks.Item) ?? throw new Exception("Failed to deserialize driver(s).");
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Driver>>(driverViewModels));
             }

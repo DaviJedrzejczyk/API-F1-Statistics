@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Dao.Interface;
+﻿using Dao.Interface;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Moq;
-using NUnit.Framework;
 using Services.Impl;
-using Services.Interfaces;
 using Shared.Responses;
 
 namespace UnitTests.Service
@@ -18,7 +14,7 @@ namespace UnitTests.Service
         private Mock<IUnityOfWork> _unityOfWorkMock = null!;
         private Mock<IDriverDao> _driverDaoMock = null!;
         private Mock<IDriverClient> _driverClientMock = null!;
-        private Mock<IMeetingService> _meetingServiceMock = null!;
+        private DriverInsertDTO _driverInsertDTO;
 
         [SetUp]
         public void SetUp()
@@ -26,16 +22,17 @@ namespace UnitTests.Service
             _unityOfWorkMock = new Mock<IUnityOfWork>();
             _driverDaoMock = new Mock<IDriverDao>();
             _driverClientMock = new Mock<IDriverClient>();
-            _meetingServiceMock = new Mock<IMeetingService>();
 
             _unityOfWorkMock.Setup(u => u.DriverDao).Returns(_driverDaoMock.Object);
+
+            _driverInsertDTO = new DriverInsertDTO(12, 12);
         }
 
         [Test]
         public void Constructor_WithMocks_CreatesInstance()
         {
             // Arrange & Act
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Assert
             Assert.IsNotNull(svc);
@@ -46,7 +43,7 @@ namespace UnitTests.Service
         public async Task DeleteDriver_NullDriver_ReturnsFailure()
         {
             // Arrange
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             Response result = await svc.DeleteDriver(null!);
@@ -64,7 +61,7 @@ namespace UnitTests.Service
             var daoResponse = new Response("db fail", false, expectedEx);
             _driverDaoMock.Setup(d => d.DeleteDriver(It.IsAny<Driver>())).ReturnsAsync(daoResponse);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             Response result = await svc.DeleteDriver(new Driver());
@@ -82,7 +79,7 @@ namespace UnitTests.Service
             var daoResponse = new Response("ok", true, null);
             _driverDaoMock.Setup(d => d.DeleteDriver(It.IsAny<Driver>())).ReturnsAsync(daoResponse);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             Response result = await svc.DeleteDriver(new Driver());
@@ -100,7 +97,7 @@ namespace UnitTests.Service
             var expectedEx = new Exception("boom");
             _driverDaoMock.Setup(d => d.DeleteDriver(It.IsAny<Driver>())).ThrowsAsync(expectedEx);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             Response result = await svc.DeleteDriver(new Driver());
@@ -115,7 +112,7 @@ namespace UnitTests.Service
         public async Task GetDriverById_IdLessOrEqualZero_ReturnsFailureSingleResponse()
         {
             // Arrange
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             var result = await svc.GetDriverById(0);
@@ -132,7 +129,7 @@ namespace UnitTests.Service
             var daoResponse = new SingleResponse<Driver> { HasSuccess = true, Message = "m", Item = null };
             _driverDaoMock.Setup(d => d.GetDriverById(It.IsAny<int>())).ReturnsAsync(daoResponse);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             var result = await svc.GetDriverById(1);
@@ -150,7 +147,7 @@ namespace UnitTests.Service
             var daoResponse = new SingleResponse<Driver> { HasSuccess = true, Message = "dao msg", Exception = expectedEx, Item = new Driver() };
             _driverDaoMock.Setup(d => d.GetDriverById(It.IsAny<int>())).ReturnsAsync(daoResponse);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             var result = await svc.GetDriverById(2);
@@ -168,7 +165,7 @@ namespace UnitTests.Service
             var expectedEx = new Exception("bad");
             _driverDaoMock.Setup(d => d.GetDriverById(It.IsAny<int>())).ThrowsAsync(expectedEx);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
             var result = await svc.GetDriverById(10);
@@ -183,17 +180,16 @@ namespace UnitTests.Service
         public async Task InsertDrivers_MeetingKeyFailure_ReturnsFailureResponse()
         {
             // Arrange
-            var meetingResp = new SingleResponse<int> { HasSuccess = false, Message = "no", Exception = null, Item = 0 };
-            _meetingServiceMock.Setup(m => m.GetRecentMeetingKey()).ReturnsAsync(meetingResp);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var meetingResp = new DataResponse<Driver>("no", false, null, null);
+            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(meetingResp);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers();
+            var result = await svc.InsertDrivers(_driverInsertDTO);
 
             // Assert
             Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("no"));
+            Assert.That(result.Message, Is.EqualTo("The Drivers in the most recent meeting was not found"));
         }
 
         [Test]
@@ -201,15 +197,13 @@ namespace UnitTests.Service
         {
             // Arrange
             var meetingResp = new SingleResponse<int>("ok", true, null, 123);
-            _meetingServiceMock.Setup(m => m.GetRecentMeetingKey()).ReturnsAsync(meetingResp);
-
             var dataResp = new DataResponse<Driver>("m", true, null, null);
-            _driverClientMock.Setup(c => c.GetAllDriversRecentMeeting(It.IsAny<int>())).ReturnsAsync(dataResp);
+            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(dataResp);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers();
+            var result = await svc.InsertDrivers(new DriverInsertDTO());
 
             // Assert
             Assert.IsFalse(result.HasSuccess);
@@ -221,19 +215,19 @@ namespace UnitTests.Service
         {
             // Arrange
             var meetingResp = new SingleResponse<int>("ok", true, null, 123);
-            _meetingServiceMock.Setup(m => m.GetRecentMeetingKey()).ReturnsAsync(meetingResp);
+
 
             var drivers = new List<Driver> { new Driver() };
             var dataResp = new DataResponse<Driver>("ok", true, null, drivers);
-            _driverClientMock.Setup(c => c.GetAllDriversRecentMeeting(It.IsAny<int>())).ReturnsAsync(dataResp);
+            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(dataResp);
 
             var insertResp = new Response("insert msg", false, new Exception("ins ex"));
             _driverDaoMock.Setup(d => d.InsertDrivers(It.IsAny<List<Driver>>())).ReturnsAsync(insertResp);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers();
+            var result = await svc.InsertDrivers(new DriverInsertDTO());
 
             // Assert
             Assert.IsFalse(result.HasSuccess);
@@ -246,19 +240,19 @@ namespace UnitTests.Service
         {
             // Arrange
             var meetingResp = new SingleResponse<int>("ok", true, null, 123);
-            _meetingServiceMock.Setup(m => m.GetRecentMeetingKey()).ReturnsAsync(meetingResp);
+
 
             var drivers = new List<Driver> { new Driver() };
             var dataResp = new DataResponse<Driver>("ok", true, null, drivers);
-            _driverClientMock.Setup(c => c.GetAllDriversRecentMeeting(It.IsAny<int>())).ReturnsAsync(dataResp);
+            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(dataResp);
 
             var insertResp = new Response("ok", true, null);
             _driverDaoMock.Setup(d => d.InsertDrivers(It.IsAny<List<Driver>>())).ReturnsAsync(insertResp);
 
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers();
+            var result = await svc.InsertDrivers(_driverInsertDTO);
 
             // Assert
             Assert.IsTrue(result.HasSuccess);
@@ -270,79 +264,11 @@ namespace UnitTests.Service
         {
             // Arrange
             var expectedEx = new Exception("meet fail");
-            _meetingServiceMock.Setup(m => m.GetRecentMeetingKey()).ThrowsAsync(expectedEx);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
-
-            // Act
-            var result = await svc.InsertDrivers();
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo(expectedEx.Message));
-            Assert.That(result.Exception, Is.EqualTo(expectedEx));
-        }
-
-        [Test]
-        public async Task UpdateDriver_NullDriver_ReturnsFailure()
-        {
-            // Arrange
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
+            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ThrowsAsync(expectedEx);
+            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.UpdateDriver(null!);
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Driver must be informed!"));
-        }
-
-        [Test]
-        public async Task UpdateDriver_DaoReturnsFailure_ReturnsFailureWithMessageAndException()
-        {
-            // Arrange
-            var daoResp = new Response("upd fail", false, new Exception("ex"));
-            _driverDaoMock.Setup(d => d.UpdateDriver(It.IsAny<Driver>())).ReturnsAsync(daoResp);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
-
-            // Act
-            var result = await svc.UpdateDriver(new Driver());
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("upd fail"));
-            Assert.IsNotNull(result.Exception);
-        }
-
-        [Test]
-        public async Task UpdateDriver_Success_ReturnsSuccessMessage()
-        {
-            // Arrange
-            var daoResp = new Response("ok", true, null);
-            _driverDaoMock.Setup(d => d.UpdateDriver(It.IsAny<Driver>())).ReturnsAsync(daoResp);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
-
-            // Act
-            var result = await svc.UpdateDriver(new Driver());
-
-            // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Driver has been updated!"));
-        }
-
-        [Test]
-        public async Task UpdateDriver_DaoThrows_ReturnsFailureWithException()
-        {
-            // Arrange
-            var expectedEx = new Exception("boom");
-            _driverDaoMock.Setup(d => d.UpdateDriver(It.IsAny<Driver>())).ThrowsAsync(expectedEx);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object, _meetingServiceMock.Object);
-
-            // Act
-            var result = await svc.UpdateDriver(new Driver());
+            var result = await svc.InsertDrivers(new DriverInsertDTO());
 
             // Assert
             Assert.IsFalse(result.HasSuccess);

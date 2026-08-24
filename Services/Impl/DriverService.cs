@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
@@ -10,13 +11,11 @@ namespace Services.Impl
     {
         private readonly IUnityOfWork _unityOfWork;
         private readonly IDriverClient _driverClient;
-        private readonly IMeetingService _meetingService;
 
-        public DriverService(IUnityOfWork unityOfWork, IDriverClient driverClient, IMeetingService meetingService)
+        public DriverService(IUnityOfWork unityOfWork, IDriverClient driverClient)
         {
             _unityOfWork = unityOfWork;
             _driverClient = driverClient;
-            _meetingService = meetingService;
         }
 
         public async Task<Response> DeleteDriver(Driver driver)
@@ -36,6 +35,21 @@ namespace Services.Impl
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
+        }
+
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int meetingKey, int sessionKey)
+        {
+            try
+            {
+                if (meetingKey <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Meeting key must be informed!");
+                if (sessionKey <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Session key must be informed!");
+
+                return await _unityOfWork.DriverDao.GetAllDriversSession(meetingKey, sessionKey);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);
             }
         }
 
@@ -62,17 +76,11 @@ namespace Services.Impl
             }
         }
 
-        public async Task<Response> InsertDrivers()
+        public async Task<Response> InsertDrivers(DriverInsertDTO driverInsertDTO)
         {
             try
             {
-                SingleResponse<int> meetingKey = await _meetingService.GetRecentMeetingKey();
-                
-                if (!meetingKey.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse(meetingKey.Message, meetingKey.Exception);
-
-
-                DataResponse<Driver> drivers = await _driverClient.GetAllDriversRecentMeeting(meetingKey.Item);
+                DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
 
                 if (drivers.Itens == null || drivers.Itens.Count <= 0)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("The Drivers in the most recent meeting was not found");
@@ -82,27 +90,11 @@ namespace Services.Impl
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert the driver: " + response.Message, response.Exception);
 
+                response = await _unityOfWork.Commit();
+
+                if (!response.HasSuccess) return response;
+
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("The new Driver has been insert!");
-            }
-            catch (Exception ex)
-            {
-                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
-            }
-        }
-
-        public async Task<Response> UpdateDriver(Driver driver)
-        {
-            try
-            {
-                if (driver == null)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Driver must be informed!");
-
-                Response response = await _unityOfWork.DriverDao.UpdateDriver(driver);
-
-                if (!response.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse(response.Message, response.Exception);
-
-                return ResponseFactory.CreateInstance().CreateSuccessResponse("Driver has been updated!");
             }
             catch (Exception ex)
             {

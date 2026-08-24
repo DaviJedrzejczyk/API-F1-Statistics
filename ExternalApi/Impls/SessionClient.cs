@@ -27,7 +27,7 @@ namespace ExternalApi.Impls
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Session>(response.Message, response.Exception);
 
-                List<SessionViewModel> sessions = JsonSerializer.Deserialize<List<SessionViewModel>>(response.Item);
+                List<SessionDto> sessions = JsonSerializer.Deserialize<List<SessionDto>>(response.Item);
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Session>(_mapper.Map<List<Session>>(sessions));
 
