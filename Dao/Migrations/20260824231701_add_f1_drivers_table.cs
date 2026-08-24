@@ -5,7 +5,7 @@
 namespace Dao.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialF1_DRIVERSMigration : Migration
+    public partial class add_f1_drivers_table : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -14,8 +14,9 @@ namespace Dao.Migrations
                 name: "F1_DRIVERS",
                 columns: table => new
                 {
-                    DriverKey = table.Column<int>(type: "int", nullable: false),
-                    DriveNumber = table.Column<int>(type: "int", nullable: false),
+                    DriverKey = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DriverNumber = table.Column<int>(type: "int", nullable: false),
                     BroadcastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
@@ -31,6 +32,11 @@ namespace Dao.Migrations
                 {
                     table.PrimaryKey("PK_F1_DRIVERS", x => x.DriverKey);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_F1_DRIVERS_DriverKey",
+                table: "F1_DRIVERS",
+                column: "DriverKey");
 
             migrationBuilder.CreateIndex(
                 name: "IX_F1_DRIVERS_MeetingKey",

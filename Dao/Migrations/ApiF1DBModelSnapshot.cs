@@ -86,7 +86,7 @@ namespace Dao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("DriveNumber")
+                    b.Property<int>("DriverNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("FirstName")

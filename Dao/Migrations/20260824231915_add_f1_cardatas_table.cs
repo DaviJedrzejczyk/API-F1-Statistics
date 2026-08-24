@@ -6,12 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Dao.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialF1_CARDATAS_Migration : Migration
+    public partial class add_f1_cardatas_table : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            
             migrationBuilder.CreateTable(
                 name: "F1_CARDATAS",
                 columns: table => new
@@ -38,6 +37,11 @@ namespace Dao.Migrations
                 name: "IX_F1_CARDATAS_DriveNumber",
                 table: "F1_CARDATAS",
                 column: "DriveNumber");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_F1_CARDATAS_Id",
+                table: "F1_CARDATAS",
+                column: "Id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_F1_CARDATAS_MeetingKey",

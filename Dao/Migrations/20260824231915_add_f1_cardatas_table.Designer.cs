@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    [Migration("20260823212832_InitialF1_CARDATAS_Migration")]
-    partial class InitialF1_CARDATAS_Migration
+    [Migration("20260824231915_add_f1_cardatas_table")]
+    partial class add_f1_cardatas_table
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -67,6 +67,8 @@ namespace Dao.Migrations
 
                     b.HasIndex("DriveNumber");
 
+                    b.HasIndex("Id");
+
                     b.HasIndex("MeetingKey");
 
                     b.HasIndex("SessionKey");
@@ -87,7 +89,7 @@ namespace Dao.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("DriveNumber")
+                    b.Property<int>("DriverNumber")
                         .HasColumnType("int");
 
                     b.Property<string>("FirstName")
@@ -132,6 +134,8 @@ namespace Dao.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("DriverKey");
+
+                    b.HasIndex("DriverKey");
 
                     b.HasIndex("MeetingKey");
 

@@ -12,7 +12,7 @@ namespace Dao.MapConfig
 
             builder.HasKey(x => x.DriverKey);
 
-            builder.Property(x => x.SessionKey).ValueGeneratedOnAdd();
+            builder.Property(x => x.DriverKey).UseIdentityColumn().ValueGeneratedOnAdd();
 
             builder.Property(x => x.DriverNumber)
                 .IsRequired();
