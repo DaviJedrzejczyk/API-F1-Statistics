@@ -80,12 +80,31 @@ namespace Services.Impl
         {
             try
             {
+                DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.MeetingKey, driverInsertDTO.SessionKey);
+
+                if (!driversDatabase.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to search drivers in database: " + driversDatabase.Message);
+
+                if (driversDatabase.Itens.Count == 22)
+                    return ResponseFactory.CreateInstance().CreateSuccessResponse("All drivers already in database.");
+
                 DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
 
                 if (drivers.Itens == null || drivers.Itens.Count <= 0)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("The Drivers in the most recent meeting was not found");
 
-                Response response = await _unityOfWork.DriverDao.InsertDrivers(drivers.Itens);
+                var newDrivers = drivers.Itens;
+                if (driversDatabase.Itens.Count < 22)
+                {
+                    newDrivers = drivers.Itens
+                        .Where(x => !driversDatabase.Itens.Any(y => y.DriverNumber == x.DriverNumber && y.SessionKey == x.SessionKey))
+                        .ToList();
+                }
+
+                if (newDrivers == null || newDrivers.Count == 0)
+                    return ResponseFactory.CreateInstance().CreateSuccessResponse("All drivers already in database.");
+
+                Response response = await _unityOfWork.DriverDao.InsertDrivers(newDrivers);
 
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert the driver: " + response.Message, response.Exception);
