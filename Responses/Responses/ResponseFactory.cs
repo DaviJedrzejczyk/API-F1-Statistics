@@ -79,6 +79,18 @@ namespace Shared.Responses
             Message = ResponsesConstants.MENSAGEM_SUCESSO,
             Itens = Itens,
         };
+        public DataResponse<T> CreateSuccessDataResponse<T>(string message) => new()
+        {
+            HasSuccess = true,
+            Message = message,
+            Itens = null,
+        };
+        public DataResponse<T> CreateSuccessDataResponse<T>(List<T> Itens, string message) => new()
+        {
+            HasSuccess = true,
+            Message = message,
+            Itens = Itens,
+        };
         public DataResponse<T> CreateFailureDataResponse<T>() => new()
         {
             HasSuccess = false,

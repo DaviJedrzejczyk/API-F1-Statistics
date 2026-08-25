@@ -80,45 +80,75 @@ namespace Services.Impl
         {
             try
             {
-                DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.MeetingKey, driverInsertDTO.SessionKey);
+                var rf = ResponseFactory.CreateInstance();
 
+                if (driverInsertDTO == null)
+                    return rf.CreateFailureResponse("DriverInsertDTO must be provided.");
+
+                DataResponse<Driver> driversDatabase = await SearchDriversDatabase(driverInsertDTO);
                 if (!driversDatabase.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to search drivers in database: " + driversDatabase.Message);
+                    return rf.CreateFailureResponse(driversDatabase.Message, driversDatabase.Exception);
 
-                if (driversDatabase.Itens.Count == 22)
-                    return ResponseFactory.CreateInstance().CreateSuccessResponse("All drivers already in database.");
+                if (driversDatabase.Itens == null || driversDatabase.Itens.Count == 22)
+                    return rf.CreateSuccessResponse("All drivers already in database.");
 
-                DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
+                DataResponse<Driver> drivers = await SearchDriversExternalApi(driverInsertDTO);
+                if (!drivers.HasSuccess)
+                    return rf.CreateFailureResponse(drivers.Message, drivers.Exception);
 
-                if (drivers.Itens == null || drivers.Itens.Count <= 0)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("The Drivers in the most recent meeting was not found");
-
-                var newDrivers = drivers.Itens;
-                if (driversDatabase.Itens.Count < 22)
-                {
-                    newDrivers = drivers.Itens
-                        .Where(x => !driversDatabase.Itens.Any(y => y.DriverNumber == x.DriverNumber && y.SessionKey == x.SessionKey))
-                        .ToList();
-                }
-
+                List<Driver> newDrivers = GetNewDrivers(driversDatabase, drivers);
                 if (newDrivers == null || newDrivers.Count == 0)
-                    return ResponseFactory.CreateInstance().CreateSuccessResponse("All drivers already in database.");
+                    return rf.CreateSuccessResponse("All drivers already in database.");
 
-                Response response = await _unityOfWork.DriverDao.InsertDrivers(newDrivers);
+                Response insertResponse = await _unityOfWork.DriverDao.InsertDrivers(newDrivers);
+                if (!insertResponse.HasSuccess)
+                    return rf.CreateFailureResponse("Failed to insert the driver(s): " + insertResponse.Message, insertResponse.Exception);
 
-                if (!response.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert the driver: " + response.Message, response.Exception);
+                Response commitResponse = await _unityOfWork.Commit();
+                if (!commitResponse.HasSuccess)
+                    return commitResponse;
 
-                response = await _unityOfWork.Commit();
-
-                if (!response.HasSuccess) return response;
-
-                return ResponseFactory.CreateInstance().CreateSuccessResponse("The new Driver has been insert!");
+                return rf.CreateSuccessResponse("The new driver(s) have been inserted!");
             }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
+        }
+
+        private static List<Driver> GetNewDrivers(DataResponse<Driver> driversDatabase, DataResponse<Driver> drivers)
+        {
+            var newDrivers = drivers.Itens;
+            if (driversDatabase.Itens.Count < 22)
+            {
+                newDrivers = drivers.Itens
+                    .Where(x => !driversDatabase.Itens.Any(y => y.DriverNumber == x.DriverNumber && y.SessionKey == x.SessionKey))
+                    .ToList();
+            }
+
+            return newDrivers;
+        }
+
+        private async Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO)
+        {
+            DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
+            
+            if (drivers.Itens == null || drivers.Itens.Count <= 0)
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("The Drivers in the most recent meeting was not found");
+            
+            return drivers;
+        }
+
+        private async Task<DataResponse<Driver>> SearchDriversDatabase(DriverInsertDTO driverInsertDTO)
+        {
+            DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.MeetingKey, driverInsertDTO.SessionKey);
+            if (!driversDatabase.HasSuccess)
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Failed to search drivers in database: " + driversDatabase.Message);
+
+            if (driversDatabase.Itens.Count == 22)
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Driver>("All drivers already in database.");
+            
+            return driversDatabase;
         }
     }
 }
