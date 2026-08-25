@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Services.Impl;
 using Services.Interfaces;
 using WebApi.Controllers.Meetings;
+using WebApi.ViewModels.DriversViews;
 using WebApi.ViewModels.MeetingsViews;
 using WebApi.ViewModels.SessionsViews;
 
@@ -36,7 +37,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.CreateMap<Session, SessionViewModel>();
     cfg.CreateMap<SessionViewModel, Session>();
 
-
+    cfg.CreateMap<DriverListViewModel, Driver>();
+    cfg.CreateMap<Driver, DriverListViewModel>();
 
 
     //External Api
