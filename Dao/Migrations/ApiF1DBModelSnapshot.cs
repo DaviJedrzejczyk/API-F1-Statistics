@@ -24,19 +24,16 @@ namespace Dao.Migrations
 
             modelBuilder.Entity("Entities.CarData", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                    b.Property<int>("SessionKey")
+                        .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("Brake")
+                    b.Property<int>("DriverNumber")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DriverNumber")
+                    b.Property<int>("Brake")
                         .HasColumnType("int");
 
                     b.Property<int?>("Drs")
@@ -51,24 +48,13 @@ namespace Dao.Migrations
                     b.Property<int>("Rpm")
                         .HasColumnType("int");
 
-                    b.Property<int>("SessionKey")
-                        .HasColumnType("int");
-
                     b.Property<int>("Speed")
                         .HasColumnType("int");
 
                     b.Property<int>("Throttle")
                         .HasColumnType("int");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("DriverNumber");
-
-                    b.HasIndex("Id");
-
-                    b.HasIndex("MeetingKey");
-
-                    b.HasIndex("SessionKey");
+                    b.HasKey("SessionKey", "DriverNumber", "Date");
 
                     b.ToTable("F1_CARDATAS", (string)null);
                 });

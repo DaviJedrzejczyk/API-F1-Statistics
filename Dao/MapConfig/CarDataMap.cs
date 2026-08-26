@@ -10,11 +10,12 @@ namespace Dao.MapConfig
         {
             builder.ToTable("F1_CARDATAS");
 
-            builder.HasKey(x => x.Id);
-
-            builder.Property(x => x.Id)
-                .UseIdentityColumn()
-                .ValueGeneratedOnAdd();
+            builder.HasKey(x => new
+            {
+                x.SessionKey,
+                x.DriverNumber,
+                x.Date
+            });
 
             builder.Property(x => x.Brake)
                 .IsRequired();
@@ -48,14 +49,6 @@ namespace Dao.MapConfig
 
             builder.Property(x => x.Throttle)
                 .IsRequired();
-
-            builder.HasIndex(x => x.Id);
-
-            builder.HasIndex(x => x.SessionKey);
-
-            builder.HasIndex(x => x.MeetingKey);
-
-            builder.HasIndex(x => x.DriverNumber);
         }
     }
 }

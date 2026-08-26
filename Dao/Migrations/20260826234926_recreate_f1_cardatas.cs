@@ -15,43 +15,21 @@ namespace Dao.Migrations
                 name: "F1_CARDATAS",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Brake = table.Column<int>(type: "int", nullable: false),
-                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SessionKey = table.Column<int>(type: "int", nullable: false),
                     DriverNumber = table.Column<int>(type: "int", nullable: false),
+                    Date = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Brake = table.Column<int>(type: "int", nullable: false),
                     Drs = table.Column<int>(type: "int", nullable: true),
                     MeetingKey = table.Column<int>(type: "int", nullable: false),
                     Gear = table.Column<int>(type: "int", nullable: false),
                     Rpm = table.Column<int>(type: "int", nullable: false),
-                    SessionKey = table.Column<int>(type: "int", nullable: false),
                     Speed = table.Column<int>(type: "int", nullable: false),
                     Throttle = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_F1_CARDATAS", x => x.Id);
+                    table.PrimaryKey("PK_F1_CARDATAS", x => new { x.SessionKey, x.DriverNumber, x.Date });
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_F1_CARDATAS_DriverNumber",
-                table: "F1_CARDATAS",
-                column: "DriverNumber");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_F1_CARDATAS_Id",
-                table: "F1_CARDATAS",
-                column: "Id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_F1_CARDATAS_MeetingKey",
-                table: "F1_CARDATAS",
-                column: "MeetingKey");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_F1_CARDATAS_SessionKey",
-                table: "F1_CARDATAS",
-                column: "SessionKey");
         }
 
         /// <inheritdoc />
