@@ -41,7 +41,7 @@ namespace Shared.Responses
         public Response CreateFailureResponse(Exception ex) => new()
         {
             HasSuccess = false,
-            Message = ex.Message + ": " + ex.InnerException!.Message ?? ex.Message,
+            Message = ex.Message,
             Exception = ex
         };
 

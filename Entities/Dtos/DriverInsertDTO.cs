@@ -4,9 +4,6 @@ namespace Entities.Dtos
 {
     public class DriverInsertDTO
     {
-        [JsonPropertyName("meeting_key")]
-        public int MeetingKey { get; set; }
-
         [JsonPropertyName("session_key")]
         public int SessionKey { get; set; }
 
@@ -15,9 +12,8 @@ namespace Entities.Dtos
             
         }
 
-        public DriverInsertDTO(int meetingKey, int sessionKey)
+        public DriverInsertDTO(int sessionKey)
         {
-            MeetingKey = meetingKey;
             SessionKey = sessionKey;
         }
     }

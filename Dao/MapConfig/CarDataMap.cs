@@ -22,7 +22,7 @@ namespace Dao.MapConfig
             builder.Property(x => x.Date)
                 .IsRequired();
 
-            builder.Property(x => x.DriveNumber)
+            builder.Property(x => x.DriverNumber)
                 .ValueGeneratedNever()
                 .IsRequired();
 
@@ -55,7 +55,7 @@ namespace Dao.MapConfig
 
             builder.HasIndex(x => x.MeetingKey);
 
-            builder.HasIndex(x => x.DriveNumber);
+            builder.HasIndex(x => x.DriverNumber);
         }
     }
 }

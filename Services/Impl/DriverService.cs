@@ -38,14 +38,13 @@ namespace Services.Impl
             }
         }
 
-        public async Task<DataResponse<Driver>> GetAllDriversSession(int meetingKey, int sessionKey)
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey)
         {
             try
             {
-                if (meetingKey <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Meeting key must be informed!");
                 if (sessionKey <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Session key must be informed!");
 
-                return await _unityOfWork.DriverDao.GetAllDriversSession(meetingKey, sessionKey);
+                return await _unityOfWork.DriverDao.GetAllDriversSession(sessionKey);
             }
             catch (Exception ex)
             {
@@ -141,7 +140,7 @@ namespace Services.Impl
 
         private async Task<DataResponse<Driver>> SearchDriversDatabase(DriverInsertDTO driverInsertDTO)
         {
-            DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.MeetingKey, driverInsertDTO.SessionKey);
+            DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.SessionKey);
             if (!driversDatabase.HasSuccess)
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Failed to search drivers in database: " + driversDatabase.Message);
 

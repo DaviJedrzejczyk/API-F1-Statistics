@@ -23,7 +23,7 @@ namespace ExternalApi.Impls
         {
 			try
 			{
-                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers?", $"meeting_key={driverInsertDTO.MeetingKey}&session_key={driverInsertDTO.SessionKey}");
+                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers?", $"session_key={driverInsertDTO.SessionKey}");
 
                 if (!tracks.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(tracks.Message, tracks.Exception);

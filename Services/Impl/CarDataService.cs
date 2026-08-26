@@ -20,36 +20,36 @@ namespace Services.Impl
             _driverService = driverService;
         }
 
-        public async Task<SingleResponse<CarData>> GetHighSpeedDriverSession(int sessionKey, int driverNumber, int minimunSpeed)
+        public async Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed)
         {
             try
             {
-                DataResponse<CarData> response = await _carDataClient.GetHighSpeedsDriverSession(sessionKey, driverNumber, minimunSpeed);
+                DataResponse<CarData> response = await _carDataClient.GetHighSpeedsSession(sessionKey, minimunSpeed);
 
                 if (!response.HasSuccess || response.Itens.Count <= 0)
-                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<CarData>(response.Message, response.Exception);
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(response.Message, response.Exception);
 
-                CarData? carData = response.Itens.MaxBy(x => x.Speed);
+                List<CarData> carDatas = response.Itens.GroupBy(x => x.DriverNumber).Select(x => x.MaxBy(y => y.Speed)!).ToList();
 
-                Response insertResponse = await SaveCarData(carData);
+                Response insertResponse = await SaveCarDatas(carDatas);
 
-                if (!insertResponse.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<CarData>(insertResponse.Message, insertResponse.Exception);
+                if (!insertResponse.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(insertResponse.Message, insertResponse.Exception);
 
-                return ResponseFactory.CreateInstance().CreateSuccessSingleResponse<CarData>(carData);
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(carDatas);
 
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<CarData>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(ex);
             }
         }
 
-        public async Task<Response> SaveCarData(CarData data)
+        public async Task<Response> SaveCarDatas(List<CarData> data)
         {
             try
             {
-                Response response = await _unityOfWork.CarDataDao.SaveCarData(data);
-                
+                Response response = await _unityOfWork.CarDataDao.SaveCarDatas(data);
+
                 if (!response.HasSuccess)
                     return response;
 
@@ -57,32 +57,41 @@ namespace Services.Impl
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);   
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
         }
 
-        public async Task<DataResponse<SessionDriverSpeedDTO>> GetSortedHighSpeedsSession(int sessionKey, int meetingKey, int minimunSpeed)
+        public async Task<DataResponse<SessionDriverSpeedDTO>> GetSortedHighSpeedsSession(int sessionKey, int minimunSpeed)
         {
-            DataResponse<Driver> driversList = await _driverService.GetAllDriversSession(meetingKey, sessionKey);
+            DataResponse<Driver> driversList = await _driverService.GetAllDriversSession(sessionKey);
 
             if (driversList.Itens.Count <= 0)
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Drivers must be inserted");
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Drivers must be inserted.");
 
-            List<SessionDriverSpeedDTO> speedDTOs = [];
-            for (int i = 0; i <= driversList.Itens.Count; i++)
-            {
-                SingleResponse<CarData> carDataResponse = await GetHighSpeedDriverSession(meetingKey, sessionKey, minimunSpeed);
-                speedDTOs.Add(new SessionDriverSpeedDTO()
-                {
-                    DriverName = driversList.Itens[i].LastName,
-                    MeetingKey = meetingKey,
-                    SessionKey = sessionKey,
-                    DriverNumber = driversList.Itens[i].DriverNumber,
-                    Speed = carDataResponse.Item.Speed,
-                });
-            }
+            DataResponse<CarData> carDataResponse = await GetHighSpeedsSession(sessionKey, minimunSpeed);
+            if (carDataResponse.Itens == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Not found the maximum speed of the drivers");
+           
+            List<SessionDriverSpeedDTO> speedDTOs = JoinListToCreateDTO(sessionKey, driversList, carDataResponse);
 
             return ResponseFactory.CreateInstance().CreateSuccessDataResponse(speedDTOs);
+        }
+
+        private List<SessionDriverSpeedDTO> JoinListToCreateDTO(int sessionKey, DataResponse<Driver> driversList, DataResponse<CarData> carDataResponse)
+        {
+            return driversList.Itens.Join(carDataResponse.Itens,
+                                          driver => new { driver.DriverNumber, driver.SessionKey },
+                                          carData => new { carData.DriverNumber, carData.SessionKey },
+                                          (driver, carData) => new SessionDriverSpeedDTO
+                                          {
+                                              DriverNumber = driver.DriverNumber,
+                                              DriverName = driver.LastName,
+                                              Speed = carData.Speed,
+                                              SessionKey = sessionKey,
+                                              HeadshotUrl = driver.HeadshotUrl,
+                                              TeamColour = driver.TeamColour,
+                                              TeamName = driver.TeamName,
+                                          })
+                                    .ToList();
         }
     }
 }

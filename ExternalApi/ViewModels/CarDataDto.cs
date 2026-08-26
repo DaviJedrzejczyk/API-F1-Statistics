@@ -11,7 +11,7 @@ namespace ExternalApi.ViewModels
         public DateTime Date { get; set; }
 
         [JsonPropertyName("driver_number")]
-        public int DriveNumber { get; set; }
+        public int DriverNumber { get; set; }
 
         [JsonPropertyName("drs")]
         public int Drs { get; set; }

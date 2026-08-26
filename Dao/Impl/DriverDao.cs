@@ -51,11 +51,11 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Driver>(ex);
             }
         }
-        public async Task<DataResponse<Driver>> GetAllDriversSession(int meetingKey, int sessionKey)
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey)
         {
             try
             {
-                List<Driver> drivers = await _db.Drivers.Where(x => x.SessionKey == sessionKey && x.MeetingKey == meetingKey).AsNoTracking().ToListAsync();
+                List<Driver> drivers = await _db.Drivers.Where(x => x.SessionKey == sessionKey).AsNoTracking().ToListAsync();
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Driver>(drivers);
             }
             catch (Exception ex)

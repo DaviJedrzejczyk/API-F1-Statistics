@@ -18,11 +18,11 @@ namespace ExternalApi.Impls
             _mapper = mapper;
         }
 
-        public async Task<DataResponse<CarData>> GetHighSpeedsDriverSession(int sessionKey, int driverNumber, int minimunSpeed)
+        public async Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed)
         {
 			try
 			{
-                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&driver_number={driverNumber}&speed={minimunSpeed}");
+                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&speed={minimunSpeed}");
 
                 if (!carData.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(carData.Message, carData.Exception);

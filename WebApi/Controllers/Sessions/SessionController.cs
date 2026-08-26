@@ -63,10 +63,10 @@ namespace WebApi.Controllers.Sessions
         {
             var response = await _sessionService.GetSessionByMeetingKeySessionKey(meetingkey, sessionId);
 
-            if (!response.HasSuccess && response.Item == null) return NotFound(new ErrorViewModel() { Message = response.Message, StatusCode = 404});
-            if (!response.HasSuccess && response.Exception != null) return BadRequest(new ErrorViewModel() { Message = response.Message, StatusCode = 404 });
+            if (!response.HasSuccess && response.Item == null) return NotFound(new ErrorViewModel(404, response.Message));
+            if (!response.HasSuccess && response.Exception != null) return BadRequest(new ErrorViewModel(400, response.Message));
 
-            return Ok(new SuccessViewModel() { Message = response.Message, StatusCode = 200});
+            return Ok(new SuccessViewModel(200, response.Message));
         }
     }
 }

@@ -12,11 +12,11 @@ namespace Dao.Impl
             _db = db;
         }
 
-        public async Task<Response> SaveCarData(CarData carData)
+        public async Task<Response> SaveCarDatas(List<CarData> data)
         {
             try
             {
-                await _db.AddAsync(carData);
+                await _db.AddRangeAsync(data);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse($"The car data has been saved.");
             }
             catch (Exception ex)

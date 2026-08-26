@@ -5,6 +5,6 @@ namespace Dao.Interface
 {
     public interface ICarDataDao
     {
-        Task<Response> SaveCarData(CarData data);
+        Task<Response> SaveCarDatas(List<CarData> data);
     }
 }
