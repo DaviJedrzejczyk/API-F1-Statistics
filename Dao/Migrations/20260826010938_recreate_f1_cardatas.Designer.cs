@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    [Migration("20260824231915_add_f1_cardatas_table")]
-    partial class add_f1_cardatas_table
+    [Migration("20260826010938_recreate_f1_cardatas")]
+    partial class recreate_f1_cardatas
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,10 +39,10 @@ namespace Dao.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DriveNumber")
+                    b.Property<int>("DriverNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("Drs")
+                    b.Property<int?>("Drs")
                         .HasColumnType("int");
 
                     b.Property<int>("Gear")
@@ -65,7 +65,7 @@ namespace Dao.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DriveNumber");
+                    b.HasIndex("DriverNumber");
 
                     b.HasIndex("Id");
 
@@ -85,7 +85,6 @@ namespace Dao.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DriverKey"));
 
                     b.Property<string>("BroadcastName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -93,22 +92,18 @@ namespace Dao.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("FirstName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("FullName")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("HeadshotUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -116,7 +111,6 @@ namespace Dao.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("NameAcronym")
-                        .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)");
 
@@ -124,12 +118,10 @@ namespace Dao.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("TeamColour")
-                        .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("TeamName")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 

@@ -36,10 +36,10 @@ namespace Dao.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("DriveNumber")
+                    b.Property<int>("DriverNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("Drs")
+                    b.Property<int?>("Drs")
                         .HasColumnType("int");
 
                     b.Property<int>("Gear")
@@ -62,7 +62,7 @@ namespace Dao.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DriveNumber");
+                    b.HasIndex("DriverNumber");
 
                     b.HasIndex("Id");
 

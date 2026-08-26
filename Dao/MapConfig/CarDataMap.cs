@@ -27,7 +27,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.Drs)
-                .IsRequired();
+                .IsRequired(false);
 
             builder.Property(x => x.MeetingKey)
                 .ValueGeneratedNever()

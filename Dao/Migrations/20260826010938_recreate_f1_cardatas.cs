@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Dao.Migrations
 {
     /// <inheritdoc />
-    public partial class add_f1_cardatas_table : Migration
+    public partial class recreate_f1_cardatas : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,8 +19,8 @@ namespace Dao.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Brake = table.Column<int>(type: "int", nullable: false),
                     Date = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DriveNumber = table.Column<int>(type: "int", nullable: false),
-                    Drs = table.Column<int>(type: "int", nullable: false),
+                    DriverNumber = table.Column<int>(type: "int", nullable: false),
+                    Drs = table.Column<int>(type: "int", nullable: true),
                     MeetingKey = table.Column<int>(type: "int", nullable: false),
                     Gear = table.Column<int>(type: "int", nullable: false),
                     Rpm = table.Column<int>(type: "int", nullable: false),
@@ -34,9 +34,9 @@ namespace Dao.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_F1_CARDATAS_DriveNumber",
+                name: "IX_F1_CARDATAS_DriverNumber",
                 table: "F1_CARDATAS",
-                column: "DriveNumber");
+                column: "DriverNumber");
 
             migrationBuilder.CreateIndex(
                 name: "IX_F1_CARDATAS_Id",
