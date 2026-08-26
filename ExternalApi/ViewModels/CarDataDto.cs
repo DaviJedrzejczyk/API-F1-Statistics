@@ -5,34 +5,34 @@ namespace ExternalApi.ViewModels
     public class CarDataDto
     {
         [JsonPropertyName("brake")]
-        public int Brake { get; set; }
+        public int? Brake { get; set; }
 
         [JsonPropertyName("date")]
-        public DateTime Date { get; set; }
+        public DateTime? Date { get; set; }
 
         [JsonPropertyName("driver_number")]
-        public int DriverNumber { get; set; }
+        public int? DriverNumber { get; set; }
 
         [JsonPropertyName("drs")]
-        public int Drs { get; set; }
+        public int? Drs { get; set; }
 
         [JsonPropertyName("meeting_key")]
-        public int MeetingKey { get; set; }
+        public int? MeetingKey { get; set; }
 
         [JsonPropertyName("n_gear")]
-        public int Gear { get; set; }
+        public int? Gear { get; set; }
 
         [JsonPropertyName("rpm")]
-        public int Rpm { get; set; }
+        public int? Rpm { get; set; }
 
         [JsonPropertyName("session_key")]
-        public int SessionKey { get; set; }
+        public int? SessionKey { get; set; }
 
         [JsonPropertyName("speed")]
-        public int Speed { get; set; }
+        public int? Speed { get; set; }
 
         [JsonPropertyName("throttle")]
-        public int Throttle { get; set; }
+        public int? Throttle { get; set; }
 
     }
 }

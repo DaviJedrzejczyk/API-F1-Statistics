@@ -69,9 +69,11 @@ namespace Services.Impl
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Drivers must be inserted.");
 
             DataResponse<CarData> carDataResponse = await GetHighSpeedsSession(sessionKey, minimunSpeed);
+            
             if (carDataResponse.Itens == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Not found the maximum speed of the drivers");
-           
+            
             List<SessionDriverSpeedDTO> speedDTOs = JoinListToCreateDTO(sessionKey, driversList, carDataResponse);
+            speedDTOs.Sort((x,y) => y.Speed.CompareTo(x.Speed));
 
             return ResponseFactory.CreateInstance().CreateSuccessDataResponse(speedDTOs);
         }
@@ -79,19 +81,19 @@ namespace Services.Impl
         private List<SessionDriverSpeedDTO> JoinListToCreateDTO(int sessionKey, DataResponse<Driver> driversList, DataResponse<CarData> carDataResponse)
         {
             return driversList.Itens.Join(carDataResponse.Itens,
-                                          driver => new { driver.DriverNumber, driver.SessionKey },
-                                          carData => new { carData.DriverNumber, carData.SessionKey },
-                                          (driver, carData) => new SessionDriverSpeedDTO
-                                          {
-                                              DriverNumber = driver.DriverNumber,
-                                              DriverName = driver.LastName,
-                                              Speed = carData.Speed,
-                                              SessionKey = sessionKey,
-                                              HeadshotUrl = driver.HeadshotUrl,
-                                              TeamColour = driver.TeamColour,
-                                              TeamName = driver.TeamName,
-                                          })
-                                    .ToList();
+                                         driver => new { driver.DriverNumber, driver.SessionKey },
+                                         carData => new { carData.DriverNumber, carData.SessionKey },
+                                         (driver, carData) => new SessionDriverSpeedDTO
+                                         {
+                                             DriverNumber = driver.DriverNumber,
+                                             DriverName = driver.LastName,
+                                             Speed = carData.Speed,
+                                             SessionKey = sessionKey,
+                                             HeadshotUrl = driver.HeadshotUrl,
+                                             TeamColour = driver.TeamColour,
+                                             TeamName = driver.TeamName,
+                                         })
+                                   .ToList();
         }
     }
 }

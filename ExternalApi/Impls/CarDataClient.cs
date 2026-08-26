@@ -22,7 +22,7 @@ namespace ExternalApi.Impls
         {
 			try
 			{
-                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&speed={minimunSpeed}");
+                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&speed>={minimunSpeed}");
 
                 if (!carData.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(carData.Message, carData.Exception);
