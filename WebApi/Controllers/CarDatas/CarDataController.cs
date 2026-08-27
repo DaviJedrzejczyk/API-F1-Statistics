@@ -27,7 +27,7 @@ namespace WebApi.Controllers.CarDatas
         /// 200 OK with the high-speed data when implemented.
         /// </returns>
         [HttpGet("high-speed")]
-        [ProducesResponseType(typeof(SessionDriverSpeedDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(List<SessionDriverSpeedDTO>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]

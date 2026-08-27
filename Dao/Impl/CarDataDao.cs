@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
 
 namespace Dao.Impl
@@ -10,6 +11,20 @@ namespace Dao.Impl
         public CarDataDao(ApiF1DB db)
         {
             _db = db;
+        }
+
+        public async Task<DataResponse<CarData>> GetHighSpeedSessionDatabase(int sessionKey, int minimunSpeed)
+        {
+            try
+            {
+                var list = await _db.CarDatas.Where(x => x.SessionKey == sessionKey && x.Speed >= minimunSpeed).AsNoTracking().ToListAsync();
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(list);
+
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(ex);
+            }
         }
 
         public async Task<Response> SaveCarDatas(List<CarData> data)
