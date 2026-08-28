@@ -69,6 +69,8 @@ builder.Services.AddTransient<IDriverClient, DriverClient>();
 builder.Services.AddTransient<ICarDataClient, CarDataClient>();
 builder.Services.AddTransient<ICarDataDao, CarDataDao>();
 builder.Services.AddTransient<ICarDataService, CarDataService>();
+builder.Services.AddTransient<ISessionResultDao, SessionResultDao>();
+builder.Services.AddTransient<ISessionResultService, SessionResultService>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

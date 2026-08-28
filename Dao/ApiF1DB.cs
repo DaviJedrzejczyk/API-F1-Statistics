@@ -17,6 +17,7 @@ namespace Dao
         public DbSet<Meeting> Meetings { get; set; }
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<CarData> CarDatas { get; set; }
+        public DbSet<SessionResult> SessionResults { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
