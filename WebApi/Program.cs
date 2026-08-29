@@ -12,6 +12,7 @@ using Services.Interfaces;
 using WebApi.Controllers.Meetings;
 using WebApi.ViewModels.DriversViews;
 using WebApi.ViewModels.MeetingsViews;
+using WebApi.ViewModels.SessionResultsViews;
 using WebApi.ViewModels.SessionsViews;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +41,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.CreateMap<DriverListViewModel, Driver>();
     cfg.CreateMap<Driver, DriverListViewModel>();
 
+    cfg.CreateMap<SessionResult, SessionResultListViewModel>();
+    cfg.CreateMap<SessionResultListViewModel, SessionResultListViewModel>();
 
     //External Api
     cfg.CreateMap<CarDataDto, CarData>();
@@ -53,6 +56,9 @@ builder.Services.AddAutoMapper(cfg =>
 
     cfg.CreateMap<DriverDto,  Driver>();
     cfg.CreateMap<Driver, DriverDto>();
+
+    cfg.CreateMap<SessionResult, SessionResultDto>();
+    cfg.CreateMap<SessionResultDto, SessionResult>();
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -71,6 +77,7 @@ builder.Services.AddTransient<ICarDataDao, CarDataDao>();
 builder.Services.AddTransient<ICarDataService, CarDataService>();
 builder.Services.AddTransient<ISessionResultDao, SessionResultDao>();
 builder.Services.AddTransient<ISessionResultService, SessionResultService>();
+builder.Services.AddTransient<ISessionResultClient, SessionResultClient>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

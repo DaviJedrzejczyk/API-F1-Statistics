@@ -13,6 +13,7 @@ namespace Dao.Interface
         IMeetingDao MeetingDao { get; }
         IDriverDao DriverDao { get; }
         ICarDataDao CarDataDao { get; }
+        ISessionResultDao SessionResultDao { get; }
         Task<Response> Commit();
     }
 }

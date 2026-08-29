@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace ExternalApi.ViewModels
+namespace WebApi.ViewModels.SessionResultsViews
 {
-    public class SessionResultDto
+    public class SessionResultListViewModel
     {
         [JsonPropertyName("dnf")]
         public bool Dnf { get; set; }

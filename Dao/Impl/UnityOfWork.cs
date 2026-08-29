@@ -11,14 +11,16 @@ namespace Dao.Impl
         private IMeetingDao? meeting = null;
         private IDriverDao? driver = null;
         private ICarDataDao? carData = null;
+        private ISessionResultDao? sessionResult = null;    
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao)
         {
             _db = db;
             session = sessionDao;
             meeting = meetingDao;
             driver = driverDao;
             carData = carDataDao;
+            sessionResult = resultDao;
         }
 
         public async Task<Response> Commit()
@@ -69,6 +71,14 @@ namespace Dao.Impl
             }
         }
 
+        public ISessionResultDao SessionResultDao
+        {
+            get
+            {
+                sessionResult ??= new SessionResultDao(_db);
+                return sessionResult;
+            }
+        }
         public void Dispose()
         {
             _db?.Dispose();
