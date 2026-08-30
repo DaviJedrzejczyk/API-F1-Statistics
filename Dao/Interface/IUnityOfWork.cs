@@ -10,6 +10,7 @@ namespace Dao.Interface
         ICarDataDao CarDataDao { get; }
         ISessionResultDao SessionResultDao { get; }
         IOvertakeDao OvertakeDao { get; }
+        IPitDao PitDao { get; }
         Task<Response> Commit();
     }
 }

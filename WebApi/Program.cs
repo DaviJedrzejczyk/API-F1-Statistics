@@ -80,6 +80,10 @@ builder.Services.AddTransient<ISessionResultService, SessionResultService>();
 builder.Services.AddTransient<ISessionResultClient, SessionResultClient>();
 builder.Services.AddTransient<IOvertakeDao, OvertakeDao>();
 builder.Services.AddTransient<IPitDao, PitDao>();
+builder.Services.AddTransient<IPitService, PitService>();
+builder.Services.AddTransient<IOvertakeService, OvertakeService>();
+builder.Services.AddTransient<IPitClient, PitClient>();
+builder.Services.AddTransient<IOvertakeClient, OvertakeClient>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();
