@@ -78,6 +78,8 @@ builder.Services.AddTransient<ICarDataService, CarDataService>();
 builder.Services.AddTransient<ISessionResultDao, SessionResultDao>();
 builder.Services.AddTransient<ISessionResultService, SessionResultService>();
 builder.Services.AddTransient<ISessionResultClient, SessionResultClient>();
+builder.Services.AddTransient<IOvertakeDao, OvertakeDao>();
+builder.Services.AddTransient<IPitDao, PitDao>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

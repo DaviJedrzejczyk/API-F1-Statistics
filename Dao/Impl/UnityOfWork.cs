@@ -11,9 +11,10 @@ namespace Dao.Impl
         private IMeetingDao? meeting = null;
         private IDriverDao? driver = null;
         private ICarDataDao? carData = null;
-        private ISessionResultDao? sessionResult = null;    
+        private ISessionResultDao? sessionResult = null;
+        private IOvertakeDao? overtake = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao)
         {
             _db = db;
             session = sessionDao;
@@ -21,6 +22,7 @@ namespace Dao.Impl
             driver = driverDao;
             carData = carDataDao;
             sessionResult = resultDao;
+            overtake = overtakeDao;
         }
 
         public async Task<Response> Commit()
@@ -77,6 +79,15 @@ namespace Dao.Impl
             {
                 sessionResult ??= new SessionResultDao(_db);
                 return sessionResult;
+            }
+        }
+
+        public IOvertakeDao OvertakeDao
+        {
+            get
+            {
+                overtake ??= new OvertakeDao(_db);
+                return overtake;
             }
         }
         public void Dispose()

@@ -18,6 +18,7 @@ namespace Dao
         public DbSet<Driver> Drivers { get; set; }
         public DbSet<CarData> CarDatas { get; set; }
         public DbSet<SessionResult> SessionResults { get; set; }
+        public DbSet<Overtake> Overtakes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
