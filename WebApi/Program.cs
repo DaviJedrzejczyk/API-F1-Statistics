@@ -3,6 +3,7 @@ using Dao;
 using Dao.Impl;
 using Dao.Interface;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using ExternalApi.ViewModels;
@@ -44,7 +45,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.CreateMap<SessionResult, SessionResultListViewModel>();
     cfg.CreateMap<SessionResultListViewModel, SessionResultListViewModel>();
 
-    //External Api
+    //External Api / Entities
     cfg.CreateMap<CarDataDto, CarData>();
     cfg.CreateMap<CarData, CarDataDto>();
 
@@ -59,6 +60,12 @@ builder.Services.AddAutoMapper(cfg =>
 
     cfg.CreateMap<SessionResult, SessionResultDto>();
     cfg.CreateMap<SessionResultDto, SessionResult>();
+
+    cfg.CreateMap<Pit, PitDto>();
+    cfg.CreateMap<PitDto, Pit>();
+
+    cfg.CreateMap<Overtake, OvertakeDto>();
+    cfg.CreateMap<OvertakeDto, Overtake>();
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -97,7 +104,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api F1 Statistics");
     });
 }
 

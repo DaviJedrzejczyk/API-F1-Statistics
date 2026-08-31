@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Entities;
+using Shared.Responses;
 
 namespace Dao.Interface
 {
     public interface IOvertakeDao
     {
+        Task<Response> SaveOvertakes(List<Overtake> overtakes);
+        Task<DataResponse<Overtake>> GetOvertakesBySession(int sessionKey);
     }
 }
