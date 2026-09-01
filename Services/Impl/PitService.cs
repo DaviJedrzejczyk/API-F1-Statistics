@@ -21,7 +21,21 @@ namespace Services.Impl
         {
             try
             {
+                //TODO: Make another method to implement the SOLID pattern...
+                DataResponse<Pit> responseDb = await GetPitsBySessionKeyDb(sessionKey);
+                if (!responseDb.HasSuccess || responseDb.Itens == null) return responseDb;
+
                 DataResponse<Pit> dataResponse = await _pitClient.GetAllPitsSession(sessionKey);
+                if (!dataResponse.HasSuccess || dataResponse.Itens == null) return dataResponse;
+
+                if (dataResponse.Itens.Count == responseDb.Itens.Count) return dataResponse;
+
+                if (responseDb.Itens.Count > 0)
+                    dataResponse.Itens = dataResponse.Itens.Where(x => !responseDb.Itens.Any(y => y.SessionKey == x.SessionKey)).ToList();
+
+                Response responseInsert = await SavePits(dataResponse.Itens);
+                if (!responseInsert.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>(responseInsert.Message, responseInsert.Exception);
+
                 return dataResponse;
             }
             catch (Exception ex)

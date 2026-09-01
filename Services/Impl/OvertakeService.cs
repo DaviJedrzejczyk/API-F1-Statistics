@@ -10,11 +10,13 @@ namespace Services.Impl
     {
         private readonly IOvertakeClient _client;
         private readonly IUnityOfWork _unityOfWork;
+        private readonly IPitService _pitService;
 
-        public OvertakeService(IOvertakeClient overtakeClient, IUnityOfWork unityOfWork)
+        public OvertakeService(IOvertakeClient overtakeClient, IUnityOfWork unityOfWork, IPitService pitService)
         {
             _client = overtakeClient;
             _unityOfWork = unityOfWork;
+            _pitService = pitService;
         }
 
         public async Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey)
@@ -25,7 +27,11 @@ namespace Services.Impl
                 if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
                     return responseApi;
 
-                //TODO: A method to filter a compare the dates of overtakes and dates of pits, because dosent have a correct count of overtakes in session.
+                DataResponse<Pit> pitsResponse = await _pitService.GetPitsBySessionKeyApi(sessionKey);
+
+                //TODO: Implement the logic to see the date and numbers of pilots where they overtaking the other pilots in pitlane.
+                //TODO: Verify when this overtake made around a Punition to the pilot in pitlane. <- Need a method.
+                //TODO: Verify when this overtake made by a DNF, DNS or DNQ. <- Need a method 
 
                 return responseApi;
             }
