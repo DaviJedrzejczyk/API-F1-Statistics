@@ -17,11 +17,13 @@ namespace ExternalApi.Impls
             _mapper = mapper;
         }
 
-        public async Task<DataResponse<RaceControl>> GetRaceControlsBySession(int sessionKey)
+        public async Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags)
         {
             try
             {
-                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}");
+                var flagQuery = string.Join("&flag=", flags);
+                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}&flag={flagQuery}");
+                
                 if (!response.HasSuccess || response.Item == null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>(response.Message, response.Exception);
 

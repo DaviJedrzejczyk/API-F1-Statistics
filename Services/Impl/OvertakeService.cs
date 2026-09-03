@@ -11,12 +11,14 @@ namespace Services.Impl
         private readonly IOvertakeClient _client;
         private readonly IUnityOfWork _unityOfWork;
         private readonly IPitService _pitService;
+        private readonly IRaceControlService _raceControlService;
 
-        public OvertakeService(IOvertakeClient overtakeClient, IUnityOfWork unityOfWork, IPitService pitService)
+        public OvertakeService(IOvertakeClient overtakeClient, IUnityOfWork unityOfWork, IPitService pitService, IRaceControlService raceControlService)
         {
             _client = overtakeClient;
             _unityOfWork = unityOfWork;
             _pitService = pitService;
+            _raceControlService = raceControlService;
         }
 
         public async Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey)
@@ -31,7 +33,6 @@ namespace Services.Impl
 
                 List<Overtake> overtakesFiltered = responseApi.Itens.Where(overtake =>
                 {
-                    // Exclude overtakes that happen within a 23-second window of a pit for either driver
                     bool isOvertakingDriverInPit = pitsResponse.Itens.Any(pit =>
                         pit.DriverNumber == overtake.OvertakingDriverNumber &&
                         (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
@@ -41,6 +42,16 @@ namespace Services.Impl
                         (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
 
                     return !isOvertakingDriverInPit && !isOvertakenDriverInPit;
+                }).ToList();
+
+                var responseRaceControls = await _raceControlService.GetRaceControlsBySessionFlagsApi(sessionKey, new string[] { "YELLOW", "DOUBLE YELLOW" });
+                if (!responseRaceControls.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseRaceControls.Message, responseRaceControls.Exception);
+
+                overtakesFiltered = overtakesFiltered.Where(overtake =>
+                {
+                    bool isDuringRaceControl = responseRaceControls.Itens.Any(raceControl => raceControl.Date >= overtake.Date);
+
+                    return !isDuringRaceControl;
                 }).ToList();
 
                 Response responseSave = await SaveOvertakes(overtakesFiltered);

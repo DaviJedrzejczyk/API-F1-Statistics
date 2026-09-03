@@ -1,6 +1,13 @@
-﻿namespace Services.Interfaces
+﻿using Entities;
+using Shared.Responses;
+
+namespace Services.Interfaces
 {
     public interface IRaceControlService
     {
+        Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlagsApi(int sessionKey, string[] flags);
+        Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlagsDb(int sessionKey, string[] flags);
+        Task<Response> SaveRaceControls(List<RaceControl> raceControls);
+
     }
 }
