@@ -21,7 +21,7 @@ namespace ExternalApi.Impls
         {
             try
             {
-                SingleResponse<string> response = await _client.Get("pits?", $"sessionKey={sessionKey}");
+                SingleResponse<string> response = await _client.Get("pit?", $"session_key={sessionKey}");
                 if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>("Error to search the pits with this session key.");
 
                 if (response.Item == null || response.Item == string.Empty) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>("The session dosen't contains pits.");

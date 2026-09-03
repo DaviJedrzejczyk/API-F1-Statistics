@@ -6,9 +6,6 @@ namespace WebApi.Controllers.Pits
     [Route("api/[controller]")]
     public class PitController : Controller
     {
-        public ActionResult Index()
-        {
-            return Ok();
-        }
+
     }
 }

@@ -11,6 +11,7 @@ namespace Dao.Interface
         ISessionResultDao SessionResultDao { get; }
         IOvertakeDao OvertakeDao { get; }
         IPitDao PitDao { get; }
+        IRaceControlDao RaceControlDao { get; }
         Task<Response> Commit();
     }
 }

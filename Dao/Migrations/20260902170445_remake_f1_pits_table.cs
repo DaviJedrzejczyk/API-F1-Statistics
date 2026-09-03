@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Dao.Migrations
 {
     /// <inheritdoc />
-    public partial class create_table_f1_pits : Migration
+    public partial class remake_f1_pits_table : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace Dao.Migrations
                     LaneDuration = table.Column<double>(type: "float", nullable: false),
                     LapNumber = table.Column<int>(type: "int", nullable: false),
                     PitDuration = table.Column<double>(type: "float", nullable: false),
-                    StopDuration = table.Column<double>(type: "float", nullable: false)
+                    StopDuration = table.Column<double>(type: "float", nullable: true)
                 },
                 constraints: table =>
                 {

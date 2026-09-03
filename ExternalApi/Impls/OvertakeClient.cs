@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Shared.Responses;
 using System.Text.Json;
@@ -23,7 +24,7 @@ namespace ExternalApi.Impls
                 SingleResponse<string> response = await _client.Get("overtakes?", $"session_key={sessionKey}");
                 if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(response.Message, response.Exception);
 
-                List<Overtake>? overtakes = JsonSerializer.Deserialize<List<Overtake>>(response.Item);
+                List<OvertakeDto>? overtakes = JsonSerializer.Deserialize<List<OvertakeDto>>(response.Item);
                 if (overtakes == null || overtakes.Count <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>("Overtakes in this session not found!");
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Overtake>>(overtakes));

@@ -13,7 +13,7 @@ namespace Entities.Dtos
         [JsonPropertyName("overtaking_driver_number")]
         public int OvertakingDriverNumber { get; set; }
 
-        [JsonPropertyName("overtaked_driver_number")]
+        [JsonPropertyName("overtaken_driver_number")]
         public int OvertakedDriverNumber { get; set; }
 
         [JsonPropertyName("date")]

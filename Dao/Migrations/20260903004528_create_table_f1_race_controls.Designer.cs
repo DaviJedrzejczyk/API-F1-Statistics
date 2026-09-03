@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    [Migration("20260830030043_create_table_f1_pits")]
-    partial class create_table_f1_pits
+    [Migration("20260903004528_create_table_f1_race_controls")]
+    partial class create_table_f1_race_controls
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -257,12 +257,56 @@ namespace Dao.Migrations
                     b.Property<double>("PitDuration")
                         .HasColumnType("float");
 
-                    b.Property<double>("StopDuration")
+                    b.Property<double?>("StopDuration")
                         .HasColumnType("float");
 
                     b.HasKey("Date", "DriverNumber", "SessionKey", "MeetingKey");
 
                     b.ToTable("F1_PITS", (string)null);
+                });
+
+            modelBuilder.Entity("Entities.RaceControl", b =>
+                {
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SessionKey")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MeetingKey")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("DriverNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FlagType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("LapNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("QualifyingPhase")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Scope")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("Sector")
+                        .HasColumnType("int");
+
+                    b.HasKey("Date", "SessionKey", "MeetingKey");
+
+                    b.ToTable("F1_RACE_CONTROLS", (string)null);
                 });
 
             modelBuilder.Entity("Entities.Session", b =>

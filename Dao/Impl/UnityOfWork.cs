@@ -13,9 +13,10 @@ namespace Dao.Impl
         private ICarDataDao? carData = null;
         private ISessionResultDao? sessionResult = null;
         private IOvertakeDao? overtake = null;
-        private IPitDao pit;
+        private IPitDao? pit = null;
+        private IRaceControlDao? raceControl = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao)
         {
             _db = db;
             session = sessionDao;
@@ -25,6 +26,7 @@ namespace Dao.Impl
             sessionResult = resultDao;
             overtake = overtakeDao;
             pit = pitDao;
+            raceControl = raceControlDao;
         }
 
         public async Task<Response> Commit()
@@ -99,6 +101,15 @@ namespace Dao.Impl
             {
                 pit ??= new PitDao(_db);
                 return pit;
+            }
+        }
+
+        public IRaceControlDao RaceControlDao
+        {
+            get
+            {
+                raceControl ??= new RaceControlDao(_db);
+                return raceControl;
             }
         }
         public void Dispose()

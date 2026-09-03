@@ -41,7 +41,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.StopDuration)
-                .IsRequired();
+                .IsRequired(false);
 
         }
     }

@@ -26,6 +26,6 @@ namespace Entities.Dtos
         public int SessionKey { get; set; }
 
         [JsonPropertyName("stop_duration")]
-        public double StopDuration { get; set; }
+        public double? StopDuration { get; set; }
     }
 }

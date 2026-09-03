@@ -9,6 +9,6 @@
         public int MeetingKey { get; set; }
         public double PitDuration { get; set; }
         public int SessionKey { get; set; }
-        public double StopDuration { get; set; }
+        public double? StopDuration { get; set; }
     }
 }

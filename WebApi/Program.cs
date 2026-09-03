@@ -66,6 +66,10 @@ builder.Services.AddAutoMapper(cfg =>
 
     cfg.CreateMap<Overtake, OvertakeDto>();
     cfg.CreateMap<OvertakeDto, Overtake>();
+
+    cfg.CreateMap<RaceControl, RaceControlDto>();
+    cfg.CreateMap<RaceControlDto, RaceControl>();
+
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -91,6 +95,9 @@ builder.Services.AddTransient<IPitService, PitService>();
 builder.Services.AddTransient<IOvertakeService, OvertakeService>();
 builder.Services.AddTransient<IPitClient, PitClient>();
 builder.Services.AddTransient<IOvertakeClient, OvertakeClient>();
+builder.Services.AddTransient<IRaceControlDao, RaceControlDao>();
+builder.Services.AddTransient<IRaceControlClient, RaceControlClient>();
+builder.Services.AddTransient<IRaceControlService, RaceControlService>();
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();

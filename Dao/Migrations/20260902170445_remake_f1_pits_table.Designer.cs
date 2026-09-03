@@ -4,6 +4,7 @@ using Dao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    partial class ApiF1DBModelSnapshot : ModelSnapshot
+    [Migration("20260902170445_remake_f1_pits_table")]
+    partial class remake_f1_pits_table
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -260,50 +263,6 @@ namespace Dao.Migrations
                     b.HasKey("Date", "DriverNumber", "SessionKey", "MeetingKey");
 
                     b.ToTable("F1_PITS", (string)null);
-                });
-
-            modelBuilder.Entity("Entities.RaceControl", b =>
-                {
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SessionKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MeetingKey")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Category")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("DriverNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FlagType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("LapNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int?>("QualifyingPhase")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Scope")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int?>("Sector")
-                        .HasColumnType("int");
-
-                    b.HasKey("Date", "SessionKey", "MeetingKey");
-
-                    b.ToTable("F1_RACE_CONTROLS", (string)null);
                 });
 
             modelBuilder.Entity("Entities.Session", b =>

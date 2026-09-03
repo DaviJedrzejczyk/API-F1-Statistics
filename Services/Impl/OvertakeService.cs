@@ -29,15 +29,28 @@ namespace Services.Impl
 
                 DataResponse<Pit> pitsResponse = await _pitService.GetPitsBySessionKeyApi(sessionKey);
 
-                //TODO: Implement the logic to see the date and numbers of pilots where they overtaking the other pilots in pitlane.
-                //TODO: Verify when this overtake made around a Punition to the pilot in pitlane. <- Need a method.
-                //TODO: Verify when this overtake made by a DNF, DNS or DNQ. <- Need a method 
+                List<Overtake> overtakesFiltered = responseApi.Itens.Where(overtake =>
+                {
+                    // Exclude overtakes that happen within a 23-second window of a pit for either driver
+                    bool isOvertakingDriverInPit = pitsResponse.Itens.Any(pit =>
+                        pit.DriverNumber == overtake.OvertakingDriverNumber &&
+                        (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
 
-                return responseApi;
+                    bool isOvertakenDriverInPit = pitsResponse.Itens.Any(pit =>
+                        pit.DriverNumber == overtake.OvertakedDriverNumber &&
+                        (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
+
+                    return !isOvertakingDriverInPit && !isOvertakenDriverInPit;
+                }).ToList();
+
+                Response responseSave = await SaveOvertakes(overtakesFiltered);
+                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseSave.Message, responseSave.Exception);
+
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(overtakesFiltered);
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>();
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(ex);
             }
         }
 
