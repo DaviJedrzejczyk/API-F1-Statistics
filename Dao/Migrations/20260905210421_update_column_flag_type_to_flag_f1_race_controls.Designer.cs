@@ -4,6 +4,7 @@ using Dao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    partial class ApiF1DBModelSnapshot : ModelSnapshot
+    [Migration("20260905210421_update_column_flag_type_to_flag_f1_race_controls")]
+    partial class update_column_flag_type_to_flag_f1_race_controls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -214,19 +217,19 @@ namespace Dao.Migrations
                     b.Property<int>("SessionKey")
                         .HasColumnType("int");
 
-                    b.Property<int>("OvertakingDriverNumber")
-                        .HasColumnType("int");
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("OvertakedDriverNumber")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("OvertakingDriverNumber")
+                        .HasColumnType("int");
 
                     b.Property<int>("Position")
                         .HasColumnType("int");
 
-                    b.HasKey("MeetingKey", "SessionKey", "OvertakingDriverNumber", "OvertakedDriverNumber", "Date", "Position");
+                    b.HasKey("MeetingKey", "SessionKey");
 
                     b.ToTable("F1_OVERTAKES", (string)null);
                 });

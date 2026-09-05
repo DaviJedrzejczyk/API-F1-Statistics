@@ -1,4 +1,5 @@
 ﻿using Entities;
+using Entities.Dtos;
 using Shared.Responses;
 
 namespace Services.Interfaces
@@ -7,6 +8,7 @@ namespace Services.Interfaces
     {
         Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlagsApi(int sessionKey, string[] flags);
         Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlagsDb(int sessionKey, string[] flags);
+        Task<DataResponse<RaceControlFilterDto>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags);
         Task<Response> SaveRaceControls(List<RaceControl> raceControls);
 
     }

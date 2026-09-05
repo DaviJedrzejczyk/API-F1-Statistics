@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
@@ -29,30 +30,13 @@ namespace Services.Impl
                 if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
                     return responseApi;
 
-                DataResponse<Pit> pitsResponse = await _pitService.GetPitsBySessionKeyApi(sessionKey);
+                List<Overtake> overtakesFiltered = await FilterOvertakesMadeInPits(sessionKey, responseApi);
 
-                List<Overtake> overtakesFiltered = responseApi.Itens.Where(overtake =>
-                {
-                    bool isOvertakingDriverInPit = pitsResponse.Itens.Any(pit =>
-                        pit.DriverNumber == overtake.OvertakingDriverNumber &&
-                        (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
-
-                    bool isOvertakenDriverInPit = pitsResponse.Itens.Any(pit =>
-                        pit.DriverNumber == overtake.OvertakedDriverNumber &&
-                        (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
-
-                    return !isOvertakingDriverInPit && !isOvertakenDriverInPit;
-                }).ToList();
-
-                var responseRaceControls = await _raceControlService.GetRaceControlsBySessionFlagsApi(sessionKey, new string[] { "YELLOW", "DOUBLE YELLOW" });
-                if (!responseRaceControls.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseRaceControls.Message, responseRaceControls.Exception);
-
-                overtakesFiltered = overtakesFiltered.Where(overtake =>
-                {
-                    bool isDuringRaceControl = responseRaceControls.Itens.Any(raceControl => raceControl.Date >= overtake.Date);
-
-                    return !isDuringRaceControl;
-                }).ToList();
+                var responseRaceControls = await _raceControlService.GetRaceControlsBySessionFlags(sessionKey, ["YELLOW", "DOUBLE YELLOW", "CLEAR"]);
+                if (!responseRaceControls.HasSuccess) 
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseRaceControls.Message, responseRaceControls.Exception);
+                
+                overtakesFiltered = FilterOvertakesMadeInYellowFlags(overtakesFiltered, responseRaceControls);
 
                 Response responseSave = await SaveOvertakes(overtakesFiltered);
                 if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseSave.Message, responseSave.Exception);
@@ -100,6 +84,38 @@ namespace Services.Impl
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
+        }
+
+        private static List<Overtake> FilterOvertakesMadeInYellowFlags(List<Overtake> overtakesFiltered, DataResponse<RaceControlFilterDto> responseRaceControls)
+        {
+            overtakesFiltered = overtakesFiltered.Where(overtake =>
+            {
+                bool isDuringRaceControl = responseRaceControls.Itens.Any(raceControl => raceControl.DateStart <= overtake.Date && raceControl.DateEnd >= overtake.Date);
+
+                return !isDuringRaceControl;
+            }).ToList();
+
+            return overtakesFiltered;
+        }
+
+        private async Task<List<Overtake>> FilterOvertakesMadeInPits(int sessionKey, DataResponse<Overtake> responseApi)
+        {
+            DataResponse<Pit> pitsResponse = await _pitService.GetPitsBySessionKeyApi(sessionKey);
+
+            List<Overtake> overtakesFiltered = responseApi.Itens.Where(overtake =>
+            {
+                bool isOvertakingDriverInPit = pitsResponse.Itens.Any(pit =>
+                    pit.DriverNumber == overtake.OvertakingDriverNumber &&
+                    (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
+
+                bool isOvertakenDriverInPit = pitsResponse.Itens.Any(pit =>
+                    pit.DriverNumber == overtake.OvertakedDriverNumber &&
+                    (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
+
+                return !isOvertakingDriverInPit && !isOvertakenDriverInPit;
+            }).ToList();
+
+            return overtakesFiltered;
         }
     }
 }

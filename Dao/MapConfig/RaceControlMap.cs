@@ -28,8 +28,8 @@ namespace Dao.MapConfig
             builder.Property(x => x.DriverNumber)
                 .IsRequired(false);
 
-            builder.Property(x => x.FlagType)
-                .HasMaxLength(50)
+            builder.Property(x => x.Flag)
+                .HasMaxLength(25)
                 .IsRequired(false);
 
             builder.Property(x => x.LapNumber)

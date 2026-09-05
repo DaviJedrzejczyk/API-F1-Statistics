@@ -37,7 +37,7 @@ namespace WebApi.Controllers.Overtakes
             var response = await _overtakeService.GetOvertakesSessionApi(sessionKey);
             if (!response.HasSuccess) return BadRequest(new ErrorViewModel(400, response.Message));
 
-            return Ok(new OvertakeCountViewModel(response.Itens.Count));
+            return Ok(new OvertakeCountViewModel(response.Itens[0].MeetingKey, response.Itens[0].SessionKey, response.Itens.Count));
         }
     }
 }

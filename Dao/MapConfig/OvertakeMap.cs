@@ -18,7 +18,11 @@ namespace Dao.MapConfig
             builder.HasKey(c => new
             {
                 c.MeetingKey,
-                c.SessionKey
+                c.SessionKey,
+                c.OvertakingDriverNumber,
+                c.OvertakedDriverNumber,
+                c.Date,
+                c.Position
             });
 
             builder.Property(x => x.MeetingKey)
