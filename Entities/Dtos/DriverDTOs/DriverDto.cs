@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace ExternalApi.ViewModels
+namespace Entities.Dtos.DriverDTOs
 {
     public class DriverDto
     {

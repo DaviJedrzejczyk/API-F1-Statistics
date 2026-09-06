@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Entities;
+using Entities.Dtos.MeetingDTOs;
 using ExternalApi.Interfaces;
-using ExternalApi.ViewModels;
 using Shared.Responses;
 using System.Text.Json;
 

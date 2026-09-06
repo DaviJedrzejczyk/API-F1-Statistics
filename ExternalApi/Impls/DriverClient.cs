@@ -2,7 +2,6 @@
 using Entities;
 using Entities.Dtos.DriverDTOs;
 using ExternalApi.Interfaces;
-using ExternalApi.ViewModels;
 using Shared.Responses;
 using System.Text.Json;
 

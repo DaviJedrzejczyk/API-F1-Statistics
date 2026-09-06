@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace ExternalApi.ViewModels
+namespace Entities.Dtos.SessionResultDTOs
 {
     public class SessionResultDto
     {
