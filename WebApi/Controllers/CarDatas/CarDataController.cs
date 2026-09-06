@@ -1,4 +1,4 @@
-﻿using Entities.Dtos;
+﻿using Entities.Dtos.SessionDTOs;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;

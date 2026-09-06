@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos
+namespace Entities.Dtos.DriverDTOs
 {
     public class DriverInsertDTO
     {

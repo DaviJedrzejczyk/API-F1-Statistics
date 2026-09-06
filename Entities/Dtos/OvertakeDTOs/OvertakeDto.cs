@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos
+namespace Entities.Dtos.OvertakeDTOs
 {
     public class OvertakeDto
     {

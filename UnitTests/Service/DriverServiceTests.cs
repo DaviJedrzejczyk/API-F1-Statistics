@@ -1,6 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
-using Entities.Dtos;
+using Entities.Dtos.DriverDTOs;
 using ExternalApi.Interfaces;
 using Moq;
 using Services.Impl;

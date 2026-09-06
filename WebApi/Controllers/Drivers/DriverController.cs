@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
-using Entities.Dtos;
+using Entities.Dtos.DriverDTOs;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using WebApi.ViewModels.DriversViews;

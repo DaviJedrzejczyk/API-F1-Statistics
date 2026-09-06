@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
-using Entities.Dtos;
+using Entities.Dtos.PitDTOs;
 using ExternalApi.Interfaces;
 using Shared.Responses;
 using System.Text.Json;

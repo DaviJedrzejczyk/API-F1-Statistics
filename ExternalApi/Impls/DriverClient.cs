@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Entities;
-using Entities.Dtos;
+using Entities.Dtos.DriverDTOs;
 using ExternalApi.Interfaces;
 using ExternalApi.ViewModels;
 using Shared.Responses;

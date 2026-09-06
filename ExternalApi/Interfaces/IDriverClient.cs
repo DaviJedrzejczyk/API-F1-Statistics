@@ -1,5 +1,5 @@
 ﻿using Entities;
-using Entities.Dtos;
+using Entities.Dtos.DriverDTOs;
 using Shared.Responses;
 
 namespace ExternalApi.Interfaces
