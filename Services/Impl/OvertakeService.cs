@@ -1,6 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
-using Entities.Dtos;
+using Entities.Dtos.RaceControlDTOs;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
@@ -26,6 +26,10 @@ namespace Services.Impl
         {
             try
             {
+                var responseDb = await GetOvertakesSessionDb(sessionKey);
+                if (responseDb.HasSuccess && responseDb.Itens != null && responseDb.Itens.Count > 0)
+                    return responseDb;
+
                 DataResponse<Overtake> responseApi = await _client.GetOvertakesSession(sessionKey);
                 if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
                     return responseApi;
