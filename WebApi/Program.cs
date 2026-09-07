@@ -11,11 +11,13 @@ using Entities.Dtos.PitDTOs;
 using Entities.Dtos.RaceControlDTOs;
 using Entities.Dtos.SessionDTOs;
 using Entities.Dtos.SessionResultDTOs;
+using Entities.Dtos.StintDTOs;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Services.Impl;
 using Services.Interfaces;
+using Shared.Converters;
 using WebApi.Controllers.Meetings;
 using WebApi.ViewModels.DriversViews;
 using WebApi.ViewModels.MeetingsViews;
@@ -76,6 +78,9 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.CreateMap<RaceControl, RaceControlDto>();
     cfg.CreateMap<RaceControlDto, RaceControl>();
 
+    cfg.CreateMap<StintListDTO, Stint>();
+    cfg.CreateMap<Stint, StintListDTO>();
+
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -104,6 +109,19 @@ builder.Services.AddTransient<IOvertakeClient, OvertakeClient>();
 builder.Services.AddTransient<IRaceControlDao, RaceControlDao>();
 builder.Services.AddTransient<IRaceControlClient, RaceControlClient>();
 builder.Services.AddTransient<IRaceControlService, RaceControlService>();
+builder.Services.AddTransient<IStintClient, StintClient>();
+builder.Services.AddTransient<IStintDao, StintDao>();
+builder.Services.AddTransient<IStintService, StintService>();
+builder.Services.AddTransient<ISessionResultQualifyDao, SessionResultQualifyDao>();
+builder.Services.AddTransient<ISessionResultQualifyingsService, SessionResultQualifyingsService>();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new ListDoubleNullToZeroConverter()));
+
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new DoubleNullToZeroConverter()));
 
 builder.Services.AddHttpClient<F1ApiClient>();
 builder.Services.AddHttpClient<MeetingController>();
