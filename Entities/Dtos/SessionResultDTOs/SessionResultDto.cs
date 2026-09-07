@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Shared.Converters;
+using System.Text.Json.Serialization;
 
 namespace Entities.Dtos.SessionResultDTOs
 {
@@ -17,10 +18,12 @@ namespace Entities.Dtos.SessionResultDTOs
         public int DriverNumber { get; set; }
 
         [JsonPropertyName("duration")]
-        public double Duration { get; set; }
+        [JsonConverter(typeof(ListDoubleNullToZeroConverter))]
+        public List<double> Duration { get; set; } = [];
 
         [JsonPropertyName("gap_to_leader")]
-        public double GapToLeader { get; set; }
+        [JsonConverter(typeof(ListDoubleNullToZeroConverter))]
+        public List<double> GapToLeader { get; set; } = [];
 
         [JsonPropertyName("number_of_laps")]
         public int NumberOfLaps { get; set; }
