@@ -15,8 +15,10 @@ namespace Dao.Impl
         private IOvertakeDao? overtake = null;
         private IPitDao? pit = null;
         private IRaceControlDao? raceControl = null;
+        private IStintDao? stint = null;
+        private ISessionResultQualifyDao? sessionResultQualify = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao, IStintDao stintDao, ISessionResultQualifyDao sessionResultQualifyDao)
         {
             _db = db;
             session = sessionDao;
@@ -27,6 +29,8 @@ namespace Dao.Impl
             overtake = overtakeDao;
             pit = pitDao;
             raceControl = raceControlDao;
+            stint = stintDao;
+            sessionResultQualify = sessionResultQualifyDao;
         }
 
         public async Task<Response> Commit()
@@ -112,6 +116,25 @@ namespace Dao.Impl
                 return raceControl;
             }
         }
+
+        public IStintDao StintDao
+        {
+            get
+            {
+                stint ??= new StintDao(_db);
+                return stint;
+            }
+        }
+
+        public ISessionResultQualifyDao SessionResultQualifyDao
+        {
+            get
+            {
+                sessionResultQualify ??= new SessionResultQualifyDao(_db);
+                return sessionResultQualify;
+            }
+        }
+
         public void Dispose()
         {
             _db?.Dispose();

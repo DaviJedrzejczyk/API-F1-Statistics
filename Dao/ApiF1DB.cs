@@ -1,4 +1,5 @@
 ﻿using Entities;
+using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -21,6 +22,8 @@ namespace Dao
         public DbSet<Overtake> Overtakes { get; set; }
         public DbSet<Pit> Pits { get; set; }
         public DbSet<RaceControl> RaceControls { get; set; }
+        public DbSet<Stint> Stints { get; set; }
+        public DbSet<SessionResultQualify> SessionResultQualifyings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

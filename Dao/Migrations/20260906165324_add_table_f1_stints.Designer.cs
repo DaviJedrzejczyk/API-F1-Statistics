@@ -4,6 +4,7 @@ using Dao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    partial class ApiF1DBModelSnapshot : ModelSnapshot
+    [Migration("20260906165324_add_table_f1_stints")]
+    partial class add_table_f1_stints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,29 +60,6 @@ namespace Dao.Migrations
                     b.HasKey("SessionKey", "DriverNumber", "Date");
 
                     b.ToTable("F1_CARDATAS", (string)null);
-                });
-
-            modelBuilder.Entity("Entities.Class.SessionResultQualify", b =>
-                {
-                    b.Property<int>("MeetingKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SessionKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DriverNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("QualifyingPhase")
-                        .HasMaxLength(2)
-                        .HasColumnType("nvarchar(2)");
-
-                    b.Property<double>("Duration")
-                        .HasColumnType("float");
-
-                    b.HasKey("MeetingKey", "SessionKey", "DriverNumber", "QualifyingPhase");
-
-                    b.ToTable("F1_SESSION_RESULTS_QUALIFYINGS", (string)null);
                 });
 
             modelBuilder.Entity("Entities.Driver", b =>
