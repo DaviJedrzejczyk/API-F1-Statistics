@@ -1,10 +1,10 @@
-﻿using Entities;
+﻿using Entities.Dtos.SessionResultDTOs;
 using Shared.Responses;
 
 namespace ExternalApi.Interfaces
 {
     public interface ISessionResultClient
     {
-        Task<DataResponse<SessionResult>> GetSessionResultApi(int sessionKey);
+        Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey);
     }
 }

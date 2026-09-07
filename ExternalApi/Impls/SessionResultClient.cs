@@ -16,21 +16,21 @@ namespace ExternalApi.Impls
             _f1ApiClient = f1ApiClient;
             _mapper = mapper;
         }
-        public async Task<DataResponse<SessionResult>> GetSessionResultApi(int sessionKey)
+        public async Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey)
         {
             try
             {
                 SingleResponse<string> response = await _f1ApiClient.Get("session_result?", $"session_key={sessionKey}");
-                if (!response.HasSuccess || response.Item == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(response.Message, response.Exception);
-
+                if (!response.HasSuccess || response.Item == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultDto>(response.Message, response.Exception);
+                
                 List<SessionResultDto>? dto = JsonSerializer.Deserialize<List<SessionResultDto>>(response.Item); 
-                if (dto == null ) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>($"The result of session: {sessionKey}, was not found!");
+                if (dto == null ) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultDto>($"The result of session: {sessionKey}, was not found!");
 
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<SessionResult>>(dto));
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(dto);
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultDto>(ex);
             }
         }
     }
