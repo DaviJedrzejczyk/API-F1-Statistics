@@ -22,16 +22,21 @@ namespace Entities.Dtos.SessionResultDTOs
         public List<double> Duration { get; set; } = [];
 
         [JsonPropertyName("gap_to_leader")]
-        [JsonConverter(typeof(ListDoubleNullToZeroConverter))]
-        public List<double> GapToLeader { get; set; } = [];
+        [JsonConverter(typeof(GapToLeaderConverter))]
+        public string GapToLeader { get; set; } = string.Empty;
 
         [JsonPropertyName("number_of_laps")]
         public int NumberOfLaps { get; set; }
+
+        [JsonPropertyName("points")]
+        [JsonConverter(typeof(DoubleNullToZeroConverter))]
+        public double Points { get; set; }
 
         [JsonPropertyName("meeting_key")]
         public int MeetingKey { get; set; }
 
         [JsonPropertyName("position")]
+        [JsonConverter(typeof(IntNullToZeroConverter))]
         public int Position { get; set; }
 
         [JsonPropertyName("session_key")]

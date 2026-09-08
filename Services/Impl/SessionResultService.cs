@@ -5,7 +5,6 @@ using Entities.Dtos.SessionResultDTOs;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
-using System.Numerics;
 
 namespace Services.Impl
 {
@@ -36,13 +35,26 @@ namespace Services.Impl
                 if (!response.HasSuccess || response.Itens == null || response.Itens.Count == 0)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(response.Message, response.Exception);
 
+                Response responseSave = new();
                 if (response.HasSuccess && response.Itens[0].Duration != null && response.Itens[0].Duration.Count > 1)
                 {
                     var qualifyingResults = await GetQualyfingResult(response.Itens);
+
+                    if (!qualifyingResults.HasSuccess) return qualifyingResults;
+
+                    responseSave = await SaveSessionResults(qualifyingResults.Itens);
+                    if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, responseSave.Exception);
+
                     return ResponseFactory.CreateInstance().CreateSuccessDataResponse(qualifyingResults.Itens);
                 }
                 
-                return await CreatListSessionResult(response.Itens);
+                var responseCreatList = await CreateListSessionResult(response.Itens);
+                if (!response.HasSuccess) return responseCreatList;
+
+                responseSave = await SaveSessionResults(responseCreatList.Itens);
+                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, response.Exception);
+
+                return responseCreatList;
             }
             catch (Exception ex)
 			{
@@ -85,7 +97,7 @@ namespace Services.Impl
             }
         }
 
-        private async Task<DataResponse<SessionResult>> CreatListSessionResult(List<SessionResultDto> itens)
+        private async Task<DataResponse<SessionResult>> CreateListSessionResult(List<SessionResultDto> itens)
         {
             try
             {
@@ -96,8 +108,9 @@ namespace Services.Impl
                     Dsq = x.Dsq,
                     DriverNumber = x.DriverNumber,
                     Duration = x.Duration != null && x.Duration.Count > 0 ? x.Duration[0] : 0,
-                    GapToLeader = x.GapToLeader != null && x.GapToLeader.Count > 0 ? x.GapToLeader[0] : 0,
+                    GapToLeader = x.GapToLeader != null && x.GapToLeader.Length > 0 ? x.GapToLeader[0].ToString() : "0", //Verify if its ok when is qualy
                     NumberOfLaps = x.NumberOfLaps,
+                    Points = x.Points,
                     MeetingKey = x.MeetingKey,
                     Position = x.Position,
                     SessionKey = x.SessionKey
@@ -143,7 +156,7 @@ namespace Services.Impl
                         Dsq = itens[i].Dsq,
                         DriverNumber = qualis[i].DriverNumber,
                         Duration = qualis[i].Duration,
-                        GapToLeader = Math.Round(timeLeader - qualis[i].Duration, 3),
+                        GapToLeader = Math.Round(timeLeader - qualis[i].Duration, 3).ToString(),
                         NumberOfLaps = itens[i].NumberOfLaps,
                         MeetingKey = qualis[i].MeetingKey,
                         Position = itens[i].Position,

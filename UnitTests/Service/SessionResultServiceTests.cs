@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities;
+using Entities.Class;
 using Entities.Dtos.SessionResultDTOs;
 using ExternalApi.Interfaces;
 using Moq;
@@ -122,7 +123,7 @@ namespace UnitTests.Service
 
             // Assert
             Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("client ok"));
+            Assert.That(result.Message, Is.EqualTo("insert failed"));
             _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.Is<List<SessionResult>>(l => l.Count == clientItems.Count && l[0].SessionKey == sessionKey)), Times.Once);
         }
 
@@ -247,6 +248,133 @@ namespace UnitTests.Service
             Assert.That(result, Is.SameAs(saveResponse));
             _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.Is<List<SessionResult>>(l => l == data)), Times.Once);
             _unityMock.Verify(u => u.Commit(), Times.Never);
+        }
+
+        [Test]
+        public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_QualisExist_SaveSucceeds_ReturnsQualifyingResults()
+        {
+            // Arrange
+            int sessionKey = 10;
+            var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
+            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
+
+            var clientItem = new SessionResultDto
+            {
+                SessionKey = sessionKey,
+                Duration = new List<double> { 60.0, 61.0 },
+                DriverNumber = 7,
+                Dnf = false,
+                Dns = false,
+                Dsq = false,
+                GapToLeader = "0",
+                NumberOfLaps = 10,
+                MeetingKey = 100,
+                Position = 1
+            };
+
+            var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = true, Itens = new List<SessionResultDto> { clientItem } };
+            _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
+
+            var qualis = new List<SessionResultQualify>
+            {
+                new SessionResultQualify { SessionKey = sessionKey, DriverNumber = 7, Duration = 60.0, MeetingKey = 100, QualifyingPhase = "Q1" }
+            };
+
+            var qualisResponse = new DataResponse<SessionResultQualify> { HasSuccess = true, Itens = qualis };
+            _sessionResultQualifyingsMock.Setup(q => q.GetQualyBySessionKey(sessionKey)).ReturnsAsync(qualisResponse);
+
+            var saveResponse = new Response { HasSuccess = true };
+            var commitResponse = new Response { HasSuccess = true };
+            _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
+            _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
+
+            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
+
+            // Act
+            var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
+
+            // Assert
+            Assert.IsTrue(result.HasSuccess);
+            Assert.IsNotNull(result.Itens);
+            Assert.That(result.Itens.Count, Is.EqualTo(qualis.Count));
+            _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>()), Times.Once);
+            _unityMock.Verify(u => u.Commit(), Times.Once);
+        }
+
+        [Test]
+        public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_CreateQualisFails_ReturnsFailure()
+        {
+            // Arrange
+            int sessionKey = 11;
+            var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
+            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
+
+            var clientItem = new SessionResultDto
+            {
+                SessionKey = sessionKey,
+                Duration = new List<double> { 60.0, 61.0 },
+                DriverNumber = 8
+            };
+
+            var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = true, Itens = new List<SessionResultDto> { clientItem } };
+            _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
+
+            // return empty qualis to force CreateListResultQualyfing
+            var emptyQualis = new DataResponse<SessionResultQualify> { HasSuccess = true, Itens = new List<SessionResultQualify>() };
+            _sessionResultQualifyingsMock.Setup(q => q.GetQualyBySessionKey(sessionKey)).ReturnsAsync(emptyQualis);
+
+            var createFail = new DataResponse<SessionResultQualify> { HasSuccess = false, Message = "qualify create failed" };
+            _sessionResultQualifyingsMock.Setup(q => q.CreateListResultQualyfing(It.IsAny<List<SessionResultDto>>())).ReturnsAsync(createFail);
+
+            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
+
+            // Act
+            var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
+
+            // Assert
+            Assert.IsFalse(result.HasSuccess);
+            Assert.That(result.Message, Is.EqualTo("qualify create failed"));
+            _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>()), Times.Never);
+        }
+
+        [Test]
+        public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_SaveFails_ReturnsFailureDataResponse()
+        {
+            // Arrange
+            int sessionKey = 12;
+            var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
+            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
+
+            var clientItem = new SessionResultDto
+            {
+                SessionKey = sessionKey,
+                Duration = new List<double> { 60.0, 61.0 },
+                DriverNumber = 9
+            };
+
+            var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = true, Itens = new List<SessionResultDto> { clientItem } };
+            _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
+
+            var qualis = new List<SessionResultQualify>
+            {
+                new SessionResultQualify { SessionKey = sessionKey, DriverNumber = 9, Duration = 60.0 }
+            };
+
+            var qualisResponse = new DataResponse<SessionResultQualify> { HasSuccess = true, Itens = qualis };
+            _sessionResultQualifyingsMock.Setup(q => q.GetQualyBySessionKey(sessionKey)).ReturnsAsync(qualisResponse);
+
+            var saveResponse = new Response { HasSuccess = false, Message = "qualify save failed" };
+            _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
+
+            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
+
+            // Act
+            var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
+
+            // Assert
+            Assert.IsFalse(result.HasSuccess);
+            Assert.That(result.Message, Is.EqualTo("qualify save failed"));
+            _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>()), Times.Once);
         }
 
         [Test]

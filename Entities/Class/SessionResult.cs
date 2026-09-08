@@ -7,8 +7,9 @@
         public bool Dsq { get; set; }
         public int DriverNumber { get; set; }
         public double Duration { get; set; }
-        public double GapToLeader { get; set; }
+        public string GapToLeader { get; set; } = string.Empty;
         public int NumberOfLaps { get; set; }
+        public double Points { get; set; }
         public int MeetingKey { get; set; }
         public int Position { get; set; }
         public int SessionKey { get; set; }

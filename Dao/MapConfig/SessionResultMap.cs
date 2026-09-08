@@ -32,6 +32,7 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.GapToLeader)
+                .HasMaxLength(50)
                 .IsRequired();
 
             builder.Property(x => x.NumberOfLaps)
@@ -44,6 +45,9 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.SessionKey)
+                .IsRequired();
+
+            builder.Property(x => x.Points)
                 .IsRequired();
         }
     }

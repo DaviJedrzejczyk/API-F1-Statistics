@@ -110,7 +110,7 @@ namespace Shared.Responses
         public DataResponse<T> CreateFailureDataResponse<T>(Exception ex) => new()
         {
             HasSuccess = false,
-            Message = ResponsesConstants.MENSAGEM_FALHA,
+            Message = ex.Message,
             Exception = ex
         };
     }

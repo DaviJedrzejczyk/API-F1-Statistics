@@ -20,10 +20,13 @@ namespace WebApi.ViewModels.SessionResultsViews
         public double Duration { get; set; }
 
         [JsonPropertyName("gap_to_leader")]
-        public double GapToLeader { get; set; }
+        public string GapToLeader { get; set; } = string.Empty;
 
         [JsonPropertyName("number_of_laps")]
         public int NumberOfLaps { get; set; }
+
+        [JsonPropertyName("points")]
+        public double Points { get; set; }
 
         [JsonPropertyName("meeting_key")]
         public int MeetingKey { get; set; }

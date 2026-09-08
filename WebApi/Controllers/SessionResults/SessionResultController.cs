@@ -22,16 +22,16 @@ namespace WebApi.Controllers.SessionResults
         }
 
         /// <summary>
-        /// Get the fastest laps by session key.
+        /// Get the result of session by session key.
         /// </summary>
         /// <param name="sessionKey"></param>
         /// <returns>
-        /// 200 OK - Returns a list of SessionResultListViewModel objects representing the fastest laps for the specified session key.
+        /// 200 OK - Returns a list of SessionResultListViewModel objects representing the result of the session for the specified session key.
         /// 400 Bad Request - Returns an ErrorViewModel if the request is invalid or if there are no results for the specified session key.
         /// 404 Not Found - Returns an ErrorViewModel if the specified session key does not exist or if there are no results for the specified session key.
         /// </returns>
-        [HttpGet("fastest-lap")]
-        [ProducesResponseType(typeof(SuccessViewModel), StatusCodes.Status200OK)]
+        [HttpGet("result")]
+        [ProducesResponseType(typeof(List<SessionResultListViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetFastestLapsBySession(int sessionKey)
@@ -44,7 +44,9 @@ namespace WebApi.Controllers.SessionResults
                 else if (response.Itens.Count <= 0) return NotFound(new ErrorViewModel(400, response.Message));
             }
 
-            return Ok(_mapper.Map<List<SessionResultListViewModel>>(response.Itens));
+            var result = _mapper.Map<List<SessionResultListViewModel>>(response.Itens);
+
+            return Ok(result);
         }
 
     }
