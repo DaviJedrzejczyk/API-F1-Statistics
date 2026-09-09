@@ -13,5 +13,6 @@
         public int MeetingKey { get; set; }
         public int Position { get; set; }
         public int SessionKey { get; set; }
+        public bool IsQualy { get; set; }
     }
 }

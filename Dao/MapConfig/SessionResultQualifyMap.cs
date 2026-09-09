@@ -33,6 +33,9 @@ namespace Dao.MapConfig
 
             builder.Property(x => x.Duration)
                 .IsRequired();
+
+            builder.Property(x => x.GapToLeader)
+                .IsRequired();
         }
     }
 }

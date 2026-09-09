@@ -18,7 +18,13 @@ namespace Dao.Impl
         {
             try
             {
-                var result = await _db.SessionResultQualifyings.Where(x => x.SessionKey == sessionKey).AsNoTracking().ToListAsync();
+                var result = await _db.SessionResultQualifyings
+                    .Where(x => x.SessionKey == sessionKey)
+                    .OrderBy(x => x.QualifyingPhase)
+                    .ThenBy(x => x.GapToLeader)
+                    .AsNoTracking()
+                    .ToListAsync();
+
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(result);
             }
             catch (Exception ex)

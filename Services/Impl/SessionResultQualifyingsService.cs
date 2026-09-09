@@ -23,13 +23,24 @@ namespace Services.Impl
                     .Select(x =>
                     {
                         int phase;
+                        string[] gaps = x.GapToLeader.Split(';', StringSplitOptions.RemoveEmptyEntries);
+                        double gap;
 
                         if (x.Duration?[2] > 0)
+                        {
                             phase = 2;
+                            gap = double.TryParse(gaps[2], out double parsedGap) ? parsedGap : 0;
+                        }
                         else if (x.Duration?[1] > 0)
+                        {
                             phase = 1;
+                            gap = double.TryParse(gaps[1], out double parsedGap) ? parsedGap : 0;
+                        }
                         else
+                        {
                             phase = 0;
+                            gap = double.TryParse(gaps[0], out double parsedGap) ? parsedGap : 0;
+                        }
 
                         return new SessionResultQualify
                         {
@@ -37,7 +48,8 @@ namespace Services.Impl
                             MeetingKey = x.MeetingKey,
                             DriverNumber = x.DriverNumber,
                             QualifyingPhase = $"Q{phase + 1}",
-                            Duration = x.Duration![phase]
+                            Duration = x.Duration![phase],
+                            GapToLeader = gap
                         };
                     }).ToList();
                 

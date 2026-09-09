@@ -71,6 +71,18 @@ namespace Services.Impl
 
                 if (response.Itens == null || response.Itens.Count == 0)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>("Not found the results of this session.");
+                
+                if (response.Itens[0].IsQualy)
+                {
+                    response.Itens = response.Itens.OrderBy(r => r.Position == 0 ? Int16.MaxValue : r.Position).ToList();
+                    return response;
+                }
+
+                var nonRetired = response.Itens.Where(r => !(r.Dnf || r.Dsq || r.Dns)).OrderBy(r => r.Position == 0 ? Int16.MaxValue : r.Position);
+
+                var retired = response.Itens.Where(r => r.Dnf || r.Dsq || r.Dns).OrderByDescending(r => r.NumberOfLaps);
+
+                response.Itens = nonRetired.Concat(retired).ToList();
 
                 return response;
             }
@@ -108,12 +120,13 @@ namespace Services.Impl
                     Dsq = x.Dsq,
                     DriverNumber = x.DriverNumber,
                     Duration = x.Duration != null && x.Duration.Count > 0 ? x.Duration[0] : 0,
-                    GapToLeader = x.GapToLeader != null && x.GapToLeader.Length > 0 ? x.GapToLeader[0].ToString() : "0", //Verify if its ok when is qualy
+                    GapToLeader = x.GapToLeader != null && x.GapToLeader.Length > 0 ? x.GapToLeader.ToString() : "0",
                     NumberOfLaps = x.NumberOfLaps,
                     Points = x.Points,
                     MeetingKey = x.MeetingKey,
                     Position = x.Position,
-                    SessionKey = x.SessionKey
+                    SessionKey = x.SessionKey,
+                    IsQualy = false
                 }).ToList());
             }
             catch (Exception ex)
@@ -160,7 +173,8 @@ namespace Services.Impl
                         NumberOfLaps = itens[i].NumberOfLaps,
                         MeetingKey = qualis[i].MeetingKey,
                         Position = itens[i].Position,
-                        SessionKey = qualis[i].SessionKey
+                        SessionKey = qualis[i].SessionKey,
+                        IsQualy = true
                     });
                 }
 

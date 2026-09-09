@@ -49,6 +49,9 @@ namespace Dao.MapConfig
 
             builder.Property(x => x.Points)
                 .IsRequired();
+
+            builder.Property(x => x.IsQualy)
+                .IsRequired();
         }
     }
 }

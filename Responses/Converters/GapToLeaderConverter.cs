@@ -39,7 +39,7 @@ namespace Shared.Converters
                 }
                 else if (reader.TokenType == JsonTokenType.Number)
                 {
-                    text += reader.GetDouble().ToString() + ",";
+                    text += reader.GetDouble().ToString() + ";";
                 }
                 else if (reader.TokenType == JsonTokenType.String)
                 {

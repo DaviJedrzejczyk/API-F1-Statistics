@@ -34,7 +34,7 @@ namespace WebApi.Controllers.SessionResults
         [ProducesResponseType(typeof(List<SessionResultListViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetFastestLapsBySession(int sessionKey)
+        public async Task<IActionResult> GetSessionResultBySessionKey(int sessionKey)
         {
             DataResponse<SessionResult> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
 
