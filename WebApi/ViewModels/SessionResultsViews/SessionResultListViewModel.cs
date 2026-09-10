@@ -36,5 +36,8 @@ namespace WebApi.ViewModels.SessionResultsViews
 
         [JsonPropertyName("session_key")]
         public int SessionKey { get; set; }
+
+        [JsonPropertyName("compound")]
+        public string Compound { get; set; } = string.Empty;
     }
 }

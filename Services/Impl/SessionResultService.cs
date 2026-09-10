@@ -201,7 +201,7 @@ namespace Services.Impl
             {
                 for (int i = 0; i < sessionResults.Count; i++)
                 {
-                    var stint = stints.Itens.FirstOrDefault(x => x.LapEnd == sessionResults[i].NumberOfLaps);
+                    var stint = stints.Itens.FirstOrDefault(x => x.LapEnd == sessionResults[i].NumberOfLaps && x.DriverNumber == sessionResults[i].DriverNumber);
                     if (stint != null)
                         sessionResults[i].Compound = stint.Compound;
                 }
