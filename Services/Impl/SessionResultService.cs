@@ -13,12 +13,14 @@ namespace Services.Impl
         private readonly ISessionResultClient _sessionResultClient;
         private readonly IUnityOfWork _unityOfWork;
         private readonly ISessionResultQualifyingsService _sessionResultQualifyings;
+        private readonly IStintService _stintService;
 
-        public SessionResultService(ISessionResultClient sessionResultClient, IUnityOfWork unityOfWork, ISessionResultQualifyingsService sessionResultQualifyings)
+        public SessionResultService(ISessionResultClient sessionResultClient, IUnityOfWork unityOfWork, ISessionResultQualifyingsService sessionResultQualifyings, IStintService stintService)
         {
             _sessionResultClient = sessionResultClient;
             _unityOfWork = unityOfWork;
             _sessionResultQualifyings = sessionResultQualifyings;
+            _stintService = stintService;
         }
 
         public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyApi(int sessionKey)
@@ -178,6 +180,13 @@ namespace Services.Impl
                     });
                 }
 
+
+                var stints = await _stintService.GetStintsBySessionKey(itens[0].SessionKey);
+                if (!stints.HasSuccess && stints.Exception != null)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(stints.Message, stints.Exception);
+                
+                ApplyLastCompoundUsed(sessionResults, stints);
+
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(sessionResults);
             }
             catch (Exception ex)
@@ -186,5 +195,17 @@ namespace Services.Impl
             }
         }
 
+        private static void ApplyLastCompoundUsed(List<SessionResult> sessionResults, DataResponse<Stint> stints)
+        {
+            if (stints.HasSuccess && stints.Itens.Count > 0)
+            {
+                for (int i = 0; i < sessionResults.Count; i++)
+                {
+                    var stint = stints.Itens.FirstOrDefault(x => x.LapEnd == sessionResults[i].NumberOfLaps);
+                    if (stint != null)
+                        sessionResults[i].Compound = stint.Compound;
+                }
+            }
+        }
     }
 }

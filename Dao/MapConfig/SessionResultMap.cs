@@ -52,6 +52,10 @@ namespace Dao.MapConfig
 
             builder.Property(x => x.IsQualy)
                 .IsRequired();
+
+            builder.Property(x => x.Compound)
+               .HasMaxLength(10)
+               .IsRequired();
         }
     }
 }

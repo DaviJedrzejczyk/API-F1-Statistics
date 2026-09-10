@@ -27,8 +27,12 @@ namespace Services.Impl
                 var responseApi = await GetStintsBySessionKeyApi(sessionKey);
                 if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
                     return responseApi;
-
+                
                 var responseSave = await SaveStints(responseApi.Itens);
+
+                if (!responseSave.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(responseSave.Message, responseSave.Exception);
+
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(responseApi.Itens, "Stints retrieved from API and saved to database successfully.");
             }
             catch (Exception ex)

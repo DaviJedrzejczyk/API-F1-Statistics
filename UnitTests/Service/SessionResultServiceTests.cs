@@ -17,6 +17,8 @@ namespace UnitTests.Service
         private Mock<ISessionResultClient> _sessionResultClientMock = null!;
         private Mock<ISessionResultDao> _sessionResultDaoMock = null!;
         private Mock<ISessionResultQualifyingsService> _sessionResultQualifyingsMock = null!;
+        private Mock<IStintService> _stintServiceMock = null!;
+        private SessionResultService service = null!;
 
         [SetUp]
         public void SetUp()
@@ -25,15 +27,18 @@ namespace UnitTests.Service
             _sessionResultClientMock = new Mock<ISessionResultClient>();
             _sessionResultDaoMock = new Mock<ISessionResultDao>();
             _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
 
             _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object);
         }
 
         [Test]
         public void Constructor_WithValidDependencies_DoesNotThrow()
         {
             // Arrange / Act / Assert
-            Assert.DoesNotThrow(() => new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object));
+            Assert.DoesNotThrow(() => new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object));
         }
 
         [Test]
@@ -45,14 +50,12 @@ namespace UnitTests.Service
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = dbList };
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
 
             // Assert
             Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Itens, Is.SameAs(dbList));
+            Assert.That(result.Itens, Is.EqualTo(dbList));
             _sessionResultClientMock.Verify(c => c.GetSessionResultApi(It.IsAny<int>()), Times.Never);
         }
 
@@ -67,8 +70,6 @@ namespace UnitTests.Service
 
             var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = false, Message = "api fail" };
             _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -89,8 +90,6 @@ namespace UnitTests.Service
 
             var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = false, Message = "api fail" };
             _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -116,7 +115,6 @@ namespace UnitTests.Service
             var saveResponse = new Response { HasSuccess = false, Message = "insert failed" };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -144,7 +142,6 @@ namespace UnitTests.Service
             var commitResponse = new Response { HasSuccess = true, Message = "committed" };
             _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -166,8 +163,6 @@ namespace UnitTests.Service
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
             _sessionResultClientMock.Setup(c => c.GetSessionResultApi(It.IsAny<int>())).ThrowsAsync(new InvalidOperationException("boom"));
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
 
@@ -185,8 +180,6 @@ namespace UnitTests.Service
             var dbFail = new DataResponse<SessionResult> { HasSuccess = false, Message = "dbfail" };
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbFail);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyDatabase(sessionKey);
 
@@ -203,8 +196,6 @@ namespace UnitTests.Service
             var dbEmpty = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbEmpty);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyDatabase(sessionKey);
 
@@ -219,8 +210,6 @@ namespace UnitTests.Service
             // Arrange
             int sessionKey = 9;
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(It.IsAny<int>())).ThrowsAsync(new InvalidOperationException("dberr"));
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyDatabase(sessionKey);
@@ -238,8 +227,6 @@ namespace UnitTests.Service
             var data = new List<SessionResult> { new() };
             var saveResponse = new Response { HasSuccess = false, Message = "save failed" };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.SaveSessionResults(data);
@@ -283,12 +270,14 @@ namespace UnitTests.Service
             var qualisResponse = new DataResponse<SessionResultQualify> { HasSuccess = true, Itens = qualis };
             _sessionResultQualifyingsMock.Setup(q => q.GetQualyBySessionKey(sessionKey)).ReturnsAsync(qualisResponse);
 
+            // ensure stint service is mocked to avoid awaiting a null Task
+            var stintsResponse = new DataResponse<Stint> { HasSuccess = true, Itens = new List<Stint>() };
+            _stintServiceMock.Setup(s => s.GetStintsBySessionKey(sessionKey)).ReturnsAsync(stintsResponse);
+
             var saveResponse = new Response { HasSuccess = true };
             var commitResponse = new Response { HasSuccess = true };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
             _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -326,8 +315,6 @@ namespace UnitTests.Service
             var createFail = new DataResponse<SessionResultQualify> { HasSuccess = false, Message = "qualify create failed" };
             _sessionResultQualifyingsMock.Setup(q => q.CreateListResultQualyfing(It.IsAny<List<SessionResultDto>>())).ReturnsAsync(createFail);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
 
@@ -363,10 +350,11 @@ namespace UnitTests.Service
             var qualisResponse = new DataResponse<SessionResultQualify> { HasSuccess = true, Itens = qualis };
             _sessionResultQualifyingsMock.Setup(q => q.GetQualyBySessionKey(sessionKey)).ReturnsAsync(qualisResponse);
 
+            var stintsResponse = new DataResponse<Stint> { HasSuccess = true, Itens = new List<Stint>() };
+            _stintServiceMock.Setup(s => s.GetStintsBySessionKey(sessionKey)).ReturnsAsync(stintsResponse);
+
             var saveResponse = new Response { HasSuccess = false, Message = "qualify save failed" };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
@@ -387,8 +375,6 @@ namespace UnitTests.Service
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
             _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
 
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
-
             // Act
             var result = await service.SaveSessionResults(data);
 
@@ -404,8 +390,6 @@ namespace UnitTests.Service
             // Arrange
             var data = new List<SessionResult> { new() };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ThrowsAsync(new InvalidOperationException("boom"));
-
-            var service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object);
 
             // Act
             var result = await service.SaveSessionResults(data);

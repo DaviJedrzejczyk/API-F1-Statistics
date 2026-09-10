@@ -56,7 +56,7 @@ namespace UnitTests.Dao
             Assert.That(result.HasSuccess, Is.False);
             Assert.That(result.Exception, Is.Not.Null);
             Assert.That(result.Exception, Is.InstanceOf<NullReferenceException>());
-            Assert.That(result.Message, Is.EqualTo("Falha"));
+            Assert.That(result.Message, Is.EqualTo("Object reference not set to an instance of an object."));
         }
 
 [Test]

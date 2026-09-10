@@ -46,9 +46,9 @@ namespace UnitTests.Service
             // Arrange
             var items = new List<SessionResultDto>
             {
-                new() { SessionKey = 1, MeetingKey = 10, DriverNumber = 44, Duration = new List<double> { 0.0, 0.0, 0.2 } }, // Q3
-                new() { SessionKey = 2, MeetingKey = 11, DriverNumber = 7, Duration = new List<double> { 0.0, 0.3, 0.0 } },  // Q2
-                new() { SessionKey = 3, MeetingKey = 12, DriverNumber = 5, Duration = new List<double> { 0.5, 0.0, 0.0 } }   // Q1
+                new() { SessionKey = 1, MeetingKey = 10, DriverNumber = 44, Duration = new List<double> { 0.0, 0.0, 0.2 }, GapToLeader = "0;0;0" }, // Q3
+                new() { SessionKey = 2, MeetingKey = 11, DriverNumber = 7, Duration = new List<double> { 0.0, 0.3, 0.0 }, GapToLeader = "0;0;0" },  // Q2
+                new() { SessionKey = 3, MeetingKey = 12, DriverNumber = 5, Duration = new List<double> { 0.5, 0.0, 0.0 }, GapToLeader = "0;0;0" }   // Q1
             };
 
             // SaveQualy flow: SaveQualifyResult succeeds and Commit succeeds
@@ -88,7 +88,7 @@ namespace UnitTests.Service
             // Arrange
             var items = new List<SessionResultDto>
             {
-                new() { SessionKey = 1, MeetingKey = 10, DriverNumber = 44, Duration = new List<double> { 0.1, 0.0, 0.0 } }
+                new() { SessionKey = 1, MeetingKey = 10, DriverNumber = 44, Duration = new List<double> { 0.1, 0.0, 0.0 }, GapToLeader = "0;0;0" }
             };
 
             var ex = new InvalidOperationException("save error");
