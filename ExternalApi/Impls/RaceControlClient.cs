@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Entities;
-using Entities.Dtos.RaceControlDTOs;
+using Entities.Class;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Shared.Responses;
 using System.Text.Json;

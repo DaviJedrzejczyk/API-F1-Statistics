@@ -1,4 +1,4 @@
-﻿using Entities.Dtos.SessionResultDTOs;
+﻿using Entities.Dtos;
 using Shared.Responses;
 
 namespace ExternalApi.Interfaces

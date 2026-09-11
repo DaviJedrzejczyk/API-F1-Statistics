@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dao.Impl;
 using Dao;
-using Entities;
+using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;

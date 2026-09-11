@@ -1,6 +1,6 @@
 ﻿using Dao.Interface;
 using Entities.Class;
-using Entities.Dtos.SessionResultDTOs;
+using Entities.Dtos;
 using Services.Interfaces;
 using Shared.Responses;
 

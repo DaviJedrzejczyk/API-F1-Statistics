@@ -17,8 +17,10 @@ namespace Dao.Impl
         private IRaceControlDao? raceControl = null;
         private IStintDao? stint = null;
         private ISessionResultQualifyDao? sessionResultQualify = null;
+        private ILapDao? lap = null;
+        private ILapSegmentDao? lapSegment = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao, IStintDao stintDao, ISessionResultQualifyDao sessionResultQualifyDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao, IStintDao stintDao, ISessionResultQualifyDao sessionResultQualifyDao, ILapDao lapDao, ILapSegmentDao lapSegmentDao)
         {
             _db = db;
             session = sessionDao;
@@ -31,6 +33,8 @@ namespace Dao.Impl
             raceControl = raceControlDao;
             stint = stintDao;
             sessionResultQualify = sessionResultQualifyDao;
+            lap = lapDao;
+            lapSegment = lapSegmentDao;
         }
 
         public async Task<Response> Commit()
@@ -132,6 +136,24 @@ namespace Dao.Impl
             {
                 sessionResultQualify ??= new SessionResultQualifyDao(_db);
                 return sessionResultQualify;
+            }
+        }
+
+        public ILapDao LapDao
+        {
+            get
+            {
+                lap ??= new LapDao(_db);
+                return lap;
+            }
+        }
+
+        public ILapSegmentDao LapSegmentDao
+        {
+            get
+            {
+                lapSegment ??= new LapSegmentDao(_db);
+                return lapSegment;
             }
         }
 

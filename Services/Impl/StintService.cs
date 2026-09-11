@@ -1,5 +1,5 @@
 ﻿using Dao.Interface;
-using Entities;
+using Entities.Class;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;

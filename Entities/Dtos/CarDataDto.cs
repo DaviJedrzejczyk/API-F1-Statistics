@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.CarDataDTOs
+namespace Entities.Dtos
 {
     public class CarDataDto
     {

@@ -1,6 +1,6 @@
 ﻿using Dao;
 using Dao.Impl;
-using Entities;
+using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Shared.Responses;

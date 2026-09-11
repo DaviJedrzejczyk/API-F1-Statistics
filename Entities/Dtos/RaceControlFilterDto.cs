@@ -1,4 +1,4 @@
-﻿namespace Entities.Dtos.RaceControlDTOs
+﻿namespace Entities.Dtos
 {
     public class RaceControlFilterDto
     {

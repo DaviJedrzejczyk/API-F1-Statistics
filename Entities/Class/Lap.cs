@@ -1,4 +1,6 @@
-﻿namespace Entities
+﻿using Entities.Class;
+
+namespace Entities.Class
 {
     public class Lap
     {
@@ -13,10 +15,9 @@
         public double LapDuration { get; set; }
         public int LapNumber { get; set; }
         public int MeetingKey { get; set; }
-        public List<int> SegmentsSector1 { get; set; } = [];
-        public List<int> SegmentsSector2 { get; set; } = [];
-        public List<int> SegmentsSector3 { get; set; } = [];
         public int SessionKey { get; set; }
         public int StSpeed { get; set; }
+
+        public List<LapSegment> Segments { get; set; } = [];
     }
 }

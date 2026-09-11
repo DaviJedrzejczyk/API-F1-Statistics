@@ -1,5 +1,5 @@
 ﻿using Dao.Interface;
-using Entities;
+using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

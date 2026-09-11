@@ -1,5 +1,4 @@
-﻿using Entities;
-using Entities.Dtos;
+﻿using Entities.Class;
 using Shared.Responses;
 
 namespace Services.Interfaces

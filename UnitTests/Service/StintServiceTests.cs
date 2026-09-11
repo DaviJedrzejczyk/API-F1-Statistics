@@ -1,11 +1,11 @@
 using Dao.Interface;
 using Dao;
-using Entities;
 using ExternalApi.Interfaces;
 using Moq;
 using Services.Impl;
 using Shared.Responses;
 using NUnit.Framework;
+using Entities.Class;
 
 namespace UnitTests.Service
 {

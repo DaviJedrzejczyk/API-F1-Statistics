@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dao.Interface;
 using Entities.Class;
-using Entities.Dtos.SessionResultDTOs;
+using Entities.Dtos;
 using Moq;
 using NUnit.Framework;
 using Services.Impl;

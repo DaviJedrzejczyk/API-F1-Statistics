@@ -2,9 +2,7 @@
 using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
-using WebApi.ViewModels.ErrorsViews;
-using WebApi.ViewModels.OvertakeViews;
-using WebApi.ViewModels.SuccessViews;
+using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Overtakes
 {

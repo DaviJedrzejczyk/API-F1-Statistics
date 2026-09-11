@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace WebApi.ViewModels.ErrorsViews
+namespace WebApi.ViewModels
 {
     public class ErrorViewModel
     {

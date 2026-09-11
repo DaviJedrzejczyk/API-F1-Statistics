@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using Entities;
-using Entities.Dtos.DriverDTOs;
+using Entities.Class;
+using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
-using WebApi.ViewModels.DriversViews;
-using WebApi.ViewModels.ErrorsViews;
-using WebApi.ViewModels.SuccessViews;
+using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Drivers
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.PitDTOs
+namespace Entities.Dtos
 {
     public class PitDto
     {

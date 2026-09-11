@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.RaceControlDTOs
+namespace Entities.Dtos
 {
     public class RaceControlDto
     {

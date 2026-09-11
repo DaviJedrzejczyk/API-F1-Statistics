@@ -1,5 +1,5 @@
 ﻿using Dao.Interface;
-using Entities;
+using Entities.Class;
 using Entities.Dtos;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;

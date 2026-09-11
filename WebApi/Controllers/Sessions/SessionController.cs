@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
-using WebApi.ViewModels.ErrorsViews;
-using WebApi.ViewModels.SessionsViews;
-using WebApi.ViewModels.SuccessViews;
+using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Sessions
 {

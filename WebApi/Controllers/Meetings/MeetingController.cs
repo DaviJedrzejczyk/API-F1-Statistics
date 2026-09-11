@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using Entities;
+using Entities.Class;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
-using WebApi.ViewModels.ErrorsViews;
-using WebApi.ViewModels.MeetingsViews;
-using WebApi.ViewModels.SuccessViews;
+using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Meetings
 {

@@ -1,6 +1,6 @@
 using Dao;
 using Dao.Impl;
-using Entities;
+using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 
 namespace UnitTests.Dao
@@ -114,7 +114,7 @@ namespace UnitTests.Dao
 
         private void CreateSession(int meetingKey, int sessionKey)
         {
-            _context.Sessions.Add(new Entities.Session
+            _context.Sessions.Add(new Session
             {
                 MeetingKey = meetingKey,
                 SessionKey = sessionKey,

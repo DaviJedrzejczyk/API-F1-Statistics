@@ -14,6 +14,9 @@ namespace Dao.Interface
         IRaceControlDao RaceControlDao { get; }
         IStintDao StintDao { get; }
         ISessionResultQualifyDao SessionResultQualifyDao { get; }
+        ILapDao LapDao { get; }
+        ILapSegmentDao LapSegmentDao { get; }
+
         Task<Response> Commit();
     }
 }

@@ -5,11 +5,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dao.Impl;
 using Dao;
-using Entities;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using NUnit.Framework;
 using Shared.Responses;
+using Entities.Class;
 
 namespace UnitTests.Dao
 {

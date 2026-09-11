@@ -1,7 +1,7 @@
 ﻿using Shared.Converters;
 using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.SessionResultDTOs
+namespace Entities.Dtos
 {
     public class SessionResultDto
     {

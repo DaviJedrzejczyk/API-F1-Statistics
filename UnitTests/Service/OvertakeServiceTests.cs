@@ -7,9 +7,9 @@ using Dao.Interface;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Services.Impl;
-using Entities;
+using Entities.Class;
 using Shared.Responses;
-using Entities.Dtos.RaceControlDTOs;
+using Entities.Dtos;
 
 namespace UnitTests.Service
 {

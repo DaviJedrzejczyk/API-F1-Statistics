@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dao.Interface;
-using Entities;
+using Entities.Class;
 using ExternalApi.Interfaces;
 using Moq;
 using NUnit.Framework;

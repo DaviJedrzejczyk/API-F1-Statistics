@@ -1,4 +1,4 @@
-﻿namespace Entities
+﻿namespace Entities.Class
 {
     public class Stint
     {

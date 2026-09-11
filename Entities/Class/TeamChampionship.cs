@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Entities
+﻿namespace Entities.Class
 {
     public class TeamChampionship
     {
@@ -15,21 +9,5 @@ namespace Entities
         public int PositionStart { get; set; }
         public int SessionKey { get; set; }
         public string TeamName { get; set; } = string.Empty;
-
-        public TeamChampionship()
-        {
-            
-        }
-
-        public TeamChampionship(int meetingKey, int pointsCurrent, int pointsStart, int positionCurrent, int positionStart, int sessionKey, string teamName)
-        {
-            MeetingKey = meetingKey;
-            PointsCurrent = pointsCurrent;
-            PointsStart = pointsStart;
-            PositionCurrent = positionCurrent;
-            PositionStart = positionStart;
-            SessionKey = sessionKey;
-            TeamName = teamName;
-        }
     }
 }

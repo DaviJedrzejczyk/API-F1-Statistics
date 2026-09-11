@@ -1,6 +1,6 @@
 ﻿using Dao.Interface;
-using Entities;
-using Entities.Dtos.DriverDTOs;
+using Entities.Class;
+using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;

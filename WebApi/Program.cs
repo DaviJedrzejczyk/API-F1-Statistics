@@ -1,34 +1,24 @@
-using AutoMapper;
 using Dao;
 using Dao.Impl;
 using Dao.Interface;
-using Entities;
-using Entities.Dtos.CarDataDTOs;
-using Entities.Dtos.DriverDTOs;
-using Entities.Dtos.MeetingDTOs;
-using Entities.Dtos.OvertakeDTOs;
-using Entities.Dtos.PitDTOs;
-using Entities.Dtos.RaceControlDTOs;
-using Entities.Dtos.SessionDTOs;
-using Entities.Dtos.SessionResultDTOs;
-using Entities.Dtos.StintDTOs;
+using Entities.Class;
+using Entities.Dtos;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Services.Impl;
 using Services.Interfaces;
 using Shared.Converters;
+using System.Reflection;
 using WebApi.Controllers.Meetings;
-using WebApi.ViewModels.DriversViews;
-using WebApi.ViewModels.MeetingsViews;
-using WebApi.ViewModels.SessionResultsViews;
-using WebApi.ViewModels.SessionsViews;
+using WebApi.ViewModels;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddCors();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -40,47 +30,7 @@ builder.Services.AddDbContext<ApiF1DB>(option =>
 
 builder.Services.AddAutoMapper(cfg =>
 {
-    //Web API
-    cfg.CreateMap<Meeting, MeetingViewModel>();
-    cfg.CreateMap<MeetingViewModel, Meeting>();
-
-    cfg.CreateMap<Session, SessionViewModel>();
-    cfg.CreateMap<SessionViewModel, Session>();
-
-    cfg.CreateMap<DriverListViewModel, Driver>();
-    cfg.CreateMap<Driver, DriverListViewModel>();
-
-    cfg.CreateMap<SessionResult, SessionResultListViewModel>();
-    cfg.CreateMap<SessionResultListViewModel, SessionResultListViewModel>();
-
-    //External Api / Entities
-    cfg.CreateMap<CarDataDto, CarData>();
-    cfg.CreateMap<CarData, CarDataDto>();
-
-    cfg.CreateMap<Meeting, MeetingDto>();
-    cfg.CreateMap<MeetingDto, Meeting>();
-
-    cfg.CreateMap<Session, SessionDto>();
-    cfg.CreateMap<SessionDto, Session>();
-
-    cfg.CreateMap<DriverDto,  Driver>();
-    cfg.CreateMap<Driver, DriverDto>();
-
-    cfg.CreateMap<SessionResult, SessionResultDto>();
-    cfg.CreateMap<SessionResultDto, SessionResult>();
-
-    cfg.CreateMap<Pit, PitDto>();
-    cfg.CreateMap<PitDto, Pit>();
-
-    cfg.CreateMap<Overtake, OvertakeDto>();
-    cfg.CreateMap<OvertakeDto, Overtake>();
-
-    cfg.CreateMap<RaceControl, RaceControlDto>();
-    cfg.CreateMap<RaceControlDto, RaceControl>();
-
-    cfg.CreateMap<StintListDTO, Stint>();
-    cfg.CreateMap<Stint, StintListDTO>();
-
+    cfg.AddMaps(Assembly.GetExecutingAssembly());
 });
 
 builder.Services.AddTransient<ISessionDao, SessionDao>();
@@ -138,6 +88,14 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Api F1 Statistics");
     });
 }
+
+app.UseCors(op =>
+{
+    op.WithOrigins("https://localhost:7054");
+    op.AllowAnyMethod();
+    op.AllowAnyHeader();
+    op.AllowAnyOrigin();
+});
 
 app.UseHttpsRedirection();
 

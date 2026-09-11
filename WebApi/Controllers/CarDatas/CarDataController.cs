@@ -1,8 +1,8 @@
-﻿using Entities.Dtos.SessionDTOs;
+﻿using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
-using WebApi.ViewModels.ErrorsViews;
+using WebApi.ViewModels;
 
 namespace WebApi.Controllers.CarDatas
 {

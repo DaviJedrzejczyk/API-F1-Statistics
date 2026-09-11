@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.MeetingDTOs
+namespace Entities.Dtos
 {
     public class MeetingDto
     {

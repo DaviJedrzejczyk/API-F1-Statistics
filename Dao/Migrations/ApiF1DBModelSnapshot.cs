@@ -59,6 +59,34 @@ namespace Dao.Migrations
                     b.ToTable("F1_CARDATAS", (string)null);
                 });
 
+            modelBuilder.Entity("Entities.Class.LapSegment", b =>
+                {
+                    b.Property<int>("MeetingKey")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionKey")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DriverNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LapNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sector")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SegmentIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SegmentStatus")
+                        .HasColumnType("int");
+
+                    b.HasKey("MeetingKey", "SessionKey", "DriverNumber", "LapNumber", "Sector", "SegmentIndex");
+
+                    b.ToTable("F1_LAPS_SEGMENTS", (string)null);
+                });
+
             modelBuilder.Entity("Entities.Class.SessionResultQualify", b =>
                 {
                     b.Property<int>("MeetingKey")
@@ -143,6 +171,52 @@ namespace Dao.Migrations
                     b.HasIndex("SessionKey");
 
                     b.ToTable("F1_DRIVERS", (string)null);
+                });
+
+            modelBuilder.Entity("Entities.Lap", b =>
+                {
+                    b.Property<int>("MeetingKey")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionKey")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DriverNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LapNumber")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("DurationSector1")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DurationSector2")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DurationSector3")
+                        .HasColumnType("float");
+
+                    b.Property<int>("I1Speed")
+                        .HasColumnType("int");
+
+                    b.Property<int>("I2Speed")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsPitOutLap")
+                        .HasColumnType("bit");
+
+                    b.Property<double>("LapDuration")
+                        .HasColumnType("float");
+
+                    b.Property<int>("StSpeed")
+                        .HasColumnType("int");
+
+                    b.HasKey("MeetingKey", "SessionKey", "DriverNumber", "LapNumber");
+
+                    b.ToTable("F1_LAPS", (string)null);
                 });
 
             modelBuilder.Entity("Entities.Meeting", b =>
@@ -485,6 +559,22 @@ namespace Dao.Migrations
                     b.HasKey("MeetingKey", "SessionKey", "DriverNumber", "StintNumber");
 
                     b.ToTable("F1_STINTS", (string)null);
+                });
+
+            modelBuilder.Entity("Entities.Class.LapSegment", b =>
+                {
+                    b.HasOne("Entities.Lap", "Lap")
+                        .WithMany("Segments")
+                        .HasForeignKey("MeetingKey", "SessionKey", "DriverNumber", "LapNumber")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lap");
+                });
+
+            modelBuilder.Entity("Entities.Lap", b =>
+                {
+                    b.Navigation("Segments");
                 });
 #pragma warning restore 612, 618
         }

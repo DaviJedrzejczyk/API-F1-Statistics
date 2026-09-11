@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 using Dao;
 using Dao.Impl;
-using Entities;
+using Entities.Class;
 using Shared.Responses;
 
 namespace UnitTests.Dao

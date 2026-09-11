@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Entities.Dtos.SessionDTOs
+namespace Entities.Dtos
 {
     public class SessionDriverSpeedDTO
     {

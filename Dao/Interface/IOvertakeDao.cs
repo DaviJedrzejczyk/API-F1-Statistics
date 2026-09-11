@@ -1,4 +1,4 @@
-﻿using Entities;
+﻿using Entities.Class;
 using Shared.Responses;
 
 namespace Dao.Interface

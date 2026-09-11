@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
-using Entities;
+using Entities.Class;
 using Dao;
 using Dao.Impl;
 using Shared.Responses;

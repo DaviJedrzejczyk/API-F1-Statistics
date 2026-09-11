@@ -1,5 +1,5 @@
-﻿using Entities;
-using Entities.Dtos.SessionDTOs;
+﻿using Entities.Class;
+using Entities.Dtos;
 using Shared.Responses;
 
 namespace Services.Interfaces

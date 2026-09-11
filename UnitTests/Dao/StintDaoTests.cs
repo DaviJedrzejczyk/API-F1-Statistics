@@ -1,8 +1,8 @@
 using Dao.Impl;
 using Dao;
-using Entities;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
+using Entities.Class;
 
 namespace UnitTests.Dao
 {
