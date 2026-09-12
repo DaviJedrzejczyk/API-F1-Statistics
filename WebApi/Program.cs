@@ -1,17 +1,9 @@
 using Dao;
-using Dao.Impl;
-using Dao.Interface;
-using Entities.Class;
-using Entities.Dtos;
 using ExternalApi.Impls;
-using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Services.Impl;
-using Services.Interfaces;
 using Shared.Converters;
-using System.Reflection;
-using WebApi.Controllers.Meetings;
-using WebApi.ViewModels;
+using WebApi.Config;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,51 +22,17 @@ builder.Services.AddDbContext<ApiF1DB>(option =>
 
 builder.Services.AddAutoMapper(cfg =>
 {
-    cfg.AddMaps(Assembly.GetExecutingAssembly());
+    cfg.AddProfile<AutoMapperConfig>();
 });
 
-builder.Services.AddTransient<ISessionDao, SessionDao>();
-builder.Services.AddTransient<ISessionService, SessionService>();
-builder.Services.AddTransient<IMeetingService, MeetingService>();
-builder.Services.AddTransient<IMeetingDao, MeetingDao>();
-builder.Services.AddTransient<IUnityOfWork, UnityOfWork>();
-builder.Services.AddTransient<ISessionClient, SessionClient>();
-builder.Services.AddTransient<IF1ApiClient, F1ApiClient>(); 
-builder.Services.AddTransient<IDriverDao, DriverDao>();
-builder.Services.AddTransient<IMeetingClient, MeetingClient>();
-builder.Services.AddTransient<IDriverService, DriverService>();
-builder.Services.AddTransient<IDriverClient, DriverClient>();
-builder.Services.AddTransient<ICarDataClient, CarDataClient>();
-builder.Services.AddTransient<ICarDataDao, CarDataDao>();
-builder.Services.AddTransient<ICarDataService, CarDataService>();
-builder.Services.AddTransient<ISessionResultDao, SessionResultDao>();
-builder.Services.AddTransient<ISessionResultService, SessionResultService>();
-builder.Services.AddTransient<ISessionResultClient, SessionResultClient>();
-builder.Services.AddTransient<IOvertakeDao, OvertakeDao>();
-builder.Services.AddTransient<IPitDao, PitDao>();
-builder.Services.AddTransient<IPitService, PitService>();
-builder.Services.AddTransient<IOvertakeService, OvertakeService>();
-builder.Services.AddTransient<IPitClient, PitClient>();
-builder.Services.AddTransient<IOvertakeClient, OvertakeClient>();
-builder.Services.AddTransient<IRaceControlDao, RaceControlDao>();
-builder.Services.AddTransient<IRaceControlClient, RaceControlClient>();
-builder.Services.AddTransient<IRaceControlService, RaceControlService>();
-builder.Services.AddTransient<IStintClient, StintClient>();
-builder.Services.AddTransient<IStintDao, StintDao>();
-builder.Services.AddTransient<IStintService, StintService>();
-builder.Services.AddTransient<ISessionResultQualifyDao, SessionResultQualifyDao>();
-builder.Services.AddTransient<ISessionResultQualifyingsService, SessionResultQualifyingsService>();
+builder.Services
+    .AddApplicationServicesTransient();
 
-builder.Services.AddControllers()
-    .AddJsonOptions(opts =>
-        opts.JsonSerializerOptions.Converters.Add(new ListDoubleNullToZeroConverter()));
-
-builder.Services.AddControllers()
-    .AddJsonOptions(opts =>
-        opts.JsonSerializerOptions.Converters.Add(new DoubleNullToZeroConverter()));
+builder.Services
+    .AddControllers()
+    .AddJsonConfiguration();
 
 builder.Services.AddHttpClient<F1ApiClient>();
-builder.Services.AddHttpClient<MeetingController>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();

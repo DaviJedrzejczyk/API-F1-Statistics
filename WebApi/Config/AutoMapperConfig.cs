@@ -3,11 +3,17 @@ using Entities.Class;
 using Entities.Dtos;
 using WebApi.ViewModels;
 
-namespace WebApi.AutoMapperConfig
+namespace WebApi.Config
 {
-    public class MapConfig : Profile
+    /// <summary>
+    /// Represents the AutoMapper configuration for mapping between entities and view models.
+    /// </summary>
+    public class AutoMapperConfig : Profile
     {
-        public MapConfig()
+        /// <summary>
+        /// Configures the AutoMapper mappings between entities and view models.
+        /// </summary>
+        public AutoMapperConfig()
         {
             //Web API
             CreateMap<Meeting, MeetingViewModel>().ReverseMap();
