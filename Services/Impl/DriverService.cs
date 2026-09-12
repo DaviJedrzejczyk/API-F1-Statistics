@@ -4,9 +4,11 @@ using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 namespace Services.Impl
 {
+    [IncludeDependencyInjection]
     public class DriverService : IDriverService
     {
         private readonly IUnityOfWork _unityOfWork;

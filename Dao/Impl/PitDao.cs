@@ -1,10 +1,12 @@
 ﻿using Dao.Interface;
 using Entities.Class;
 using Microsoft.EntityFrameworkCore;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 
 namespace Dao.Impl
 {
+    [IncludeDependencyInjection]
     public class PitDao : IPitDao
     {
         private ApiF1DB _db;

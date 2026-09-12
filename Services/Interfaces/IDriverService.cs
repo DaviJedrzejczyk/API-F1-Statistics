@@ -1,9 +1,11 @@
 ﻿using Entities.Class;
 using Entities.Dtos;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 
 namespace Services.Interfaces
 {
+    [IncludeDependencyInjection]
     public interface IDriverService
     {
         Task<Response> InsertDrivers(DriverInsertDTO driverInsertDTO);

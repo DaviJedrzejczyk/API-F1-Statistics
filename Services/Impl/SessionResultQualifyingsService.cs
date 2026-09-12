@@ -3,9 +3,11 @@ using Entities.Class;
 using Entities.Dtos;
 using Services.Interfaces;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 namespace Services.Impl
 {
+    [IncludeDependencyInjection]
     public class SessionResultQualifyingsService : ISessionResultQualifyingsService
     {
         private readonly IUnityOfWork _unityOfWork;

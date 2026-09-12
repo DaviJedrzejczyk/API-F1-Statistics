@@ -1,7 +1,9 @@
-﻿using Shared.Responses;
+﻿using Shared.Common.Atrributes;
+using Shared.Responses;
 
 namespace Dao.Interface
 {
+    [IncludeDependencyInjection]
     public interface IUnityOfWork
     {
         ISessionDao SessionDao { get; }

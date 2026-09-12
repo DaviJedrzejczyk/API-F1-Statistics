@@ -1,9 +1,11 @@
 ﻿using Entities.Class;
 using Entities.Dtos;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 namespace Services.Interfaces
 {
+    [IncludeDependencyInjection]
     public interface ICarDataService
     {
         Task<DataResponse<CarData>> GetHighSpeedsSessionApi(int sessionKey, int minimunSpeed);

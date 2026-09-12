@@ -1,8 +1,10 @@
 ﻿using Entities.Class;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 
 namespace Services.Interfaces
 {
+    [IncludeDependencyInjection]
     public interface ISessionService
     {
         Task<Response> InsertSessions(int meetingKey);

@@ -1,8 +1,10 @@
 ﻿using Entities.Class;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 
 namespace Dao.Interface
 {
+    [IncludeDependencyInjection]
     public interface IStintDao
     {
         Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey);

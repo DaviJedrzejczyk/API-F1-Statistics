@@ -1,6 +1,7 @@
 ﻿using Dao.Impl;
 using ExternalApi.Impls;
 using Services.Impl;
+using Shared.Common.Atrributes;
 using System.Reflection;
 
 namespace WebApi.Config
@@ -21,14 +22,12 @@ namespace WebApi.Config
         {
             services.Scan(scan => scan
                 .FromAssemblyDependencies(Assembly.GetExecutingAssembly())
-                .AddClasses(classes => classes.Where(type => type.Namespace != null &&
+                .AddClasses(classes => classes.Where(type => 
                                                      (type.Module.Name.Equals("DAO.DLL", StringComparison.CurrentCultureIgnoreCase) || 
                                                       type.Module.Name.Equals("SERVICES.DLL", StringComparison.CurrentCultureIgnoreCase) ||
                                                       type.Module.Name.Equals("EXTERNALAPI.DLL", StringComparison.CurrentCultureIgnoreCase)) &&
-                                                    (type.Namespace.StartsWith("IMPL", StringComparison.CurrentCultureIgnoreCase) ||
-                                                    type.Namespace.StartsWith("INTERFACES", StringComparison.CurrentCultureIgnoreCase) || 
-                                                    type.IsClass || type.IsInterface)))
-                .AsImplementedInterfaces()
+                                                     type.IsDefined(typeof(IncludeDependencyInjectionAttribute), false)))
+                .AsMatchingInterface()
                 .WithTransientLifetime());
 
             return services;

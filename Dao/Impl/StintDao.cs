@@ -2,9 +2,11 @@
 using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 namespace Dao.Impl
 {
+    [IncludeDependencyInjection]
     public class StintDao : IStintDao
     {
         private readonly ApiF1DB _apiF1;

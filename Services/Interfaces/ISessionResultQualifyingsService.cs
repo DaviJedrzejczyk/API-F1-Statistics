@@ -1,9 +1,11 @@
 ﻿using Entities.Class;
 using Entities.Dtos;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 namespace Services.Interfaces
 {
+    [IncludeDependencyInjection]
     public interface ISessionResultQualifyingsService
     {
         Task<Response> SaveQualys(List<SessionResultQualify> sessionResultQualifiess);

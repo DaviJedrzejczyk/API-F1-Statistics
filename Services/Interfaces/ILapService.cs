@@ -1,9 +1,9 @@
 ﻿using Shared.Common.Atrributes;
 
-namespace Dao.Interface
+namespace Services.Interfaces
 {
     [IncludeDependencyInjection]
-    public interface ILapDao
+    public interface ILapService
     {
     }
 }

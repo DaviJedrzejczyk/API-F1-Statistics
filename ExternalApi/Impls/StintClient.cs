@@ -3,10 +3,12 @@ using Entities.Class;
 using Entities.Dtos;
 using ExternalApi.Interfaces;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 using System.Text.Json;
 
 namespace ExternalApi.Impls
 {
+    [IncludeDependencyInjection]
     public class StintClient : IStintClient
     {
         private readonly IF1ApiClient _api;

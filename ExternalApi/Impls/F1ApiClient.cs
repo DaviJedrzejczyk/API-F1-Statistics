@@ -1,9 +1,11 @@
 ﻿using ExternalApi.Constants;
 using ExternalApi.Interfaces;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 
 namespace ExternalApi.Impls
 {
+    [IncludeDependencyInjection]
     public class F1ApiClient : IF1ApiClient
     {
         private readonly HttpClient _httpClient;

@@ -2,11 +2,13 @@
 using Entities.Class;
 using Entities.Dtos;
 using ExternalApi.Interfaces;
+using Shared.Common.Atrributes;
 using Shared.Responses;
 using System.Text.Json;
 
 namespace ExternalApi.Impls
 {
+    [IncludeDependencyInjection]
     public class DriverClient : IDriverClient
     {
         private readonly IF1ApiClient _f1ApiClient;

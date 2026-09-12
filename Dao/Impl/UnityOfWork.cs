@@ -1,9 +1,11 @@
 ﻿using Dao.Interface;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 
 
 namespace Dao.Impl
 {
+    [IncludeDependencyInjection]
     public class UnityOfWork : IUnityOfWork
     {
         private readonly ApiF1DB _db;

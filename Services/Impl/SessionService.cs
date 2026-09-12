@@ -5,10 +5,12 @@ using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
+using Shared.Common.Atrributes;
 using System.Runtime.ExceptionServices;
 
 namespace Services.Impl
 {
+    [IncludeDependencyInjection]
     public class SessionService : ISessionService
     {
         private readonly IUnityOfWork _unityOfWork;
