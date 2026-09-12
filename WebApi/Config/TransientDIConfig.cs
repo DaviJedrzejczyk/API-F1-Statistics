@@ -1,9 +1,7 @@
 ﻿using Dao.Impl;
-using Dao.Interface;
 using ExternalApi.Impls;
-using ExternalApi.Interfaces;
 using Services.Impl;
-using Services.Interfaces;
+using System.Reflection;
 
 namespace WebApi.Config
 {
@@ -15,47 +13,23 @@ namespace WebApi.Config
     public static class TransientDIConfig
     {
         /// <summary>
-        /// Registers application services with transient lifetimes in the provided IServiceCollection.
+        /// Registers application services with transient lifetimes in the dependency injection container.
         /// </summary>
         /// <param name="services">The IServiceCollection to add the services to.</param>
         /// <returns>The IServiceCollection with the added services.</returns>
         public static IServiceCollection AddApplicationServicesTransient(this IServiceCollection services)
         {
-            services.AddTransient<ISessionDao, SessionDao>();
-            services.AddTransient<ISessionService, SessionService>();
-            services.AddTransient<IMeetingService, MeetingService>();
-            services.AddTransient<IMeetingDao, MeetingDao>();
-            services.AddTransient<IUnityOfWork, UnityOfWork>();
-            services.AddTransient<ISessionClient, SessionClient>();
-            services.AddTransient<IF1ApiClient, F1ApiClient>();
-            services.AddTransient<IDriverDao, DriverDao>();
-            services.AddTransient<IMeetingClient, MeetingClient>();
-            services.AddTransient<IDriverService, DriverService>();
-            services.AddTransient<IDriverClient, DriverClient>();
-            services.AddTransient<ICarDataClient, CarDataClient>();
-            services.AddTransient<ICarDataDao, CarDataDao>();
-            services.AddTransient<ICarDataService, CarDataService>();
-            services.AddTransient<ISessionResultDao, SessionResultDao>();
-            services.AddTransient<ISessionResultService, SessionResultService>();
-            services.AddTransient<ISessionResultClient, SessionResultClient>();
-            services.AddTransient<IOvertakeDao, OvertakeDao>();
-            services.AddTransient<IPitDao, PitDao>();
-            services.AddTransient<IPitService, PitService>();
-            services.AddTransient<IOvertakeService, OvertakeService>();
-            services.AddTransient<IPitClient, PitClient>();
-            services.AddTransient<IOvertakeClient, OvertakeClient>();
-            services.AddTransient<IRaceControlDao, RaceControlDao>();
-            services.AddTransient<IRaceControlClient, RaceControlClient>();
-            services.AddTransient<IRaceControlService, RaceControlService>();
-            services.AddTransient<IStintClient, StintClient>();
-            services.AddTransient<IStintDao, StintDao>();
-            services.AddTransient<IStintService, StintService>();
-            services.AddTransient<ISessionResultQualifyDao, SessionResultQualifyDao>();
-            services.AddTransient<ISessionResultQualifyingsService, SessionResultQualifyingsService>();
-            services.AddTransient<ILapDao, LapDao>();
-            services.AddTransient<ILapSegmentDao, LapSegmentDao>();
-            services.AddTransient<ILapService, LapService>();
-            services.AddTransient<ILapSegmentService, LapSegmentService>(); 
+            services.Scan(scan => scan
+                .FromAssemblyDependencies(Assembly.GetExecutingAssembly())
+                .AddClasses(classes => classes.Where(type => type.Namespace != null &&
+                                                     (type.Module.Name.Equals("DAO.DLL", StringComparison.CurrentCultureIgnoreCase) || 
+                                                      type.Module.Name.Equals("SERVICES.DLL", StringComparison.CurrentCultureIgnoreCase) ||
+                                                      type.Module.Name.Equals("EXTERNALAPI.DLL", StringComparison.CurrentCultureIgnoreCase)) &&
+                                                    (type.Namespace.StartsWith("IMPL", StringComparison.CurrentCultureIgnoreCase) ||
+                                                    type.Namespace.StartsWith("INTERFACES", StringComparison.CurrentCultureIgnoreCase) || 
+                                                    type.IsClass || type.IsInterface)))
+                .AsImplementedInterfaces()
+                .WithTransientLifetime());
 
             return services;
         }
