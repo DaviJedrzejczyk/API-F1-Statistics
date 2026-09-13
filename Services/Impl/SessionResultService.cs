@@ -58,7 +58,7 @@ namespace Services.Impl
                 }
                 
                 var responseCreatList = await CreateListSessionResult(response.Itens);
-                if (!response.HasSuccess) return responseCreatList;
+                if (!responseCreatList.HasSuccess) return responseCreatList;
 
                 responseSave = await SaveSessionResults(_mapper.Map<List<SessionResult>>(responseCreatList.Itens));
                 if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(responseSave.Message, response.Exception);
