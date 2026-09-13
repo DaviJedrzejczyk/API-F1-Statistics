@@ -51,6 +51,12 @@ namespace Shared.Responses
             Message = ResponsesConstants.MENSAGEM_SUCESSO,
             Item = item
         };
+        public SingleResponse<T> CreateSuccessSingleResponse<T>(string message) => new()
+        {
+            HasSuccess = true,
+            Message = message,
+            Item = default!
+        };
         public SingleResponse<T> CreateFailureSingleResponse<T>() => new()
         {
             HasSuccess = false,

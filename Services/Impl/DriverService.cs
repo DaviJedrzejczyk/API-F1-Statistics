@@ -130,7 +130,7 @@ namespace Services.Impl
             return newDrivers;
         }
 
-        private async Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO)
+        public async Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO)
         {
             DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
             
@@ -140,7 +140,7 @@ namespace Services.Impl
             return drivers;
         }
 
-        private async Task<DataResponse<Driver>> SearchDriversDatabase(DriverInsertDTO driverInsertDTO)
+        public async Task<DataResponse<Driver>> SearchDriversDatabase(DriverInsertDTO driverInsertDTO)
         {
             DataResponse<Driver> driversDatabase = await GetAllDriversSession(driverInsertDTO.SessionKey);
             if (!driversDatabase.HasSuccess)

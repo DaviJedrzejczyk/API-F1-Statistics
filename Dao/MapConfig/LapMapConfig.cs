@@ -1,11 +1,6 @@
 ﻿using Entities.Class;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Dao.MapConfig
 {
@@ -60,6 +55,9 @@ namespace Dao.MapConfig
                 .IsRequired();
 
             builder.Property(x => x.StSpeed)
+                .IsRequired();
+
+            builder.Property(x => x.IsFastLap)
                 .IsRequired();
 
             builder.HasMany(x => x.Segments)

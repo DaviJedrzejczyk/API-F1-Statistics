@@ -17,6 +17,7 @@ namespace Entities.Class
         public int MeetingKey { get; set; }
         public int SessionKey { get; set; }
         public int StSpeed { get; set; }
+        public bool IsFastLap { get; set; }
 
         public List<LapSegment> Segments { get; set; } = [];
     }

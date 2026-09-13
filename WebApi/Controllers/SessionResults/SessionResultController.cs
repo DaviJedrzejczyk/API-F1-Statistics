@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Entities.Class;
+using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
@@ -34,7 +35,7 @@ namespace WebApi.Controllers.SessionResults
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSessionResultBySessionKey(int sessionKey)
         {
-            DataResponse<SessionResult> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
+            DataResponse<SessionResultFastLapDto> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
 
             if (!response.HasSuccess)
             {

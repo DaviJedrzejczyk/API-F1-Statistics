@@ -5,6 +5,7 @@ using ExternalApi.Interfaces;
 using Services.Interfaces;
 using Shared.Responses;
 using Shared.Common.Atrributes;
+using AutoMapper;
 
 namespace Services.Impl
 {
@@ -15,70 +16,75 @@ namespace Services.Impl
         private readonly IUnityOfWork _unityOfWork;
         private readonly ISessionResultQualifyingsService _sessionResultQualifyings;
         private readonly IStintService _stintService;
+        private readonly ILapService _lapService;
+        private readonly IMapper _mapper;
 
-        public SessionResultService(ISessionResultClient sessionResultClient, IUnityOfWork unityOfWork, ISessionResultQualifyingsService sessionResultQualifyings, IStintService stintService)
+        public SessionResultService(ISessionResultClient sessionResultClient, IUnityOfWork unityOfWork, ISessionResultQualifyingsService sessionResultQualifyings, IStintService stintService, ILapService lapService, IMapper mapper)
         {
             _sessionResultClient = sessionResultClient;
             _unityOfWork = unityOfWork;
             _sessionResultQualifyings = sessionResultQualifyings;
             _stintService = stintService;
+            _lapService = lapService;
+            _mapper = mapper;
         }
 
-        public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyApi(int sessionKey)
+        public async Task<DataResponse<SessionResultFastLapDto>> GetSessionResultBySessionKeyApi(int sessionKey)
         {
 			try
             {
-                DataResponse<SessionResult> sessionResult = await GetSessionResultBySessionKeyDatabase(sessionKey);
+                DataResponse<SessionResultFastLapDto> sessionResult = await GetSessionResultBySessionKeyDatabase(sessionKey);
 
-                if (sessionResult.HasSuccess && sessionResult.Itens.Count > 0 || !sessionResult.HasSuccess && sessionResult.Exception != null) 
+                if (sessionResult.HasSuccess && sessionResult.Itens.Count > 0 || !sessionResult.HasSuccess && sessionResult.Exception != null)
                     return sessionResult; 
 
                 DataResponse<SessionResultDto> response = await _sessionResultClient.GetSessionResultApi(sessionKey);
                 
                 if (!response.HasSuccess || response.Itens == null || response.Itens.Count == 0)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(response.Message, response.Exception);
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(response.Message, response.Exception);
 
                 Response responseSave = new();
                 if (response.HasSuccess && response.Itens[0].Duration != null && response.Itens[0].Duration.Count > 1)
                 {
                     var qualifyingResults = await GetQualyfingResult(response.Itens);
 
-                    if (!qualifyingResults.HasSuccess) return qualifyingResults;
+                    if (!qualifyingResults.HasSuccess) 
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(qualifyingResults.Message, qualifyingResults.Exception);
 
                     responseSave = await SaveSessionResults(qualifyingResults.Itens);
-                    if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, responseSave.Exception);
+                    if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(responseSave.Message, responseSave.Exception);
 
-                    return ResponseFactory.CreateInstance().CreateSuccessDataResponse(qualifyingResults.Itens);
+                    return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<SessionResultFastLapDto>>(qualifyingResults.Itens));
                 }
                 
                 var responseCreatList = await CreateListSessionResult(response.Itens);
                 if (!response.HasSuccess) return responseCreatList;
 
-                responseSave = await SaveSessionResults(responseCreatList.Itens);
-                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, response.Exception);
+                responseSave = await SaveSessionResults(_mapper.Map<List<SessionResult>>(responseCreatList.Itens));
+                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(responseSave.Message, response.Exception);
 
                 return responseCreatList;
             }
             catch (Exception ex)
 			{
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(ex);
 			}
         }
 
-        public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyDatabase(int sessionKey)
+        public async Task<DataResponse<SessionResultFastLapDto>> GetSessionResultBySessionKeyDatabase(int sessionKey)
         {
             try
             {
                 var response = await _unityOfWork.SessionResultDao.GetSessionResultsBySesssionKey(sessionKey);
-                if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>("An error has ocurred to found the results of this session.");
+                if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>("An error has ocurred to found the results of this session.");
 
                 if (response.Itens == null || response.Itens.Count == 0)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>("Not found the results of this session.");
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>("Not found the results of this session.");
                 
                 if (response.Itens[0].IsQualy)
                 {
                     response.Itens = response.Itens.OrderBy(r => r.Position == 0 ? Int16.MaxValue : r.Position).ToList();
-                    return response;
+                    return _mapper.Map<DataResponse<SessionResultFastLapDto>>(response);
                 }
 
                 var nonRetired = response.Itens.Where(r => !(r.Dnf || r.Dsq || r.Dns)).OrderBy(r => r.Position == 0 ? Int16.MaxValue : r.Position);
@@ -87,11 +93,19 @@ namespace Services.Impl
 
                 response.Itens = nonRetired.Concat(retired).ToList();
 
-                return response;
+                var fastLap = await _lapService.GetFastLapOfRaceBySessionKey(sessionKey);
+                if (!fastLap.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(fastLap.Message, fastLap.Exception);
+
+                var driverListFastLap = _mapper.Map<List<SessionResultFastLapDto>>(response.Itens);
+
+                var driverFastLap = driverListFastLap.FirstOrDefault(d => d.DriverNumber == fastLap.Item.DriverNumber);
+                driverFastLap!.LapFastLap = fastLap.Item;
+
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(driverListFastLap);
             }
             catch (Exception ex)
             { 
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(ex);
             }
         }
 
@@ -112,11 +126,14 @@ namespace Services.Impl
             }
         }
 
-        private async Task<DataResponse<SessionResult>> CreateListSessionResult(List<SessionResultDto> itens)
+        private async Task<DataResponse<SessionResultFastLapDto>> CreateListSessionResult(List<SessionResultDto> itens)
         {
             try
             {
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(itens.Select(x => new SessionResult
+                var fastLap = await _lapService.GetFastLapOfRaceBySessionKey(itens[0].SessionKey);
+                if (!fastLap.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(fastLap.Message, fastLap.Exception);
+
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(itens.Select(x => new SessionResultFastLapDto
                 {
                     Dnf = x.Dnf,
                     Dns = x.Dns,
@@ -129,12 +146,13 @@ namespace Services.Impl
                     MeetingKey = x.MeetingKey,
                     Position = x.Position,
                     SessionKey = x.SessionKey,
-                    IsQualy = false
+                    IsQualy = false,
+                    LapFastLap = fastLap.Item.DriverNumber == x.DriverNumber ? fastLap.Item : null
                 }).ToList());
             }
             catch (Exception ex)
             {
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultFastLapDto>(ex);
             }
         }
 
