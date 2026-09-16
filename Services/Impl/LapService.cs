@@ -51,6 +51,8 @@ namespace Services.Impl
 
                 LapFastLapDto fastLap = new();
                 LapListDto fastLapToSave = new();
+                List<LapListFastSector> listFastSectorAllDrivers = [];
+                List<LapFastSectorDriverDto> listFastSector = [];
                 for (int i = 0; i < responseDriverDatabase.Itens.Count; i++)
                 {
                     var responseLap = await _lapClient.GetAllLapsSessionByDriver(sessionKey, responseDriverDatabase.Itens[i].DriverNumber);
@@ -59,6 +61,25 @@ namespace Services.Impl
 
                     if (responseLap.Itens == null || responseLap.Itens.Count == 0)
                         continue;
+
+                    var fastSectors = new LapListFastSector
+                    {
+                        DriverNumber = responseLap.Itens.First().DriverNumber,
+
+                        Sector1Duration = responseLap.Itens
+                        .Where(l => l.DurationSector1 > 0)
+                        .Min(l => l.DurationSector1),
+
+                        Sector2Duration = responseLap.Itens
+                        .Where(l => l.DurationSector2 > 0)
+                        .Min(l => l.DurationSector2),
+
+                        Sector3Duration = responseLap.Itens
+                        .Where(l => l.DurationSector3 > 0)
+                        .Min(l => l.DurationSector3)
+                    };
+
+                    listFastSectorAllDrivers.Add(fastSectors);
 
                     LapListDto? fastLapDriver = responseLap.Itens.MinBy(l => l.LapDuration);
                     if (fastLapDriver == null) continue;
@@ -76,6 +97,11 @@ namespace Services.Impl
                     };
                 }
 
+                var responseFastSectors = await CreateListWithFastSector(listFastSectorAllDrivers, sessionKey, listFastSector);
+                
+                if (!responseFastSectors.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseFastSectors.Message, responseFastSectors.Exception);
+    
                 if (fastLap.LapDuration == 0)
                     return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("No laps found for the given session key.");
                 
@@ -88,6 +114,75 @@ namespace Services.Impl
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(ex);
+            }
+        }
+
+        private async Task<DataResponse<LapFastSectorDriverDto>> CreateListWithFastSector(List<LapListFastSector> listFastSectorAllDrivers, int sessionKey, List<LapFastSectorDriverDto> listFastSector)
+        {
+            try
+            {
+                var bestSector1 = listFastSectorAllDrivers
+                    .Where(x => x.Sector1Duration > 0)
+                    .MinBy(x => x.Sector1Duration);
+
+                var bestSector2 = listFastSectorAllDrivers
+                    .Where(x => x.Sector2Duration > 0)
+                    .MinBy(x => x.Sector2Duration);
+
+                var bestSector3 = listFastSectorAllDrivers
+                    .Where(x => x.Sector3Duration > 0)
+                    .MinBy(x => x.Sector3Duration);
+
+                if (bestSector1 != null)
+                {
+                    var driverName = await _driverService.GetDriverName(bestSector1.DriverNumber, sessionKey);
+
+                    if (!driverName.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>(driverName.Message, driverName.Exception);
+
+                    listFastSector.Add(new LapFastSectorDriverDto
+                    {
+                        DriverNumber = bestSector1.DriverNumber,
+                        Duration = bestSector1.Sector1Duration,
+                        DriverName = driverName.Item
+                    });
+                }
+
+                if (bestSector2 != null)
+                {
+                    var driverName = await _driverService.GetDriverName(bestSector2.DriverNumber, sessionKey);
+
+                    if (!driverName.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>(driverName.Message, driverName.Exception);
+
+                    listFastSector.Add(new LapFastSectorDriverDto
+                    {
+                        DriverNumber = bestSector2.DriverNumber,
+                        Duration = bestSector2.Sector2Duration,
+                        DriverName = driverName.Item
+                    });
+                }
+
+                if (bestSector3 != null)
+                {
+                    var driverName = await _driverService.GetDriverName(bestSector3.DriverNumber, sessionKey);
+
+                    if (!driverName.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>(driverName.Message, driverName.Exception);
+
+                    listFastSector.Add(new LapFastSectorDriverDto
+                    {
+                        DriverNumber = bestSector3.DriverNumber,
+                        Duration = bestSector3.Sector3Duration,
+                        DriverName = driverName.Item
+                    });
+                }
+
+                if (listFastSector.Count < 3)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>("Not all fast sectors were found.");
+
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(listFastSector);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>(ex);
             }
         }
 
@@ -107,6 +202,20 @@ namespace Services.Impl
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(ex);
+            }
+        }
+
+        public void GetFastSector(List<LapListDto> listDtos, List<LapFastSectorDriverDto> actualFastSec, out List<LapFastSectorDriverDto> fastSectors)
+        {
+            fastSectors = actualFastSec;
+            try
+            {
+                
+
+            }
+            catch (Exception ex)
+            {
+                //return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSectorDriverDto>(ex);
             }
         }
 

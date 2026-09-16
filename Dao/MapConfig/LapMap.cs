@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Dao.MapConfig
 {
-    internal class LapMapConfig : IEntityTypeConfiguration<Lap>
+    internal class LapMap : IEntityTypeConfiguration<Lap>
     {
         public void Configure(EntityTypeBuilder<Lap> builder)
         {

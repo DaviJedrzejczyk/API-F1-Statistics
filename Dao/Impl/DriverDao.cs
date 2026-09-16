@@ -65,5 +65,18 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);
             }
         }
+
+        public async Task<SingleResponse<string>> GetDriverName(int driverNumber, int sessionKey)
+        {
+            try
+            {
+                string? driverName = await _db.Drivers.Where(x => x.DriverNumber == driverNumber && x.SessionKey == sessionKey).AsNoTracking().Select(x => x.LastName).FirstOrDefaultAsync();
+                return ResponseFactory.CreateInstance().CreateSuccessSingleResponse(driverName ?? string.Empty);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>(ex);
+            }
+        }
     }
 }

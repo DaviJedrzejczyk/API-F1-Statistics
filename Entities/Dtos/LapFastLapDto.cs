@@ -18,5 +18,7 @@ namespace Entities.Dtos
 
         [JsonPropertyName("is_fast_lap")]
         public bool IsFastLap { get; set; }
+        [JsonIgnore]
+        public LapFastSectorDriverDto? LapFastSectorDriverDto { get; set; } 
     }
 }

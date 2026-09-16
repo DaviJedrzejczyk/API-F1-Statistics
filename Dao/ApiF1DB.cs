@@ -25,6 +25,7 @@ namespace Dao
         public DbSet<SessionResultQualify> SessionResultQualifyings { get; set; }
         public DbSet<Lap> Laps { get; set; }
         public DbSet<LapSegment> LapSegments { get; set; }
+        public DbSet<LapFastSector> LapFastSectors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -151,5 +151,24 @@ namespace Services.Impl
             
             return driversDatabase;
         }
+
+        public async Task<SingleResponse<string>> GetDriverName(int driverNumber, int sessionKey)
+        {
+            try
+            {
+                var response = await _unityOfWork.DriverDao.GetDriverName(driverNumber, sessionKey);
+                if (!response.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>("Failed to get driver name: " + response.Message, response.Exception);
+                
+                if (string.IsNullOrEmpty(response.Item))
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>("Driver name not found for the given driver number and session key.");
+                
+                return response;
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>(ex);
+            }
+        }
     }
 }

@@ -10,5 +10,6 @@ namespace Dao.Interface
         Task<Response> DeleteDriver(Driver driver);
         Task<SingleResponse<Driver>> GetDriverById(int id);
         Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey);
+        Task<SingleResponse<string>> GetDriverName(int driverNumber, int sessionKey);
     }
 }
