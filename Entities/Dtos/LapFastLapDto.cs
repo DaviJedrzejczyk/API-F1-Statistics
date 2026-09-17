@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using Entities.Class;
+using System.Text.Json.Serialization;
 
 namespace Entities.Dtos
 {
@@ -19,6 +20,6 @@ namespace Entities.Dtos
         [JsonPropertyName("is_fast_lap")]
         public bool IsFastLap { get; set; }
         [JsonIgnore]
-        public LapFastSectorDriverDto? LapFastSectorDriverDto { get; set; } 
+        public LapFastSector? LapFastSectorDriverDto { get; set; } 
     }
 }

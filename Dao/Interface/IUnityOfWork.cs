@@ -18,6 +18,7 @@ namespace Dao.Interface
         ISessionResultQualifyDao SessionResultQualifyDao { get; }
         ILapDao LapDao { get; }
         ILapSegmentDao LapSegmentDao { get; }
+        ILapFastSectorDao LapFastSectorDao { get; }
 
         Task<Response> Commit();
     }

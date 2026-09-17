@@ -1,5 +1,6 @@
 ﻿using Dao.Interface;
 using Entities.Class;
+using Microsoft.EntityFrameworkCore;
 using Shared.Responses;
 
 namespace Dao.Impl
@@ -13,14 +14,30 @@ namespace Dao.Impl
             _db = db;
         }
 
-        public Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey)
+        public async Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var lapFastSectors = await _db.LapFastSectors.Where(l => l.SessionKey == sessionKey).AsNoTracking().ToListAsync();
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(lapFastSectors);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(ex);
+            }
         }
 
-        public Task<Response> SaveLapFastSector(List<LapFastSector> lapFastSectors)
+        public async Task<Response> SaveLapFastSector(List<LapFastSector> lapFastSectors)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _db.LapFastSectors.AddRangeAsync(lapFastSectors);
+                return ResponseFactory.CreateInstance().CreateSuccessResponse("LapFastSectors saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
         }
     }
 }

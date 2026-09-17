@@ -21,8 +21,9 @@ namespace Dao.Impl
         private ISessionResultQualifyDao? sessionResultQualify = null;
         private ILapDao? lap = null;
         private ILapSegmentDao? lapSegment = null;
+        private ILapFastSectorDao? lapFastSector = null;
 
-        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao, IStintDao stintDao, ISessionResultQualifyDao sessionResultQualifyDao, ILapDao lapDao, ILapSegmentDao lapSegmentDao)
+        public UnityOfWork(ApiF1DB db, ISessionDao sessionDao, IMeetingDao meetingDao, IDriverDao driverDao, ICarDataDao carDataDao, ISessionResultDao resultDao, IOvertakeDao overtakeDao, IPitDao pitDao, IRaceControlDao raceControlDao, IStintDao stintDao, ISessionResultQualifyDao sessionResultQualifyDao, ILapDao lapDao, ILapSegmentDao lapSegmentDao, ILapFastSectorDao lapFastSectorDao)
         {
             _db = db;
             session = sessionDao;
@@ -37,6 +38,7 @@ namespace Dao.Impl
             sessionResultQualify = sessionResultQualifyDao;
             lap = lapDao;
             lapSegment = lapSegmentDao;
+            lapFastSector = lapFastSectorDao;
         }
 
         public async Task<Response> Commit()
@@ -156,6 +158,15 @@ namespace Dao.Impl
             {
                 lapSegment ??= new LapSegmentDao(_db);
                 return lapSegment;
+            }
+        }
+
+        public ILapFastSectorDao LapFastSectorDao
+        {
+            get
+            {
+                lapFastSector ??= new LapFastSectorDao(_db);
+                return lapFastSector;
             }
         }
 
