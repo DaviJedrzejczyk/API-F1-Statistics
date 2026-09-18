@@ -33,6 +33,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             // Act
             var uow = new UnityOfWork(
@@ -48,12 +49,16 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object); 
 
             // Assert
-            Assert.That(uow.SessionDao, Is.SameAs(sessionMock.Object));
-            Assert.That(uow.MeetingDao, Is.SameAs(meetingMock.Object));
-            Assert.That(uow.DriverDao, Is.SameAs(driverMock.Object));
+            Assert.Multiple(() =>
+            {
+                Assert.That(uow.SessionDao, Is.SameAs(sessionMock.Object));
+                Assert.That(uow.MeetingDao, Is.SameAs(meetingMock.Object));
+                Assert.That(uow.DriverDao, Is.SameAs(driverMock.Object));
+            });
         }
 
         [Test]
@@ -76,6 +81,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -90,7 +96,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var response = await uow.Commit();
@@ -122,6 +129,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -136,17 +144,21 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var response = await uow.Commit();
 
             // Assert
-            Assert.IsNotNull(response);
-            Assert.IsFalse(response.HasSuccess);
-            Assert.IsNotNull(response.Exception);
-            Assert.That(response.Message, Is.EqualTo("boom"));
-            Assert.That(response.Exception, Is.SameAs(ex));
+            Assert.Multiple(() =>
+            {
+                Assert.That(response, Is.Not.Null);
+                Assert.That(response.HasSuccess, Is.False);
+                Assert.That(response.Exception, Is.Not.Null);
+                Assert.That(response.Message, Is.EqualTo("boom"));
+                Assert.That(response.Exception, Is.SameAs(ex));
+            });
         }
 
         [Test]
@@ -167,6 +179,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -181,7 +194,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.SessionDao;
@@ -212,6 +226,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -226,7 +241,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var meeting = uow.MeetingDao;
@@ -254,6 +270,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -268,7 +285,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var driver = uow.DriverDao;
@@ -296,6 +314,8 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
+
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -310,7 +330,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.CarDataDao;
@@ -341,6 +362,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -355,7 +377,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.SessionResultDao;
@@ -386,6 +409,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -400,7 +424,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.OvertakeDao;
@@ -431,6 +456,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -445,7 +471,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.PitDao;
@@ -476,6 +503,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -490,7 +518,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.RaceControlDao;
@@ -522,6 +551,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -536,7 +566,8 @@ namespace UnitTests.Dao
                 null!, // stintDao intentionally null
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.StintDao;
@@ -567,6 +598,7 @@ namespace UnitTests.Dao
             var stintMock = new Mock<IStintDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -581,7 +613,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 null!, // sessionResultQualifyDao intentionally null
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.SessionResultQualifyDao;
@@ -611,6 +644,7 @@ namespace UnitTests.Dao
             var raceControlMock = new Mock<IRaceControlDao>();
             var stintMock = new Mock<IStintDao>();
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
 
             var uow = new UnityOfWork(
@@ -626,7 +660,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 null!, // lapDao intentionally null
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.LapDao;
@@ -657,6 +692,7 @@ namespace UnitTests.Dao
             var stintMock = new Mock<IStintDao>();
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -671,7 +707,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                null!); // lapSegmentDao intentionally null
+                null!, // lapSegmentDao intentionally null
+                lapFastSectorMock.Object);
 
             // Act
             var first = uow.LapSegmentDao;
@@ -703,6 +740,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 mockDb.Object,
@@ -717,7 +755,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act
             uow.Dispose();
@@ -743,6 +782,7 @@ namespace UnitTests.Dao
             var sessionResultQualifyMock = new Mock<ISessionResultQualifyDao>();
             var lapMock = new Mock<ILapDao>();
             var lapSegmentMock = new Mock<ILapSegmentDao>();
+            var lapFastSectorMock = new Mock<ILapFastSectorDao>();
 
             var uow = new UnityOfWork(
                 nullDb!,
@@ -757,7 +797,8 @@ namespace UnitTests.Dao
                 stintMock.Object,
                 sessionResultQualifyMock.Object,
                 lapMock.Object,
-                lapSegmentMock.Object);
+                lapSegmentMock.Object,
+                lapFastSectorMock.Object);
 
             // Act & Assert
             Assert.DoesNotThrow(() => uow.Dispose());

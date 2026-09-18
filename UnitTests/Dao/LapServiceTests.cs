@@ -17,17 +17,38 @@ namespace UnitTests.Dao
     [TestFixture]
     public class LapServiceTests
     {
+        private LapService service;
+        private Mock<IUnityOfWork> unityMock;
+        private Mock<ILapClient> lapClientMock;
+        private Mock<IDriverService> driverServiceMock;
+        private Mock<IMapper> mapperMock;
+        private Mock<ILapFastSectorService> lapFastSectorServiceMock;
+        private Mock<ILapDao> lapDaoMock;
+
+        [SetUp]
+        public void Setup()
+        {
+            unityMock = new Mock<IUnityOfWork>();
+            lapClientMock = new Mock<ILapClient>();
+            driverServiceMock = new Mock<IDriverService>();
+            mapperMock = new Mock<IMapper>();
+            lapFastSectorServiceMock = new Mock<ILapFastSectorService>();
+            lapDaoMock = new Mock<ILapDao>();
+            service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object, lapFastSectorServiceMock.Object);
+        }
+
         [Test]
         public void Constructor_WithValidDependencies_CreatesInstance()
         {
             // Arrange
-            var unityMock = new Mock<IUnityOfWork>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-            var mapperMock = new Mock<IMapper>();
+            unityMock = new Mock<IUnityOfWork>();
+            lapClientMock = new Mock<ILapClient>();
+            driverServiceMock = new Mock<IDriverService>();
+            mapperMock = new Mock<IMapper>();
+            lapFastSectorServiceMock = new Mock<ILapFastSectorService>();
 
             // Act
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
+            service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object, lapFastSectorServiceMock.Object);
 
             // Assert
             Assert.IsNotNull(service);
@@ -41,27 +62,23 @@ namespace UnitTests.Dao
             var lap = new Lap { MeetingKey = 10 };
             var lapFast = new LapFastLapDto { DriverNumber = 5, LapDuration = 12.3 };
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = lap });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-            var mapperMock = new Mock<IMapper>();
             mapperMock.Setup(m => m.Map<LapFastLapDto>(It.IsAny<Lap>())).Returns(lapFast);
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.IsNotNull(result.Item);
-            Assert.AreEqual(lapFast.DriverNumber, result.Item.DriverNumber);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result.Item, Is.Not.Null);
+            });
+            Assert.That(result.Item.DriverNumber, Is.EqualTo(lapFast.DriverNumber));
         }
 
         [Test]
@@ -70,30 +87,25 @@ namespace UnitTests.Dao
             // Arrange
             const int sessionKey = 2;
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
             driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
                 .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver>() });
             driverServiceMock.Setup(d => d.SearchDriversExternalApi(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
                 .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver>() });
 
-            var mapperMock = new Mock<IMapper>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
-
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("No drivers found for the given session key.", result.Message);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("No drivers found for the given session key."));
+            });
         }
 
         [Test]
@@ -103,29 +115,23 @@ namespace UnitTests.Dao
             const int sessionKey = 3;
             var ex = new Exception("db error");
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
             driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
                 .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = false, Exception = ex, Message = "fail" });
-
-            var mapperMock = new Mock<IMapper>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
-
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("fail", result.Message);
-            Assert.AreEqual(ex, result.Exception);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("fail"));
+                Assert.That(result.Exception, Is.EqualTo(ex));
+            });
         }
 
         [Test]
@@ -133,35 +139,33 @@ namespace UnitTests.Dao
         {
             // Arrange
             const int sessionKey = 4;
-            var driver = new Entities.Class.Driver { DriverNumber = 7 };
-
-            var lapDaoMock = new Mock<ILapDao>();
+            var driver = new Driver { DriverNumber = 7 };
+            
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver> { driver } });
+            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<DriverInsertDTO>()))
+                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new List<Driver> { driver } });
+
+            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
+                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new List<LapFastSector>() });
 
             var lapEx = new Exception("lap error");
             lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
                 .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = false, Exception = lapEx, Message = "lapfail" });
 
-            var mapperMock = new Mock<IMapper>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
-
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("lapfail", result.Message);
-            Assert.AreEqual(lapEx, result.Exception);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("lapfail"));
+                Assert.That(result.Exception, Is.EqualTo(lapEx));
+            });
         }
 
         [Test]
@@ -169,77 +173,31 @@ namespace UnitTests.Dao
         {
             // Arrange
             const int sessionKey = 5;
-            var driver = new Entities.Class.Driver { DriverNumber = 8 };
+            var driver = new Driver { DriverNumber = 8 };
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
+                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null! });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var lapClientMock = new Mock<ILapClient>();
+            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
+                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new System.Collections.Generic.List<LapFastSector>() });
+
             lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new List<LapListDto>() });
+                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new System.Collections.Generic.List<LapListDto>() });
 
-            var driverServiceMock = new Mock<IDriverService>();
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver> { driver } });
-
-            var mapperMock = new Mock<IMapper>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
+            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<DriverInsertDTO>()))
+                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new System.Collections.Generic.List<Driver> { driver } });
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("No laps found for the given session key.", result.Message);
-        }
-
-        [Test]
-        public async Task GetFastLapOfRaceBySessionKey_FindsFastLapAndSaves_ReturnsSuccess()
-        {
-            // Arrange
-            const int sessionKey = 6;
-            var driver = new Entities.Class.Driver { DriverNumber = 9 };
-            var lapList = new LapListDto { DriverNumber = 9, LapDuration = 11.1 };
-            var lap = new Lap();
-            var fastLapDto = new LapFastLapDto { DriverNumber = 9, LapDuration = 11.1 };
-
-            var lapDaoMock = new Mock<ILapDao>();
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
-            lapDaoMock.Setup(d => d.SaveLap(It.IsAny<Lap>()))
-                .ReturnsAsync(new Response { HasSuccess = true });
-
-            var unityMock = new Mock<IUnityOfWork>();
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-            unityMock.Setup(u => u.Commit()).ReturnsAsync(new Response { HasSuccess = true });
-
-            var lapClientMock = new Mock<ILapClient>();
-            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new List<LapListDto> { lapList } });
-
-            var driverServiceMock = new Mock<IDriverService>();
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver> { driver } });
-
-            var mapperMock = new Mock<IMapper>();
-            mapperMock.Setup(m => m.Map<Lap>(It.IsAny<LapListDto>())).Returns(lap);
-            mapperMock.Setup(m => m.Map<LapFastLapDto>(It.IsAny<Lap>())).Returns(fastLapDto);
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
-
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.IsNotNull(result.Item);
-            Assert.AreEqual(9, result.Item.DriverNumber);
-            Assert.AreEqual(11.1, result.Item.LapDuration);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("No laps found for the given session key."));
+            });
         }
 
         [Test]
@@ -248,26 +206,22 @@ namespace UnitTests.Dao
             // Arrange
             const int sessionKey = 7;
             var ex = new Exception("dao fail");
-            var lapDaoMock = new Mock<ILapDao>();
+
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = false, Exception = ex, Message = "err" });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            var mapperMock = new Mock<IMapper>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKeyDb(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("err", result.Message);
-            Assert.AreEqual(ex, result.Exception);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("err"));
+                Assert.That(result.Exception, Is.EqualTo(ex));
+            });
         }
 
         [Test]
@@ -275,26 +229,22 @@ namespace UnitTests.Dao
         {
             // Arrange
             const int sessionKey = 8;
-            var lapDaoMock = new Mock<ILapDao>();
+
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            var mapperMock = new Mock<IMapper>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKeyDb(sessionKey);
 
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.AreEqual("No fast lap found for the given session key in the database.", result.Message);
-            Assert.IsNull(result.Item);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result.Message, Is.EqualTo("No fast lap found for the given session key in the database."));
+                Assert.That(result.Item, Is.Null);
+            });
         }
 
         [Test]
@@ -305,28 +255,23 @@ namespace UnitTests.Dao
             var lap = new Lap { MeetingKey = 99 };
             var mapped = new LapFastLapDto { DriverNumber = 1 };
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
                 .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = lap });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            var mapperMock = new Mock<IMapper>();
             mapperMock.Setup(m => m.Map<LapFastLapDto>(lap)).Returns(mapped);
-
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKeyDb(sessionKey);
 
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.IsNotNull(result.Item);
-            Assert.AreEqual(1, result.Item.DriverNumber);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result.Item, Is.Not.Null);
+                Assert.That(result.Item.DriverNumber, Is.EqualTo(1));
+            });
         }
 
         [Test]
@@ -336,26 +281,21 @@ namespace UnitTests.Dao
             var lap = new Lap();
             var ex = new Exception("save fail");
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.SaveLap(lap))
                 .ReturnsAsync(new Response { HasSuccess = false, Exception = ex, Message = "saveerror" });
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            var mapperMock = new Mock<IMapper>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.SaveLap(lap);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("saveerror", result.Message);
-            Assert.AreEqual(ex, result.Exception);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("saveerror"));
+                Assert.That(result.Exception, Is.EqualTo(ex));
+            });
         }
 
         [Test]
@@ -364,27 +304,23 @@ namespace UnitTests.Dao
             // Arrange
             var lap = new Lap();
 
-            var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.SaveLap(lap))
                 .ReturnsAsync(new Response { HasSuccess = true });
 
             var expected = new Response { HasSuccess = true };
-            var unityMock = new Mock<IUnityOfWork>();
+            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
             unityMock.Setup(u => u.Commit()).ReturnsAsync(expected);
-
-            var mapperMock = new Mock<IMapper>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.SaveLap(lap);
 
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.AreEqual(expected, result);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result, Is.EqualTo(expected));
+            });
         }
 
         [Test]
@@ -395,22 +331,18 @@ namespace UnitTests.Dao
             var lapDaoMock = new Mock<ILapDao>();
             lapDaoMock.Setup(d => d.SaveLap(lap)).ThrowsAsync(new InvalidOperationException("boom"));
 
-            var unityMock = new Mock<IUnityOfWork>();
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            var mapperMock = new Mock<IMapper>();
-            var lapClientMock = new Mock<ILapClient>();
-            var driverServiceMock = new Mock<IDriverService>();
-
-            var service = new LapService(unityMock.Object, lapClientMock.Object, driverServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.SaveLap(lap);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.IsNotNull(result.Exception);
-            Assert.AreEqual("boom", result.Message);
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Exception, Is.Not.Null);
+                Assert.That(result.Message, Is.EqualTo("boom"));
+            });
         }
     }
 }

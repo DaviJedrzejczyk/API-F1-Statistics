@@ -35,7 +35,7 @@ namespace WebApi.Controllers.SessionResults
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetSessionResultBySessionKey(int sessionKey)
         {
-            DataResponse<SessionResultFastLapDto> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
+            DataResponse<SessionResult> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
 
             if (!response.HasSuccess)
             {

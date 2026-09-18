@@ -20,8 +20,6 @@ namespace WebApi.Config
             CreateMap<Session, SessionViewModel>().ReverseMap();
             CreateMap<DriverListViewModel, Driver>().ReverseMap();
             CreateMap<SessionResult, SessionResultListViewModel>().ReverseMap();
-            CreateMap<SessionResultFastLapDto, SessionResultListViewModel>().ReverseMap();
-            CreateMap<LapFastLapDto, SessionResultFastLapViewModel>().ReverseMap();
 
             //External Api / Entities
             CreateMap<CarDataDto, CarData>().ReverseMap();
@@ -33,7 +31,6 @@ namespace WebApi.Config
             CreateMap<Overtake, OvertakeDto>().ReverseMap();
             CreateMap<RaceControl, RaceControlDto>().ReverseMap();
             CreateMap<StintListDTO, Stint>().ReverseMap();
-            CreateMap<SessionResultFastLapDto, SessionResult>().ReverseMap();
             CreateMap<LapListDto, Lap>().ReverseMap();
             CreateMap<LapFastLapDto, Lap>().ReverseMap();
         }

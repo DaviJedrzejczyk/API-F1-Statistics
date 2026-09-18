@@ -8,8 +8,8 @@ namespace Services.Interfaces
     [IncludeDependencyInjection]
     public interface ISessionResultService
     {
-        Task<DataResponse<SessionResultFastLapDto>> GetSessionResultBySessionKeyApi(int sessionKey);
-        Task<DataResponse<SessionResultFastLapDto>> GetSessionResultBySessionKeyDatabase(int sessionKey);
+        Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyApi(int sessionKey);
+        Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyDatabase(int sessionKey);
         Task<Response> SaveSessionResults(List<SessionResult> sessionResult);
     }
 }

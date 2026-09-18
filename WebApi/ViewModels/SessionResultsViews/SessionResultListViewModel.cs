@@ -39,8 +39,5 @@ namespace WebApi.ViewModels
 
         [JsonPropertyName("compound")]
         public string Compound { get; set; } = string.Empty;
-
-        [JsonPropertyName("fastest_lap")]
-        public SessionResultFastLapViewModel? LapFastLap { get; set; } = null;
     }
 }

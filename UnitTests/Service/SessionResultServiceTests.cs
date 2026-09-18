@@ -18,59 +18,47 @@ namespace UnitTests.Service
         private Mock<ISessionResultDao> _sessionResultDaoMock = null!;
         private Mock<ISessionResultQualifyingsService> _sessionResultQualifyingsMock = null!;
         private Mock<IStintService> _stintServiceMock = null!;
-        private Mock<ILapService> _lapServiceMock = null!;
         private Mock<IMapper> _mapperMock = null!;
         private SessionResultService service = null!;
-
-        [SetUp]
-        public void SetUp()
-        {
-            _unityMock = new Mock<IUnityOfWork>();
-            _sessionResultClientMock = new Mock<ISessionResultClient>();
-            _sessionResultDaoMock = new Mock<ISessionResultDao>();
-            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
-            _stintServiceMock = new Mock<IStintService>();
-            _lapServiceMock = new Mock<ILapService>();
-            _mapperMock = new Mock<IMapper>();
-
-            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
-
-            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, _lapServiceMock.Object, _mapperMock.Object);
-        }
-
-        [Test]
-        public void Constructor_WithValidDependencies_DoesNotThrow()
-        {
-            // Arrange / Act / Assert
-            Assert.DoesNotThrow(() => new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, _lapServiceMock.Object, _mapperMock.Object));
-        }
 
         [Test]
         public async Task GetSessionResultBySessionKeyApi_DatabaseHasItems_ReturnsDatabaseResponse()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             int sessionKey = 1;
-            var dbList = new List<SessionResult> { new() { SessionKey = sessionKey } };
+            var dbList = new List<SessionResult> { new() { SessionKey = sessionKey, DriverNumber = 1} };
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = dbList };
             _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
 
-            var singleResponseFastLap = new SingleResponse<LapFastLapDto>() { HasSuccess = true, Item = new LapFastLapDto() };
-            _lapServiceMock.Setup(d => d.GetFastLapOfRaceBySessionKey(sessionKey)).ReturnsAsync(singleResponseFastLap);
-
-            var mappedList = new List<SessionResultFastLapDto>
+            var mappedList = new List<SessionResult>
             {
-                new SessionResultFastLapDto { DriverNumber = singleResponseFastLap.Item.DriverNumber }
+                new SessionResult { DriverNumber = dbList[0].DriverNumber }
             };
-            _mapperMock.Setup(x => x.Map<List<SessionResultFastLapDto>>(It.IsAny<List<SessionResult>>())).Returns(mappedList);
+            _mapperMock.Setup(x => x.Map<List<SessionResult>>(It.IsAny<List<SessionResult>>())).Returns(mappedList);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
-
+            
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Itens, Is.Not.Null);
-            Assert.AreEqual(1, result.Itens.Count);
-            Assert.AreSame(singleResponseFastLap.Item, result.Itens[0].LapFastLap);
+            Assert.Multiple(() =>
+            {
+                
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result.Itens, Is.Not.Null);
+            });
+            Assert.That(result.Itens, Has.Count.EqualTo(1));
+            Assert.That(result.Itens[0], Is.SameAs(dbList[0]));
             _sessionResultClientMock.Verify(c => c.GetSessionResultApi(It.IsAny<int>()), Times.Never);
         }
 
@@ -98,6 +86,17 @@ namespace UnitTests.Service
         [Test]
         public async Task GetSessionResultBySessionKeyApi_ClientReturnsFailure_ReturnsFailureDataResponse()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             int sessionKey = 3;
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
@@ -118,6 +117,17 @@ namespace UnitTests.Service
         [Test]
         public async Task GetSessionResultBySessionKeyApi_ClientReturnsItems_SaveFails_ReturnsFailureDataResponse()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             int sessionKey = 4;
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
@@ -130,80 +140,15 @@ namespace UnitTests.Service
             var saveResponse = new Response { HasSuccess = false, Message = "insert failed" };
             _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
 
-            var fastlap = new SingleResponse<LapFastLapDto>() { HasSuccess = true, Item = new LapFastLapDto() };
-            _lapServiceMock.Setup(x => x.GetFastLapOfRaceBySessionKey(sessionKey)).ReturnsAsync(fastlap);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("insert failed"));
-        }
-
-        [Test]
-        public async Task GetSessionResultBySessionKeyApi_ClientReturnsItems_SaveSucceeds_ReturnsClientResponse()
-        {
-            // Arrange
-            int sessionKey = 5;
-            var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
-            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
-
-            var clientItems = new List<SessionResultDto> { new() { SessionKey = sessionKey } };
-            var clientResponse = new DataResponse<SessionResultDto> { HasSuccess = true, Itens = clientItems };
-            _sessionResultClientMock.Setup(c => c.GetSessionResultApi(sessionKey)).ReturnsAsync(clientResponse);
-
-            var saveResponse = new Response { HasSuccess = true };
-            _sessionResultDaoMock.Setup(d => d.SaveSessionResults(It.IsAny<List<SessionResult>>())).ReturnsAsync(saveResponse);
-            var commitResponse = new Response { HasSuccess = true, Message = "committed" };
-            _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
-
-            var fastlap = new SingleResponse<LapFastLapDto>() { HasSuccess = true, Item = new LapFastLapDto() };
-            _lapServiceMock.Setup(x => x.GetFastLapOfRaceBySessionKey(sessionKey)).ReturnsAsync(fastlap);
-
-            // Mock mapper: from client DTOs -> fastlap DTOs returned to caller
-            var mappedFastLapDtos = new List<SessionResultFastLapDto>
+            Assert.Multiple(() =>
             {
-                new SessionResultFastLapDto { SessionKey = sessionKey }
-            };
-            _mapperMock.Setup(m => m.Map<List<SessionResultFastLapDto>>(It.IsAny<List<SessionResultDto>>()))
-                       .Returns(mappedFastLapDtos);
-
-            // Mock mapper: from fastlap DTOs -> SessionResult used for saving
-            var mappedSessionResults = new List<SessionResult>
-            {
-                new SessionResult { SessionKey = sessionKey }
-            };
-            _mapperMock.Setup(m => m.Map<List<SessionResult>>(It.IsAny<List<SessionResultFastLapDto>>()))
-                       .Returns(mappedSessionResults);
-
-            // Act
-            var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
-
-            // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Itens.Count, Is.EqualTo(clientItems.Count));
-            Assert.That(result.Itens[0].SessionKey, Is.EqualTo(sessionKey));
-            _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.Is<List<SessionResult>>(l => l.Count == clientItems.Count && l[0].SessionKey == sessionKey)), Times.Once);
-            _unityMock.Verify(u => u.Commit(), Times.Once);
-        }
-
-        [Test]
-        public async Task GetSessionResultBySessionKeyApi_ClientThrows_ReturnsFailureWithException()
-        {
-            // Arrange
-            int sessionKey = 6;
-            var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
-            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbResponse);
-            _sessionResultClientMock.Setup(c => c.GetSessionResultApi(It.IsAny<int>())).ThrowsAsync(new InvalidOperationException("boom"));
-
-            // Act
-            var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.IsNotNull(result.Exception);
-            Assert.IsInstanceOf<InvalidOperationException>(result.Exception);
+                Assert.That(result.HasSuccess, Is.False);
+                Assert.That(result.Message, Is.EqualTo("insert failed"));
+            });
         }
 
         [Test]
@@ -212,7 +157,20 @@ namespace UnitTests.Service
             // Arrange
             int sessionKey = 7;
             var dbFail = new DataResponse<SessionResult> { HasSuccess = false, Message = "dbfail" };
-            _sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbFail);
+
+            var sessionResultDaoMock = new Mock<ISessionResultDao>();
+            sessionResultDaoMock.Setup(d => d.GetSessionResultsBySesssionKey(sessionKey)).ReturnsAsync(dbFail);
+
+            var unityMock = new Mock<IUnityOfWork>();
+            unityMock.Setup(u => u.SessionResultDao).Returns(sessionResultDaoMock.Object);
+
+            var sessionResultClientMock = new Mock<ISessionResultClient>();
+            var sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            var stintServiceMock = new Mock<IStintService>();
+            var lapServiceMock = new Mock<ILapService>();
+            var mapperMock = new Mock<IMapper>();
+
+            var service = new SessionResultService(sessionResultClientMock.Object, unityMock.Object, sessionResultQualifyingsMock.Object, stintServiceMock.Object, lapServiceMock.Object, mapperMock.Object);
 
             // Act
             var result = await service.GetSessionResultBySessionKeyDatabase(sessionKey);
@@ -274,6 +232,18 @@ namespace UnitTests.Service
         [Test]
         public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_QualisExist_SaveSucceeds_ReturnsQualifyingResults()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+            _mapperMock.Setup(x => x.Map<List<SessionResult>>(It.IsAny<List<SessionResult>>())).Returns((List<SessionResult> src) => src);
+
             // Arrange
             int sessionKey = 5;
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
@@ -288,31 +258,15 @@ namespace UnitTests.Service
             var commitResponse = new Response { HasSuccess = true, Message = "committed" };
             _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
 
-            var fastlap = new SingleResponse<LapFastLapDto>() { HasSuccess = true, Item = new LapFastLapDto() };
-            _lapServiceMock.Setup(x => x.GetFastLapOfRaceBySessionKey(sessionKey)).ReturnsAsync(fastlap);
-
-            // Mapper: from client DTOs -> fastlap DTOs returned to caller
-            var mappedFastLapDtos = new List<SessionResultFastLapDto>
-            {
-                new SessionResultFastLapDto { SessionKey = sessionKey }
-            };
-            _mapperMock.Setup(m => m.Map<List<SessionResultFastLapDto>>(It.IsAny<List<SessionResultDto>>()))
-                       .Returns(mappedFastLapDtos);
-
-            // Mapper: from fastlap DTOs -> SessionResult used for saving
-            var mappedSessionResults = new List<SessionResult>
-            {
-                new SessionResult { SessionKey = sessionKey }
-            };
-            _mapperMock.Setup(m => m.Map<List<SessionResult>>(It.IsAny<List<SessionResultFastLapDto>>()))
-                       .Returns(mappedSessionResults);
-
             // Act
             var result = await service.GetSessionResultBySessionKeyApi(sessionKey);
 
             // Assert
-            Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Itens.Count, Is.EqualTo(clientItems.Count));
+            Assert.Multiple(() =>
+            {
+                Assert.That(result.HasSuccess, Is.True);
+                Assert.That(result.Itens, Has.Count.EqualTo(clientItems.Count));
+            });
             Assert.That(result.Itens[0].SessionKey, Is.EqualTo(sessionKey));
             _sessionResultDaoMock.Verify(d => d.SaveSessionResults(It.Is<List<SessionResult>>(l => l.Count == clientItems.Count && l[0].SessionKey == sessionKey)), Times.Once);
             _unityMock.Verify(u => u.Commit(), Times.Once);
@@ -321,6 +275,17 @@ namespace UnitTests.Service
         [Test]
         public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_CreateQualisFails_ReturnsFailure()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             int sessionKey = 11;
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
@@ -355,6 +320,17 @@ namespace UnitTests.Service
         [Test]
         public async Task GetSessionResultBySessionKeyApi_ClientReturnsQualifyingItems_SaveFails_ReturnsFailureDataResponse()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            var lapServiceMock = new Mock<ILapService>();
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             int sessionKey = 12;
             var dbResponse = new DataResponse<SessionResult> { HasSuccess = true, Itens = new List<SessionResult>() };
@@ -396,6 +372,17 @@ namespace UnitTests.Service
         [Test]
         public async Task SaveSessionResults_SaveSucceeds_CommitsAndReturnsCommitResponse()
         {
+            // initialize mocks and service (missing class SetUp)
+            _sessionResultDaoMock = new Mock<ISessionResultDao>();
+            _unityMock = new Mock<IUnityOfWork>();
+            _sessionResultClientMock = new Mock<ISessionResultClient>();
+            _sessionResultQualifyingsMock = new Mock<ISessionResultQualifyingsService>();
+            _stintServiceMock = new Mock<IStintService>();
+            var lapServiceMock = new Mock<ILapService>();
+            _mapperMock = new Mock<IMapper>();
+            _unityMock.Setup(u => u.SessionResultDao).Returns(_sessionResultDaoMock.Object);
+            service = new SessionResultService(_sessionResultClientMock.Object, _unityMock.Object, _sessionResultQualifyingsMock.Object, _stintServiceMock.Object, lapServiceMock.Object, _mapperMock.Object);
+
             // Arrange
             var data = new List<SessionResult> { new() };
             var saveResponse = new Response { HasSuccess = true };

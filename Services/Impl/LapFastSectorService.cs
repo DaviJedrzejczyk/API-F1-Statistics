@@ -20,7 +20,15 @@ namespace Services.Impl
             {
                 var lapFastSectors = await _unityOfWork.LapFastSectorDao.GetAllLapFastSectorsSession(sessionKey);
 
-                if (lapFastSectors.HasSuccess) return lapFastSectors;
+                if (lapFastSectors.HasSuccess)
+                {
+                    var response = await SaveFastSectors(lapFastSectors.Itens);
+
+                    if (!response.HasSuccess)
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(response.Message, response.Exception);
+
+                    return lapFastSectors;
+                }
 
                 if (lapFastSectors.Exception != null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(lapFastSectors.Message, lapFastSectors.Exception);
