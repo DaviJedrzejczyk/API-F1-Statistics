@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IRaceControlDao
     {
         Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] sessionFlags);

@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IPitDao
     {
         Task<Response> SavePits(List<Pit> pits);

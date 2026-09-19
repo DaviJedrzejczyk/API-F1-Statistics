@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ISessionResultQualifyDao
     {
         Task<Response> SaveQualifyResult(List<SessionResultQualify> sessionResultQualifiess);

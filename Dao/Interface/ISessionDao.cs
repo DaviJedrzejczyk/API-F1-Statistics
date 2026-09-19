@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ISessionDao
     {
         Task<Response> InsertSessions(List<Session> sessions);

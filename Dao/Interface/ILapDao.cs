@@ -5,7 +5,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ILapDao
     {
         Task<SingleResponse<Lap>> GetFastLapSessionBySessionKey(int sessionKey);

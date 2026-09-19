@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IOvertakeDao
     {
         Task<Response> SaveOvertakes(List<Overtake> overtakes);

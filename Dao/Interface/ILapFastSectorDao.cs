@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ILapFastSectorDao
     {
         Task<Response> SaveLapFastSector(List<LapFastSector> lapFastSectors);

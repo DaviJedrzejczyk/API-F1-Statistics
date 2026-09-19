@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IMeetingDao
     {
         Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings);

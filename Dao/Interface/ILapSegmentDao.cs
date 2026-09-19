@@ -2,7 +2,6 @@
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ILapSegmentDao
     {
     }

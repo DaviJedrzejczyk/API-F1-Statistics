@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface ISessionResultDao
     {
         Task<Response> SaveSessionResults(List<SessionResult> sessionResults);

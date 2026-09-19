@@ -3,7 +3,6 @@ using Shared.Common.Atrributes;
 using Shared.Responses;
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IDriverDao
     {
         Task<Response> InsertDrivers(List<Driver> drivers);

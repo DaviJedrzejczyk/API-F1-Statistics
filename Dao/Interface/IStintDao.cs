@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Dao.Interface
 {
-    [IncludeDependencyInjection]
     public interface IStintDao
     {
         Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey);
