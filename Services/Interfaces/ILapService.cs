@@ -5,7 +5,6 @@ using Shared.Responses;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface ILapService
     {
         Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKey(int sessionKey);

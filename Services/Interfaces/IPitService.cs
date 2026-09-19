@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface IPitService
     {
         Task<Response> SavePits(List<Pit> pits);

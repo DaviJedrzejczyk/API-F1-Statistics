@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface IOvertakeService
     {
         Task<Response> SaveOvertakes(List<Overtake> overtakes);

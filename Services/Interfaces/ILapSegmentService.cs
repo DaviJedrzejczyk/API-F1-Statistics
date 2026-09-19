@@ -2,7 +2,6 @@
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface ILapSegmentService
     {
     }

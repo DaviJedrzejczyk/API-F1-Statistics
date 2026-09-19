@@ -5,7 +5,6 @@ using Shared.Common.Atrributes;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface ISessionResultQualifyingsService
     {
         Task<Response> SaveQualys(List<SessionResultQualify> sessionResultQualifiess);

@@ -4,7 +4,6 @@ using Shared.Responses;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface IMeetingService
     {
         Task<Response> InsertTracksOfCurrentYear(int year);
