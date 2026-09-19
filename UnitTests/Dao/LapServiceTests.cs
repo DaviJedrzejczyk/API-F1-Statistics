@@ -82,33 +82,6 @@ namespace UnitTests.Dao
         }
 
         [Test]
-        public async Task GetFastLapOfRaceBySessionKey_NoDriversFound_ReturnsFailure()
-        {
-            // Arrange
-            const int sessionKey = 2;
-
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
-
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver>() });
-            driverServiceMock.Setup(d => d.SearchDriversExternalApi(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = true, Itens = new List<Entities.Class.Driver>() });
-
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.HasSuccess, Is.False);
-                Assert.That(result.Message, Is.EqualTo("No drivers found for the given session key."));
-            });
-        }
-
-        [Test]
         public async Task GetFastLapOfRaceBySessionKey_DriverDatabaseFailure_ReturnsFailure()
         {
             // Arrange
@@ -120,8 +93,8 @@ namespace UnitTests.Dao
 
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<Entities.Dtos.DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Entities.Class.Driver> { HasSuccess = false, Exception = ex, Message = "fail" });
+            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
+                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = false, Exception = ex, Message = "fail" });
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
 
@@ -129,7 +102,7 @@ namespace UnitTests.Dao
             Assert.Multiple(() =>
             {
                 Assert.That(result.HasSuccess, Is.False);
-                Assert.That(result.Message, Is.EqualTo("fail"));
+                Assert.That(result.Message, Is.EqualTo("Error to fetch the drivers: fail"));
                 Assert.That(result.Exception, Is.EqualTo(ex));
             });
         }
@@ -146,7 +119,7 @@ namespace UnitTests.Dao
 
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<DriverInsertDTO>()))
+            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
                 .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new List<Driver> { driver } });
 
             lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
@@ -181,13 +154,13 @@ namespace UnitTests.Dao
             unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
 
             lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
-                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new System.Collections.Generic.List<LapFastSector>() });
+                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = [] });
 
             lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new System.Collections.Generic.List<LapListDto>() });
+                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = [] });
 
-            driverServiceMock.Setup(d => d.SearchDriversDatabase(It.IsAny<DriverInsertDTO>()))
-                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new System.Collections.Generic.List<Driver> { driver } });
+            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
+                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = [driver] });
 
             // Act
             var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);

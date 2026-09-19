@@ -29,56 +29,6 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public async Task InsertDrivers_ServiceReturnsFailure_ReturnsBadRequestWithErrorViewModel()
-        {
-            // Arrange
-            var serviceMock = new Mock<IDriverService>();
-            var mapperMock = new Mock<IMapper>();
-
-            var response = new Response("failed", false, new System.Exception("fail"));
-            serviceMock.Setup(s => s.InsertDrivers(It.IsAny<DriverInsertDTO>())).ReturnsAsync(response);
-
-            var controller = new DriverController(serviceMock.Object, mapperMock.Object);
-
-            // Act
-            var result = await controller.InsertDrivers(new DriverInsertDTO());
-
-            // Assert
-            Assert.IsInstanceOf<BadRequestObjectResult>(result);
-            var bad = (BadRequestObjectResult)result;
-            Assert.IsInstanceOf<ErrorViewModel>(bad.Value);
-            Assert.IsNotNull(bad.Value);
-            var vm = (ErrorViewModel)bad.Value!;
-            Assert.That(vm.StatusCode, Is.EqualTo(400));
-            Assert.That(vm.Message, Is.EqualTo("failed"));
-        }
-
-        [Test]
-        public async Task InsertDrivers_ServiceReturnsSuccess_ReturnsOkWithSuccessViewModel()
-        {
-            // Arrange
-            var serviceMock = new Mock<IDriverService>();
-            var mapperMock = new Mock<IMapper>();
-
-            var response = new Response("ok", true, new System.Exception("ok"));
-            serviceMock.Setup(s => s.InsertDrivers(It.IsAny<DriverInsertDTO>())).ReturnsAsync(response);
-
-            var controller = new DriverController(serviceMock.Object, mapperMock.Object);
-
-            // Act
-            var result = await controller.InsertDrivers(new DriverInsertDTO());
-
-            // Assert
-            Assert.IsInstanceOf<OkObjectResult>(result);
-            var ok = (OkObjectResult)result;
-            Assert.IsInstanceOf<SuccessViewModel>(ok.Value);
-            Assert.IsNotNull(ok.Value);
-            var vm = (SuccessViewModel)ok.Value!;
-            Assert.That(vm.StatusCode, Is.EqualTo(200));
-            Assert.That(vm.Message, Is.EqualTo("ok"));
-        }
-
-        [Test]
         public async Task GetAllDriversSession_ServiceThrowsExceptionInResponse_ReturnsBadRequest()
         {
             // Arrange

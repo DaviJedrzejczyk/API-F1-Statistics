@@ -1,7 +1,6 @@
 using Dao;
 using ExternalApi.Impls;
 using Microsoft.EntityFrameworkCore;
-using Shared.Converters;
 using WebApi.Config;
 
 

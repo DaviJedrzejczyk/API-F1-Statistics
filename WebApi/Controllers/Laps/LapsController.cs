@@ -53,11 +53,11 @@ namespace WebApi.Controllers
         [HttpGet("fast_sectors_session")]
         [ProducesResponseType(typeof(ErrorViewModel), 400)]
         [ProducesResponseType(typeof(ErrorViewModel), 404)]
-        [ProducesResponseType(typeof(List<LapFastSectorDto>), 200)]
+        [ProducesResponseType(typeof(List<LapFastSectorViewModel>), 200)]
         public async Task<IActionResult> GetFastSectorsSession(int sessionKey)
         {
             var result = await _lapFastSectorService.GetFastSectorsOfSession(sessionKey);
-            if (result.HasSuccess) return Ok(_mapper.Map<List<LapFastSectorDto>>(result.Itens));
+            if (result.HasSuccess) return Ok(_mapper.Map<List<LapFastSectorViewModel>>(result.Itens));
 
             if (!result.HasSuccess || result.Itens == null)
                 return NotFound(new ErrorViewModel(404, result.Message));

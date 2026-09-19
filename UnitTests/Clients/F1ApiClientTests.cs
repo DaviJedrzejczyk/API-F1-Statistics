@@ -54,7 +54,7 @@ namespace UnitTests
             // Assert
             Assert.IsTrue(result.HasSuccess);
             Assert.That(result.Item, Is.EqualTo(expectedContent));
-            Assert.That(result.Message, Is.EqualTo("Sucesso"));
+            Assert.That(result.Message, Is.EqualTo("Success"));
 
             handlerMock.Protected().Verify("SendAsync",
                 Times.Once(),

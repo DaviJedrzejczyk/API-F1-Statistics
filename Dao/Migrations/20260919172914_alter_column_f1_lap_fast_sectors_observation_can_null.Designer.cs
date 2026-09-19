@@ -4,6 +4,7 @@ using Dao;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Dao.Migrations
 {
     [DbContext(typeof(ApiF1DB))]
-    partial class ApiF1DBModelSnapshot : ModelSnapshot
+    [Migration("20260919172914_alter_column_f1_lap_fast_sectors_observation_can_null")]
+    partial class alter_column_f1_lap_fast_sectors_observation_can_null
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

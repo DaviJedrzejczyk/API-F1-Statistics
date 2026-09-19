@@ -13,7 +13,7 @@ namespace Shared.Responses
         public Response CreateSuccessResponse() => new()
         {
             HasSuccess = true,
-            Message = ResponsesConstants.MENSAGEM_SUCESSO
+            Message = ResponsesConstants.MESSAGE_SUCCESS_NOT_MAPPED
         };
 
         public Response CreateSuccessResponse(string message) => new()
@@ -24,7 +24,7 @@ namespace Shared.Responses
         public Response CreateFailureResponse() => new()
         {
             HasSuccess = false,
-            Message = ResponsesConstants.MENSAGEM_FALHA
+            Message = ResponsesConstants.MESSAGE_FAILURE_NOT_MAPPED
         };
         public Response CreateFailureResponse(string message, Exception ex) => new()
         {
@@ -48,7 +48,7 @@ namespace Shared.Responses
         public SingleResponse<T> CreateSuccessSingleResponse<T>(T item) => new()
         {
             HasSuccess = true,
-            Message = ResponsesConstants.MENSAGEM_SUCESSO,
+            Message = ResponsesConstants.MESSAGE_SUCCESS_NOT_MAPPED,
             Item = item
         };
         public SingleResponse<T> CreateSuccessSingleResponse<T>(string message) => new()
@@ -60,7 +60,7 @@ namespace Shared.Responses
         public SingleResponse<T> CreateFailureSingleResponse<T>() => new()
         {
             HasSuccess = false,
-            Message = ResponsesConstants.MENSAGEM_FALHA,
+            Message = ResponsesConstants.MESSAGE_FAILURE_NOT_MAPPED,
         };
         public SingleResponse<T> CreateFailureSingleResponse<T>(string message, Exception ex) => new()
         {
@@ -82,7 +82,7 @@ namespace Shared.Responses
         public DataResponse<T> CreateSuccessDataResponse<T>(List<T> Itens) => new()
         {
             HasSuccess = true,
-            Message = ResponsesConstants.MENSAGEM_SUCESSO,
+            Message = ResponsesConstants.MESSAGE_SUCCESS_NOT_MAPPED,
             Itens = Itens,
         };
         public DataResponse<T> CreateSuccessDataResponse<T>(string message) => new()
@@ -100,7 +100,7 @@ namespace Shared.Responses
         public DataResponse<T> CreateFailureDataResponse<T>() => new()
         {
             HasSuccess = false,
-            Message = ResponsesConstants.MENSAGEM_FALHA,
+            Message = ResponsesConstants.MESSAGE_FAILURE_NOT_MAPPED,
         };
         public DataResponse<T> CreateFailureDataResponse<T>(string message, Exception ex) => new()
         {

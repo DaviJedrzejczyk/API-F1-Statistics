@@ -5,7 +5,6 @@ using Shared.Responses;
 using System;
 namespace ExternalApi.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface ILapClient
     {
         Task<DataResponse<LapListDto>> GetAllLapsSessionByDriver(int sessionKey, int driverNumber);

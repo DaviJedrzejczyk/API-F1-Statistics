@@ -33,6 +33,7 @@ namespace WebApi.Config
             CreateMap<StintListDTO, Stint>().ReverseMap();
             CreateMap<LapListDto, Lap>().ReverseMap();
             CreateMap<LapFastLapDto, Lap>().ReverseMap();
+            CreateMap<LapFastSectorViewModel, LapFastSector>().ReverseMap();
         }
     }
 }

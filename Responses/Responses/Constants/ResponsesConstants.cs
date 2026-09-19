@@ -8,7 +8,7 @@ namespace Shared.Responses.Constants
 {
     internal class ResponsesConstants
     {
-        public const string MENSAGEM_SUCESSO = "Sucesso";
-        public const string MENSAGEM_FALHA = "Falha";
+        public const string MESSAGE_SUCCESS_NOT_MAPPED = "Success";
+        public const string MESSAGE_FAILURE_NOT_MAPPED = "Failure";
     }
 }

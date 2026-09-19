@@ -2,7 +2,7 @@
 
 namespace WebApi.ViewModels
 {
-    public class LapFastSectorDto
+    public class LapFastSectorViewModel
     {
         [JsonPropertyName("session_key")]
         public int SessionKey { get; set; }
@@ -18,5 +18,8 @@ namespace WebApi.ViewModels
 
         [JsonPropertyName("sector")]
         public int Sector { get; set; }
+
+        [JsonPropertyName("observation")]
+        public string? Observation { get; set; }
     }
 }

@@ -5,10 +5,9 @@ using Shared.Responses;
 
 namespace Services.Interfaces
 {
-    [IncludeDependencyInjection]
     public interface IDriverService
     {
-        Task<Response> InsertDrivers(DriverInsertDTO driverInsertDTO);
+        Task<Response> InsertDrivers(List<Driver> drivers);
         Task<Response> DeleteDriver(Driver driver);
         Task<SingleResponse<Driver>> GetDriverById(int id);
         Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey);

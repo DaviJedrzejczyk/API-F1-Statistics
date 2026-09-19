@@ -7,5 +7,6 @@
         public double Duration { get; set; }
         public string DriverName { get; set; }
         public int Sector { get; set; }
+        public string? Observation { get; set; }
     }
 }

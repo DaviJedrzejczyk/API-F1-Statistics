@@ -19,7 +19,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(response);
             Assert.IsTrue(response.HasSuccess);
-            Assert.That(response.Message, Is.EqualTo("Sucesso"));
+            Assert.That(response.Message, Is.EqualTo("Success"));
         }
 
         [Test]
@@ -34,7 +34,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(response);
             Assert.IsFalse(response.HasSuccess);
-            Assert.That(response.Message, Is.EqualTo("Falha"));
+            Assert.That(response.Message, Is.EqualTo("Failure"));
         }
 
         [Test]
@@ -50,7 +50,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(result);
             Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Sucesso"));
+            Assert.That(result.Message, Is.EqualTo("Success"));
             Assert.That(result.Item, Is.EqualTo(expected));
         }
 
@@ -83,7 +83,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Falha"));
+            Assert.That(result.Message, Is.EqualTo("Failure"));
             Assert.That(result.Item, Is.EqualTo(default(int)));
         }
 
@@ -155,7 +155,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(result);
             Assert.IsTrue(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Sucesso"));
+            Assert.That(result.Message, Is.EqualTo("Success"));
             Assert.That(result.Itens, Is.SameAs(items));
         }
 
@@ -207,7 +207,7 @@ namespace UnitTests.Responses
             // Assert
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Falha"));
+            Assert.That(result.Message, Is.EqualTo("Failure"));
             Assert.IsNull(result.Itens);
         }
 

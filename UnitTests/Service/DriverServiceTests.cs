@@ -14,7 +14,7 @@ namespace UnitTests.Service
         private Mock<IUnityOfWork> _unityOfWorkMock = null!;
         private Mock<IDriverDao> _driverDaoMock = null!;
         private Mock<IDriverClient> _driverClientMock = null!;
-        private DriverInsertDTO _driverInsertDTO;
+        private List<Driver> _drivers = null!;
 
         [SetUp]
         public void SetUp()
@@ -25,7 +25,7 @@ namespace UnitTests.Service
 
             _unityOfWorkMock.Setup(u => u.DriverDao).Returns(_driverDaoMock.Object);
 
-            _driverInsertDTO = new DriverInsertDTO(12);
+            _drivers = [new() { SessionKey = 12 }];
         }
 
         [Test]
@@ -177,47 +177,6 @@ namespace UnitTests.Service
         }
 
         [Test]
-        public async Task InsertDrivers_MeetingKeyFailure_ReturnsFailureResponse()
-        {
-            // Arrange
-            var meetingResp = new DataResponse<Driver>("no", false, null, null);
-            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(meetingResp);
-
-            // Ensure the database search returns success so the service proceeds to call the external API
-            _driverDaoMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(new DataResponse<Driver>() { HasSuccess = true, Itens = [] });
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
-
-            // Act
-            var result = await svc.InsertDrivers(_driverInsertDTO);
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("The Drivers in the most recent meeting was not found"));
-        }
-
-        [Test]
-        public async Task InsertDrivers_NoDriversFound_ReturnsFailure()
-        {
-            // Arrange
-            var meetingResp = new SingleResponse<int>("ok", true, null, 123);
-            var dataResp = new DataResponse<Driver>("m", true, null, null);
-            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ReturnsAsync(dataResp);
-
-            var dbResp = new DataResponse<Driver>("m", true, null, []);
-            _unityOfWorkMock.Setup(u => u.DriverDao.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(dbResp);
-
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
-
-            // Act
-            var result = await svc.InsertDrivers(new DriverInsertDTO(123));
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("The Drivers in the most recent meeting was not found"));
-        }
-
-        [Test]
         public async Task InsertDrivers_InsertFails_ReturnsFailureWithMessageAndException()
         {
             // Arrange
@@ -235,7 +194,7 @@ namespace UnitTests.Service
             var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers(new DriverInsertDTO(14));
+            var result = await svc.InsertDrivers([new() { SessionKey = 14 }]);
 
             // Assert
             Assert.IsFalse(result.HasSuccess);
@@ -258,7 +217,7 @@ namespace UnitTests.Service
             _driverDaoMock.Setup(d => d.InsertDrivers(It.IsAny<List<Driver>>())).ReturnsAsync(insertResp);
 
             // Ensure the database search returns success and an empty list so insertion proceeds
-            _driverDaoMock.Setup(d => d.GetAllDriversSession(_driverInsertDTO.SessionKey))
+            _driverDaoMock.Setup(d => d.GetAllDriversSession(_drivers[0].SessionKey))
                 .ReturnsAsync(new DataResponse<Driver>() { HasSuccess = true, Itens = [] });
 
             // Ensure commit succeeds
@@ -267,30 +226,11 @@ namespace UnitTests.Service
             var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
 
             // Act
-            var result = await svc.InsertDrivers(_driverInsertDTO);
+            var result = await svc.InsertDrivers(_drivers);
 
             // Assert
             Assert.IsTrue(result.HasSuccess);
             Assert.That(result.Message, Is.EqualTo("The new driver(s) have been inserted!"));
-        }
-
-        [Test]
-        public async Task InsertDrivers_MeetingServiceThrows_ReturnsFailureWithException()
-        {
-            // Arrange
-            var expectedEx = new Exception("meet fail");
-            _driverClientMock.Setup(c => c.GetAllDriversSessionSelected(It.IsAny<DriverInsertDTO>())).ThrowsAsync(expectedEx);
-            // Ensure the database search returns success so the service proceeds to call the external API
-            _driverDaoMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(new DataResponse<Driver>() { HasSuccess = true, Itens = [] });
-            var svc = new DriverService(_unityOfWorkMock.Object, _driverClientMock.Object);
-
-            // Act
-            var result = await svc.InsertDrivers(_driverInsertDTO);
-
-            // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo(expectedEx.Message));
-            Assert.That(result.Exception, Is.EqualTo(expectedEx));
         }
     }
 }
