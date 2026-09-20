@@ -43,7 +43,7 @@ namespace UnitTests
             };
 
             mockClient
-                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
 
             var sut = new RaceControlClient(mockClient.Object, mockMapper.Object);
@@ -58,7 +58,7 @@ namespace UnitTests
             Assert.That(result.Exception.Message, Is.EqualTo("client error"));
 
             // verify that client was invoked with expected constructed query
-            mockClient.Verify(c => c.Get("race_control?", "session_key=123&flag=red&flag=yellow"), Times.Once);
+            mockClient.Verify(c => c.Get("race_control?", "session_key=123&flag=red&flag=yellow", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -77,7 +77,7 @@ namespace UnitTests
             };
 
             mockClient
-                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
 
             var sut = new RaceControlClient(mockClient.Object, mockMapper.Object);
@@ -89,7 +89,7 @@ namespace UnitTests
             Assert.IsFalse(result.HasSuccess);
             Assert.That(result.Message, Is.EqualTo("Failed to deserialize race controls"));
 
-            mockClient.Verify(c => c.Get("race_control?", "session_key=5&flag=blue"), Times.Once);
+            mockClient.Verify(c => c.Get("race_control?", "session_key=5&flag=blue", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -126,7 +126,7 @@ namespace UnitTests
             };
 
             mockClient
-                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>()))
+                .Setup(c => c.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
 
             var mapped = new List<RaceControl>
@@ -162,7 +162,7 @@ namespace UnitTests
             Assert.That(result.Itens.Count, Is.EqualTo(1));
             Assert.That(result.Itens[0].Category, Is.EqualTo("cat"));
 
-            mockClient.Verify(c => c.Get("race_control?", "session_key=7&flag=green"), Times.Once);
+            mockClient.Verify(c => c.Get("race_control?", "session_key=7&flag=green", It.IsAny<CancellationToken>()), Times.Once);
             mockMapper.Verify(m => m.Map<List<RaceControl>>(It.IsAny<List<RaceControlDto>>()), Times.Once);
         }
     }

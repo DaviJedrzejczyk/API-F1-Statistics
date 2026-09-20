@@ -38,7 +38,7 @@ namespace UnitTests
             int meetingKey = 42;
 
             var apiResponse = new SingleResponse<string> { HasSuccess = false, Message = "api error", Exception = new InvalidOperationException("upstream") };
-            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}")).ReturnsAsync(apiResponse);
+            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
 
             var client = new SessionClient(apiMock.Object, mapperMock.Object);
 
@@ -50,7 +50,7 @@ namespace UnitTests
             Assert.That(result.Message, Is.EqualTo("api error"));
             Assert.IsNotNull(result.Exception);
             Assert.IsInstanceOf<InvalidOperationException>(result.Exception);
-            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}"), Times.Once);
+            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -68,7 +68,7 @@ namespace UnitTests
             string json = JsonSerializer.Serialize(dtoList);
 
             var apiResponse = new SingleResponse<string> { HasSuccess = true, Item = json };
-            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}")).ReturnsAsync(apiResponse);
+            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
 
             var mapped = new List<Session>
             {
@@ -87,7 +87,7 @@ namespace UnitTests
             Assert.That(result.Itens.Count, Is.EqualTo(mapped.Count));
             Assert.That(result.Itens[0].SessionKey, Is.EqualTo(mapped[0].SessionKey));
             mapperMock.Verify(m => m.Map<List<Session>>(It.IsAny<List<SessionDto>>()), Times.Once);
-            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}"), Times.Once);
+            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -99,7 +99,7 @@ namespace UnitTests
             int meetingKey = 99;
 
             var inner = new Exception("boom");
-            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}")).ThrowsAsync(inner);
+            apiMock.Setup(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>())).ThrowsAsync(inner);
 
             var client = new SessionClient(apiMock.Object, mapperMock.Object);
 
@@ -107,7 +107,7 @@ namespace UnitTests
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await client.GetSessionsByMeetingKey(meetingKey))!;
             Assert.That(ex.Message, Is.EqualTo("Error occurred while fetching sessions."));
             Assert.That(ex.InnerException, Is.SameAs(inner));
-            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}"), Times.Once);
+            apiMock.Verify(a => a.Get("sessions?", $"meeting_key={meetingKey}", It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

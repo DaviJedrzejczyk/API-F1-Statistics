@@ -45,7 +45,7 @@ namespace UnitTests.Impls
                 Exception = new InvalidOperationException("bad")
             };
 
-            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>()))
+            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(apiResponse);
 
             var client = new OvertakeClient(mockClient.Object, mockMapper.Object);
@@ -74,7 +74,7 @@ namespace UnitTests.Impls
                 Item = "[]"
             };
 
-            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>()))
+            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(apiResponse);
 
             var client = new OvertakeClient(mockClient.Object, mockMapper.Object);
@@ -126,7 +126,7 @@ namespace UnitTests.Impls
                 }
             };
 
-            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(apiResponse);
+            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
             mockMapper.Setup(m => m.Map<List<Overtake>>(It.IsAny<List<OvertakeDto>>())).Returns(mapped);
 
             var client = new OvertakeClient(mockClient.Object, mockMapper.Object);
@@ -150,7 +150,7 @@ namespace UnitTests.Impls
             var mockMapper = new Mock<IMapper>();
 
             var boom = new Exception("boom");
-            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>())).ThrowsAsync(boom);
+            mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(boom);
 
             var client = new OvertakeClient(mockClient.Object, mockMapper.Object);
 
