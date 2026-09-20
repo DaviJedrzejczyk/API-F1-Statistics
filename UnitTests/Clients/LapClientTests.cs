@@ -39,7 +39,7 @@ namespace UnitTests.Impls
             };
             string json = JsonSerializer.Serialize(expectedList);
             var singleResponse = new SingleResponse<string> { HasSuccess = true, Message = "ok", Item = json };
-            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>())).ReturnsAsync(singleResponse);
+            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(singleResponse);
 
             var sut = new LapClient(mockF1Client.Object);
 
@@ -52,7 +52,7 @@ namespace UnitTests.Impls
             Assert.IsNotNull(result.Itens);
             Assert.That(result.Itens.Count, Is.EqualTo(1));
             Assert.That(result.Itens[0].DriverNumber, Is.EqualTo(7));
-            mockF1Client.Verify(m => m.Get("laps?", "session_key=123&driver_number=7"), Times.Once);
+            mockF1Client.Verify(m => m.Get("laps?", "session_key=123&driver_number=7", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -62,7 +62,7 @@ namespace UnitTests.Impls
             var mockF1Client = new Mock<IF1ApiClient>();
             var ex = new Exception("api error");
             var singleResponse = new SingleResponse<string> { HasSuccess = false, Message = "err", Exception = ex };
-            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>())).ReturnsAsync(singleResponse);
+            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(singleResponse);
 
             var sut = new LapClient(mockF1Client.Object);
 
@@ -74,7 +74,7 @@ namespace UnitTests.Impls
             Assert.IsFalse(result.HasSuccess);
             Assert.That(result.Message, Is.EqualTo("err"));
             Assert.That(result.Exception, Is.EqualTo(ex));
-            mockF1Client.Verify(m => m.Get("laps?", "session_key=1&driver_number=2"), Times.Once);
+            mockF1Client.Verify(m => m.Get("laps?", "session_key=1&driver_number=2", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -83,7 +83,7 @@ namespace UnitTests.Impls
             // Arrange
             var mockF1Client = new Mock<IF1ApiClient>();
             var singleResponse = new SingleResponse<string> { HasSuccess = true, Message = "ok", Item = "null" };
-            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>())).ReturnsAsync(singleResponse);
+            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(singleResponse);
 
             var sut = new LapClient(mockF1Client.Object);
 
@@ -94,7 +94,7 @@ namespace UnitTests.Impls
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasSuccess);
             Assert.That(result.Message, Is.EqualTo("Failed to deserialize lap list."));
-            mockF1Client.Verify(m => m.Get("laps?", "session_key=9&driver_number=9"), Times.Once);
+            mockF1Client.Verify(m => m.Get("laps?", "session_key=9&driver_number=9", It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -103,7 +103,7 @@ namespace UnitTests.Impls
             // Arrange
             var mockF1Client = new Mock<IF1ApiClient>();
             var thrown = new InvalidOperationException("boom");
-            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>())).ThrowsAsync(thrown);
+            mockF1Client.Setup(m => m.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(thrown);
 
             var sut = new LapClient(mockF1Client.Object);
 
@@ -115,6 +115,6 @@ namespace UnitTests.Impls
             Assert.IsFalse(result.HasSuccess);
             Assert.That(result.Exception, Is.TypeOf<InvalidOperationException>());
             Assert.That(result.Message, Is.EqualTo("boom"));
-            mockF1Client.Verify(m => m.Get("laps?", "session_key=5&driver_number=6"), Times.Once);
+            mockF1Client.Verify(m => m.Get("laps?", "session_key=5&driver_number=6", It.IsAny<CancellationToken>()), Times.Once);
         }    }
 }

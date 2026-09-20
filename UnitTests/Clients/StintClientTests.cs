@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using AutoMapper;
 using Entities.Class;
 using Entities.Dtos;
 using ExternalApi.Interfaces;
 using ExternalApi.Impls;
 using Moq;
-using NUnit.Framework;
 using Shared.Responses;
 
 namespace UnitTests.Impls
@@ -38,7 +34,7 @@ namespace UnitTests.Impls
             var dtoList = new List<StintListDTO> { dto };
             var json = JsonSerializer.Serialize(dtoList);
 
-            apiMock.Setup(a => a.Get("stints?", "session_key=5"))
+            apiMock.Setup(a => a.Get("stints?", "session_key=5", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SingleResponse<string> { Item = json });
 
             var mapped = new List<Stint> { new Stint { Compound = dto.Compound, DriverNumber = dto.DriverNumber, SessionKey = dto.SessionKey } };
@@ -56,7 +52,7 @@ namespace UnitTests.Impls
             Assert.That(result.Itens.Count, Is.EqualTo(1));
             Assert.That(result.Itens[0].DriverNumber, Is.EqualTo(7));
 
-            apiMock.Verify(a => a.Get("stints?", "session_key=5"), Times.Once);
+            apiMock.Verify(a => a.Get("stints?", "session_key=5", It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<List<Stint>>(It.IsAny<List<StintListDTO>>()), Times.Once);
         }
 
@@ -67,7 +63,7 @@ namespace UnitTests.Impls
             var apiMock = new Mock<IF1ApiClient>();
             var mapperMock = new Mock<IMapper>();
 
-            apiMock.Setup(a => a.Get(It.IsAny<string>(), It.IsAny<string>()))
+            apiMock.Setup(a => a.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SingleResponse<string> { Item = "null" });
 
             var client = new StintClient(apiMock.Object, mapperMock.Object);
@@ -90,7 +86,7 @@ namespace UnitTests.Impls
             var apiMock = new Mock<IF1ApiClient>();
             var mapperMock = new Mock<IMapper>();
 
-            apiMock.Setup(a => a.Get(It.IsAny<string>(), It.IsAny<string>()))
+            apiMock.Setup(a => a.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new InvalidOperationException("boom"));
 
             var client = new StintClient(apiMock.Object, mapperMock.Object);

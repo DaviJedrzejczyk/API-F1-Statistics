@@ -41,7 +41,7 @@ namespace UnitTests.Impls
                 Exception = new InvalidOperationException("api-ex")
             };
 
-            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(single);
+            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(single);
 
             var sut = new CarDataClient(f1Mock.Object, mapperMock.Object);
 
@@ -68,7 +68,7 @@ namespace UnitTests.Impls
                 Item = "null"
             };
 
-            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(single);
+            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(single);
 
             var sut = new CarDataClient(f1Mock.Object, mapperMock.Object);
 
@@ -88,7 +88,7 @@ namespace UnitTests.Impls
             var f1Mock = new Mock<IF1ApiClient>();
             var mapperMock = new Mock<IMapper>();
 
-            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>())).ThrowsAsync(new Exception("boom"));
+            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("boom"));
 
             var sut = new CarDataClient(f1Mock.Object, mapperMock.Object);
 
@@ -121,7 +121,7 @@ namespace UnitTests.Impls
                 Item = json
             };
 
-            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(single);
+            f1Mock.Setup(x => x.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(single);
 
             var mapped = new List<CarData>
             {

@@ -47,7 +47,7 @@ namespace UnitTests
                 Item = string.Empty
             };
 
-            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(apiResponse);
+            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
 
             var client = new MeetingClient(f1ApiMock.Object, mapperMock.Object);
 
@@ -60,7 +60,7 @@ namespace UnitTests
             Assert.That(result.Message, Is.EqualTo("api failed"));
             Assert.That(result.Exception, Is.SameAs(expectedEx));
 
-            f1ApiMock.Verify(f => f.Get("meetings?", "year=1999"), Times.Once);
+            f1ApiMock.Verify(f => f.Get("meetings?", "year=1999", It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<List<Meeting>>(It.IsAny<object>()), Times.Never);
         }
 
@@ -79,7 +79,7 @@ namespace UnitTests
                 Item = "null"
             };
 
-            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(apiResponse);
+            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
 
             var client = new MeetingClient(f1ApiMock.Object, mapperMock.Object);
 
@@ -93,7 +93,7 @@ namespace UnitTests
             Assert.IsNotNull(result.Exception);
             Assert.That(result.Exception.Message, Is.EqualTo("Failed to deserialize tracks."));
 
-            f1ApiMock.Verify(f => f.Get("meetings?", "year=2001"), Times.Once);
+            f1ApiMock.Verify(f => f.Get("meetings?", "year=2001", It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<List<Meeting>>(It.IsAny<object>()), Times.Never);
         }
 
@@ -125,7 +125,7 @@ namespace UnitTests
                 new Meeting { MeetingKey = 2, MeetingName = "B", Year = 2020 }
             };
 
-            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(apiResponse);
+            f1ApiMock.Setup(f => f.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
             mapperMock.Setup(m => m.Map<List<Meeting>>(It.IsAny<object>())).Returns(mapped);
 
             var client = new MeetingClient(f1ApiMock.Object, mapperMock.Object);
@@ -141,7 +141,7 @@ namespace UnitTests
             Assert.That(result.Itens[0].MeetingKey, Is.EqualTo(1));
             Assert.That(result.Itens[1].MeetingKey, Is.EqualTo(2));
 
-            f1ApiMock.Verify(f => f.Get("meetings?", "year=2020"), Times.Once);
+            f1ApiMock.Verify(f => f.Get("meetings?", "year=2020", It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<List<Meeting>>(It.IsAny<object>()), Times.Once);
         }
     }
