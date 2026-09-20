@@ -18,24 +18,24 @@
 1. Read `WebApi/Program.cs` for app wiring.
 2. Read `WebApi/Config/TransientDIConfig.cs` before adding services, DAOs, or API clients.
 3. Read `WebApi/Config/AutoMapperConfig.cs` before adding or renaming DTO/view-model mappings.
-4. Run tests with:
+4. From the repository root, run tests with:
 
 ```bash
-dotnet test /home/runner/work/API-F1-Statistics/API-F1-Statistics/UnitTests/UnitTests.csproj
+dotnet test UnitTests/UnitTests.csproj
 ```
 
 5. Build the solution with:
 
 ```bash
-dotnet build "/home/runner/work/API-F1-Statistics/API-F1-Statistics/API OpenF1.sln"
+dotnet build "API OpenF1.sln"
 ```
 
 ## Run locally
 
-- Start the API with:
+- Start the API from the repository root with:
 
 ```bash
-dotnet run --project /home/runner/work/API-F1-Statistics/API-F1-Statistics/WebApi/WebApi.csproj
+dotnet run --project WebApi/WebApi.csproj
 ```
 
 - Development launch settings expose Swagger at `/swagger`.
