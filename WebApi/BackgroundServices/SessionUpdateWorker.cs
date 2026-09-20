@@ -35,7 +35,15 @@ namespace WebApi.BackgroundServices
 
                             var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
 
-                            LogResponse(await sessionService.UpdateRecentSession());
+                            var response = await sessionService.UpdateRecentSession();
+                            if(response.HasSuccess)
+                               LogResponse(response);
+                            else
+                            {
+                                _logger.LogError("An error occurred while updating the sessions: {Message}", response.Message);
+                                tryCount++;
+                                continue;
+                            }
                         }
 
                         break;
@@ -66,19 +74,19 @@ namespace WebApi.BackgroundServices
             }
             else if (response.Message == "This method can only be called on Mondays.")
             {
-                _logger.LogWarning("This method can only be called on Mondays.");
+                _logger.LogWarning(response.Message);
             }
             else if (response.Message == "No recent meeting key found.")
             {
-                _logger.LogWarning("No recent meeting key found.");
+                _logger.LogWarning(response.Message);
             }
-            else if (response.Message == "Session already exists.")
+            else if (response.Message == "Recent session already exists, no update needed.")
             {
-                _logger.LogWarning("Session already exists.");
+                _logger.LogWarning(response.Message);
             }
             else
             {
-                _logger.LogError("An error occurred while updating the sessions: {Message}", response.Message);
+                _logger.LogWarning("Something when try to update session happend and not mapped: " + response.Message);
             }
         }
 

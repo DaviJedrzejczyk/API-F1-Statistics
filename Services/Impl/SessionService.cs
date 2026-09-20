@@ -95,8 +95,12 @@ namespace Services.Impl
                 if (meetingKeyResponse.Item == 0)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("No recent meeting key found.");
 
-               if ((await ReturnAlreadyHaveSession(meetingKeyResponse.Item)).HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Session already exists.");
+                var responseSession = await ReturnAlreadyHaveSession(meetingKeyResponse.Item);
+                if (!responseSession.HasSuccess && responseSession.Exception != null) 
+                    return ResponseFactory.CreateInstance().CreateFailureResponse(responseSession.Message, responseSession.Exception);
+
+                if(responseSession.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateSuccessResponse("Recent session already exists, no update needed.");
 
                 Response response = await InsertSessions(meetingKeyResponse.Item);
                 if (!response.HasSuccess)
