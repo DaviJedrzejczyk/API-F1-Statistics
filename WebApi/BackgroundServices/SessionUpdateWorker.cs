@@ -20,7 +20,6 @@ namespace WebApi.BackgroundServices
             while (!stoppingToken.IsCancellationRequested)
             {
                 var incrementDays = GetDaysUntilNextMonday();
-                tryCount++;
                 try
                 {
                     if (DateTime.Now.DayOfWeek != DayOfWeek.Monday)
@@ -38,7 +37,8 @@ namespace WebApi.BackgroundServices
                 }
                 catch (Exception ex)
                 {
-                    if(tryCount < 3)
+                    tryCount++;
+                    if (tryCount < 3)
                     {
                         _logger.LogInformation("Retrying in 1 minute...");
                         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);

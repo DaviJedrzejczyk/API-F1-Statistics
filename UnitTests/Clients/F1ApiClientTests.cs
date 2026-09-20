@@ -13,6 +13,8 @@ namespace UnitTests
     [TestFixture]
     public class F1ApiClientTests
     {
+        private const string _baseUrl = "https://api.openf1.org/v1/";
+
         [Test]
         public async Task Get_WhenResponseIsSuccess_ReturnsSuccessSingleResponse()
         {
@@ -32,7 +34,11 @@ namespace UnitTests
                 })
                 .Verifiable();
 
-            var httpClient = new HttpClient(handlerMock.Object);
+            var httpClient = new HttpClient(handlerMock.Object)
+            {
+                BaseAddress = new Uri(_baseUrl)
+            };
+
             var apiClient = new F1ApiClient(httpClient);
 
             // Act
@@ -67,7 +73,10 @@ namespace UnitTests
                 })
                 .Verifiable();
 
-            var httpClient = new HttpClient(handlerMock.Object);
+            var httpClient = new HttpClient(handlerMock.Object)
+            {
+                BaseAddress = new Uri(_baseUrl)
+            };
             var apiClient = new F1ApiClient(httpClient);
 
             // Act
@@ -97,7 +106,10 @@ namespace UnitTests
                 .ThrowsAsync(ex)
                 .Verifiable();
 
-            var httpClient = new HttpClient(handlerMock.Object);
+            var httpClient = new HttpClient(handlerMock.Object)
+            {
+                BaseAddress = new Uri(_baseUrl)
+            };
             var apiClient = new F1ApiClient(httpClient);
 
             // Act
