@@ -8,5 +8,6 @@ namespace Dao.Interface
     {
         Task<Response> InsertSessions(List<Session> sessions);
         Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey);
+        Task<Response> GetAlreadyHaveSession(int meetingKey);
     }
 }

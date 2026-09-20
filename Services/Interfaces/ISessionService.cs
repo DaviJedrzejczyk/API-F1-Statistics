@@ -9,6 +9,7 @@ namespace Services.Interfaces
     {
         Task<Response> InsertSessions(int meetingKey);
         Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey);
+        Task<Response> ReturnAlreadyHaveSession(int meetingKey);
         Task<Response> UpdateRecentSession();
     }
 }

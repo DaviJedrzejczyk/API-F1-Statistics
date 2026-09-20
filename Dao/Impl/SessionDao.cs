@@ -15,6 +15,23 @@ namespace Dao.Impl
             _db = db;
         }
 
+        public async Task<Response> GetAlreadyHaveSession(int meetingKey)
+        {
+            try
+            {
+               var response = await _db.Sessions.AnyAsync(s => s.MeetingKey == meetingKey);
+
+               if (response)
+                   return ResponseFactory.CreateInstance().CreateSuccessResponse("Session already exists.");
+               else
+                   return ResponseFactory.CreateInstance().CreateFailureResponse("Session does not exist.");
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
+        }
+
         public async Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey)
         {
             try

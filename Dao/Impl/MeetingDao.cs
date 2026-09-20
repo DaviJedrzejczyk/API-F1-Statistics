@@ -45,10 +45,10 @@ namespace Dao.Impl
         {
             try
             {
-                int meetingKey = await _db.Meetings.Where(x => x.DateEnd >= DateTime.UtcNow && x.DateEnd <= DateTime.UtcNow.AddDays(7))
-                                                   .OrderBy(x => x.DateStart)
-                                                   .Select(x => x.MeetingKey)
-                                                   .FirstOrDefaultAsync();
+                int meetingKey = await _db.Meetings.Where(x => !x.IsCancelled && x.DateEnd >= DateTime.UtcNow && x.DateEnd <= DateTime.UtcNow.AddDays(7))
+                                            .OrderBy(x => x.DateStart)
+                                            .Select(x => x.MeetingKey)
+                                            .FirstOrDefaultAsync();
 
                 return ResponseFactory.CreateInstance().CreateSuccessSingleResponse(meetingKey);
             }

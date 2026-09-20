@@ -16,23 +16,39 @@ namespace WebApi.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            var tryCount = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
                 var incrementDays = GetDaysUntilNextMonday();
+                tryCount++;
                 try
                 {
                     if (DateTime.Now.DayOfWeek != DayOfWeek.Monday)
-                        throw new Exception("This method can only be called on Mondays.");
+                    {
+                        LogResponse(new Response() { HasSuccess = false, Message = "This method can only be called on Mondays." });
+                    }
+                    else
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
 
-                    using var scope = _serviceScopeFactory.CreateScope();
-                    
-                    var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-                    
-                    LogResponse(await sessionService.UpdateRecentSession());
+                        var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
+
+                        LogResponse(await sessionService.UpdateRecentSession());
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "An error occurred while updating the calendar.");
+                    if(tryCount < 3)
+                    {
+                        _logger.LogInformation("Retrying in 1 minute...");
+                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        continue;
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "An error occurred while updating the calendar. Tried 3 times.");
+                        break;
+                    }
                 }
                 await Task.Delay(TimeSpan.FromDays(incrementDays), stoppingToken);
             }
@@ -51,6 +67,10 @@ namespace WebApi.BackgroundServices
             else if (response.Message == "No recent meeting key found.")
             {
                 _logger.LogWarning("No recent meeting key found.");
+            }
+            else if (response.Message == "Session already exists.")
+            {
+                _logger.LogWarning("Session already exists.");
             }
             else
             {

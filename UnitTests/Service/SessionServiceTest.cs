@@ -14,6 +14,7 @@ namespace UnitTests.Service
     {
         private Mock<IUnityOfWork> _unityOfWorkMock = null!;
         private Mock<ISessionClient> _sessionClient = null!;
+        private Mock<IMeetingService> _meetingServiceMock = null!;
         private SessionService _service = null!;
         
         [SetUp]
@@ -21,7 +22,8 @@ namespace UnitTests.Service
         {
             _unityOfWorkMock = new Mock<IUnityOfWork>();
             _sessionClient = new Mock<ISessionClient>();
-            _service = new SessionService(_unityOfWorkMock.Object, _sessionClient.Object);
+            _meetingServiceMock = new Mock<IMeetingService>();
+            _service = new SessionService(_unityOfWorkMock.Object, _sessionClient.Object, _meetingServiceMock.Object);
         }
 
         [Test]

@@ -68,6 +68,18 @@ namespace Services.Impl
             }
         }
 
+        public async Task<Response> ReturnAlreadyHaveSession(int meetingKey)
+        {
+            try
+            {
+                return await _unityOfWork.SessionDao.GetAlreadyHaveSession(meetingKey);
+            }
+            catch (Exception ex)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
+            }
+        }
+
         /// <summary>
         /// This method just been call by the scheduler to update the recent session, it will be called every week. DO NOT CALL IN ANY OTHER CONTEXT.
         /// </summary>
@@ -82,6 +94,9 @@ namespace Services.Impl
 
                 if (meetingKeyResponse.Item == 0)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("No recent meeting key found.");
+
+               if ((await ReturnAlreadyHaveSession(meetingKeyResponse.Item)).HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("Session already exists.");
 
                 Response response = await InsertSessions(meetingKeyResponse.Item);
                 if (!response.HasSuccess)

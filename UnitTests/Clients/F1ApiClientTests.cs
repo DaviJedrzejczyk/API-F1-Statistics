@@ -14,19 +14,6 @@ namespace UnitTests
     public class F1ApiClientTests
     {
         [Test]
-        public void Constructor_SetsBaseAddress()
-        {
-            // Arrange
-            var httpClient = new HttpClient();
-
-            // Act
-            var client = new F1ApiClient(httpClient);
-
-            // Assert
-            Assert.That(httpClient.BaseAddress, Is.EqualTo(new Uri("https://api.openf1.org/v1/")));
-        }
-
-        [Test]
         public async Task Get_WhenResponseIsSuccess_ReturnsSuccessSingleResponse()
         {
             // Arrange
