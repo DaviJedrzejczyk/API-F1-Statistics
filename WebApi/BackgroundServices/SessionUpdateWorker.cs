@@ -16,38 +16,42 @@ namespace WebApi.BackgroundServices
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var tryCount = 0;
             while (!stoppingToken.IsCancellationRequested)
             {
                 var incrementDays = GetDaysUntilNextMonday();
-                try
-                {
-                    if (DateTime.Now.DayOfWeek != DayOfWeek.Monday)
-                    {
-                        LogResponse(new Response() { HasSuccess = false, Message = "This method can only be called on Mondays." });
-                    }
-                    else
-                    {
-                        using var scope = _serviceScopeFactory.CreateScope();
+                var tryCount = 0;
 
-                        var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-
-                        LogResponse(await sessionService.UpdateRecentSession());
-                    }
-                }
-                catch (Exception ex)
+                while (tryCount < 3 && !stoppingToken.IsCancellationRequested)
                 {
-                    tryCount++;
-                    if (tryCount < 3)
+                    try
                     {
-                        _logger.LogInformation("Retrying in 1 minute...");
-                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-                        continue;
-                    }
-                    else
-                    {
-                        _logger.LogError(ex, "An error occurred while updating the calendar. Tried 3 times.");
+                        if (DateTime.Now.DayOfWeek != DayOfWeek.Monday)
+                        {
+                            LogResponse(new Response() { HasSuccess = false, Message = "This method can only be called on Mondays." });
+                        }
+                        else
+                        {
+                            using var scope = _serviceScopeFactory.CreateScope();
+
+                            var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
+
+                            LogResponse(await sessionService.UpdateRecentSession());
+                        }
+
                         break;
+                    }
+                    catch (Exception ex)
+                    {
+                        tryCount++;
+                        if (tryCount < 3)
+                        {
+                            _logger.LogInformation("Retrying in 1 minute...");
+                            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        }
+                        else
+                        {
+                            _logger.LogError(ex, "An error occurred while updating the calendar. Tried 3 times.");
+                        }
                     }
                 }
                 await Task.Delay(TimeSpan.FromDays(incrementDays), stoppingToken);
