@@ -11,7 +11,6 @@ namespace ExternalApi.Impls
         private readonly HttpClient _httpClient;
         public F1ApiClient(HttpClient httpClient)
         {
-            httpClient.BaseAddress = new Uri(F1ApiURL.URL_API_F1);
             _httpClient = httpClient;
         }
 

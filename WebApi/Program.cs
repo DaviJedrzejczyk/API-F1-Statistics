@@ -1,7 +1,10 @@
 using Dao;
 using ExternalApi.Impls;
+using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using WebApi.BackgroundServices;
 using WebApi.Config;
+using WebApi.Controllers.Constants;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,8 +34,10 @@ builder.Services
     .AddControllers()
     .AddJsonConfiguration();
 
-builder.Services.AddHttpClient<F1ApiClient>();
+builder.Services.AddHttpClient<IF1ApiClient, F1ApiClient>(c => c.BaseAddress = new Uri(F1ApiURL.URL_API_F1));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
+builder.Services.AddHostedService<SessionUpdateWorker>();
 
 var app = builder.Build();
 
