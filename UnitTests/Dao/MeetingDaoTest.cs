@@ -33,7 +33,7 @@ namespace UnitTests.Dao
                 _context.Meetings.Add(new Meeting
                 {
                     MeetingKey = i,
-                    MeetingName = $"Meeting {i}",
+                    MeetingName = $"Meeting {i} Grand Prix",
                     Year = currentYear
                 });
             }
