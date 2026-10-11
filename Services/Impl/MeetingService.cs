@@ -25,8 +25,8 @@ namespace Services.Impl
                 if (year.ToString().Length != 4)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Invalid year format.");
 
-                if (year < 1951 || year > DateTime.Now.Year)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Year must be between 1951 and the current year.");
+                if (year < 2023 || year > DateTime.Now.Year)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Meeting>("Year must be between 2023 and the current year.");
 
                 return await _unityOfWork.MeetingDao.GetAllTracksOfCurrentYear(year);
             }
