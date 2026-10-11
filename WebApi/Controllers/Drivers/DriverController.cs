@@ -22,7 +22,6 @@ namespace WebApi.Controllers.Drivers
         /// <summary>
         /// Get all drivers of a session
         /// </summary>
-        /// <param name="meetingKey">The weekend chosen</param>
         /// <param name="sessionKey">The session chosen</param>
         /// <returns>
         /// 200 OK - A list with all drivers of this session
