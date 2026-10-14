@@ -19,7 +19,7 @@ namespace Dao.Impl
         {
             try
             {
-                List<Meeting> meetings = await _db.Meetings.Where(m => m.Year == year).ToListAsync();
+                List<Meeting> meetings = await _db.Meetings.OrderBy(m => m.DateStart).Where(m => m.Year == year && m.MeetingName.Contains("Grand Prix")).ToListAsync();
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(meetings);
             }
             catch (Exception ex)
