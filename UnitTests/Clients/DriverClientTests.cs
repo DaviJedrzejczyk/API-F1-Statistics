@@ -24,7 +24,7 @@ namespace UnitTests.Impls
 
             var apiException = new Exception("api-exception");
             var failure = ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>("api failed", apiException);
-            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>())).ReturnsAsync(failure);
+            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(failure);
 
             var client = new DriverClient(mockApi.Object, mockMapper.Object);
 
@@ -37,7 +37,7 @@ namespace UnitTests.Impls
             Assert.That(result.Message, Is.EqualTo("api failed"));
             Assert.IsNotNull(result.Exception);
             Assert.That(result.Exception.Message, Is.EqualTo("api-exception"));
-            mockApi.Verify(a => a.Get("drivers?", "session_key=2"), Times.Once);
+            mockApi.Verify(a => a.Get("drivers?", "session_key=2", It.IsAny<CancellationToken>()), Times.Once);
             mockMapper.Verify(m => m.Map<List<Driver>>(It.IsAny<List<DriverDto>>()), Times.Never);
         }
 
@@ -51,7 +51,7 @@ namespace UnitTests.Impls
             // JSON that will deserialize to null for a List<DriverDto>
             var jsonNull = "null";
             var successWithNull = new Shared.Responses.SingleResponse<string> { HasSuccess = true, Message = "OK", Item = jsonNull };
-            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>())).ReturnsAsync(successWithNull);
+            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(successWithNull);
 
             var client = new DriverClient(mockApi.Object, mockMapper.Object);
 
@@ -62,7 +62,7 @@ namespace UnitTests.Impls
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasSuccess);
             Assert.IsTrue(result.Message.Contains("Failed to deserialize"));
-            mockApi.Verify(a => a.Get("drivers?", "session_key=3"), Times.Once);
+            mockApi.Verify(a => a.Get("drivers?", "session_key=3", It.IsAny<CancellationToken>()), Times.Once);
             mockMapper.Verify(m => m.Map<List<Driver>>(It.IsAny<List<DriverDto>>()), Times.Never);
         }
 
@@ -76,7 +76,7 @@ namespace UnitTests.Impls
             var driverDtoJson = "[ { \"driver_number\": 42, \"broadcast_name\": \"BN\", \"first_name\": \"F\", \"full_name\": \"FF\", \"headshot_url\": \"H\", \"last_name\": \"L\", \"meeting_key\": 1, \"name_acronym\": \"NA\", \"session_key\": 4, \"team_colour\": \"C\", \"team_name\": \"T\" } ]";
             var apiResponse = new SingleResponse<string>{ HasSuccess = true, Item = driverDtoJson };
 
-            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>())).ReturnsAsync(apiResponse);
+            mockApi.Setup(a => a.Get("drivers?", It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(apiResponse);
 
             var expectedDrivers = new List<Driver> { new Driver { DriverNumber = 42, FirstName = "F" } };
 
@@ -102,7 +102,7 @@ namespace UnitTests.Impls
             Assert.IsNotNull(result.Itens);
             Assert.That(result.Itens.Count, Is.EqualTo(1));
             Assert.That(result.Itens[0].DriverNumber, Is.EqualTo(42));
-            mockApi.Verify(a => a.Get("drivers?", "session_key=4"), Times.Once);
+            mockApi.Verify(a => a.Get("drivers?", "session_key=4", It.IsAny<CancellationToken>()), Times.Once);
 
             // Verify mapper was called once (argument inspected in Returns)
             mockMapper.Verify(m => m.Map<List<Driver>>(It.IsAny<object>()), Times.Once);

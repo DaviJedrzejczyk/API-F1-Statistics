@@ -28,7 +28,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.InsertSessionsInDataBase(new SessionKeyViewModel { SessionKey = 1 });
+            var result = await controller.InsertSessionsInDataBase(new SessionMeetingKeyViewModel { MeetingKey = 1 });
 
             // Assert
             Assert.IsInstanceOf(typeof(OkObjectResult), result);
@@ -50,7 +50,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.InsertSessionsInDataBase(new SessionKeyViewModel { SessionKey = 5 });
+            var result = await controller.InsertSessionsInDataBase(new SessionMeetingKeyViewModel { MeetingKey = 5 });
 
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
@@ -71,7 +71,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.InsertSessionsInDataBase(new SessionKeyViewModel { SessionKey = 7 });
+            var result = await controller.InsertSessionsInDataBase(new SessionMeetingKeyViewModel { MeetingKey = 7 });
 
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
@@ -87,7 +87,7 @@ namespace UnitTests.WebApi
             SessionController controller = new SessionController(null!);
 
             // Act
-            var result = await controller.InsertSessionsInDataBase(new SessionKeyViewModel { SessionKey = 1 });
+            var result = await controller.InsertSessionsInDataBase(new SessionMeetingKeyViewModel { MeetingKey = 1 });
 
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
@@ -109,7 +109,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.GetSessionById(1, 2);
+            var result = await controller.GetSessionBySessionKey(1, 2);
 
             // Assert
             Assert.IsInstanceOf(typeof(NotFoundObjectResult), result);
@@ -131,7 +131,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.GetSessionById(10, 20);
+            var result = await controller.GetSessionBySessionKey(10, 20);
 
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
@@ -153,7 +153,7 @@ namespace UnitTests.WebApi
             var controller = new SessionController(serviceMock.Object);
 
             // Act
-            var result = await controller.GetSessionById(3, 4);
+            var result = await controller.GetSessionBySessionKey(3, 4);
 
             // Assert
             Assert.IsInstanceOf(typeof(OkObjectResult), result);

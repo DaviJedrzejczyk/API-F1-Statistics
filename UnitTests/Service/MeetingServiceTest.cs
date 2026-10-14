@@ -175,13 +175,13 @@ namespace UnitTests.Service
         }
 
         [Test]
-        public async Task ShouldBeReturnErrorGetAllTracksOfCurrentYearWhenYearIsLessThan1951()
+        public async Task ShouldBeReturnErrorGetAllTracksOfCurrentYearWhenYearIsLessThan2023()
         {
-            var service = await _service.GetAllTracksOfCurrentYear(1950);
+            var service = await _service.GetAllTracksOfCurrentYear(2022);
          
             Assert.Multiple(() =>
             {
-                Assert.That(service.Message, Is.EqualTo("Year must be between 1951 and the current year."));
+                Assert.That(service.Message, Is.EqualTo("Year must be between 2023 and the current year."));
                 Assert.That(service.HasSuccess, Is.False);
                 Assert.That(service.Itens, Is.Null);
             });
