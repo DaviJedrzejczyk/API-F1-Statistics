@@ -21,6 +21,23 @@ Este projeto foi inspirado no trabalho de **Rodolpho Santos** ([@rodolpho_santos
 
 O projeto está em **estágio de desenvolvimento**, com funcionalidades básicas implementadas. Atualmente é usado para testes diários com funcionalidades limitadas.
 
+## Atalhos
+
+- [Tecnologias](#-tecnologias)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Como Buildar e Executar](#-como-buildar-e-executar)
+- [Endpoints Disponíveis](#-endpoints-disponíveis)
+- [Como Consumir a API](#-como-consumir-a-api)
+- [Fluxo de Uso Típico](#-fluxo-de-uso-típico)
+- [Configuração](#-configuração)
+- [Testes](#-testes)
+- [Convenções de Código](#-convenções-de-código)
+- [Problemas Conhecidos](#-problemas-conhecidos)
+- [Licença](#-licença)
+- [Contribuições](#-contribuições)
+- [Contato](#-contato)
+- [Próximas Funcionalidades Planejadas](#-próximas-funcionalidades-planejadas)
+
 ---
 
 ## 🛠️ Tecnologias
@@ -430,6 +447,9 @@ Como este é um projeto pessoal em desenvolvimento, contribuições não são es
 ## 📞 Contato
 
 Desenvolvido por **Davi Jedrzejczyk**
+
+- [LinkedIn](https://www.linkedin.com/in/davi-jedrzejczyk-03b22a245/)
+- [E-mail](mailto:djedrzejczyk88@gmail.com)
 
 ---
 
