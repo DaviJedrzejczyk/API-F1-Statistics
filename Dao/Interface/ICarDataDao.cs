@@ -5,7 +5,7 @@ using Shared.Responses;
 namespace Dao.Interface
 {
     /// <summary>
-    /// Define as operações de acesso a dados de dados de telemetria dos carros.
+    /// Define as operações de acesso a dados de telemetria dos carros.
     /// </summary>
     public interface ICarDataDao
     {
