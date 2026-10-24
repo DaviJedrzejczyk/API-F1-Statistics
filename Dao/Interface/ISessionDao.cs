@@ -29,7 +29,7 @@ namespace Dao.Interface
         /// Verifica se existe alguma sessão cadastrada para o evento.
         /// </summary>
         /// <param name="meetingKey">Chave do evento consultado.</param>
-        /// <returns>Uma tarefa que retorna uma resposta com uma indicação de sucesso se existir uma sessão, ou de falha se não existir ou ocorrer um erro, ou uma indicação de falha em caso de erro.</returns>
+        /// <returns>Uma tarefa que retorna uma resposta com uma indicação de sucesso se existir uma sessão, ou de falha se não existir ou ocorrer um erro.</returns>
         Task<Response> GetAlreadyHaveSession(int meetingKey);
     }
 }
