@@ -6,6 +6,9 @@ using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Overtakes
 {
+    /// <summary>
+    /// API controller that counts overtakes for sessions.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class OvertakeController : Controller
@@ -13,6 +16,11 @@ namespace WebApi.Controllers.Overtakes
         private readonly IOvertakeService _overtakeService;
         private readonly IMapper _mapper;
 
+        /// <summary>
+        /// Creates a new instance of <see cref="OvertakeController"/>.
+        /// </summary>
+        /// <param name="overtakeService">Service used to retrieve overtakes.</param>
+        /// <param name="mapper">AutoMapper instance supplied to the controller.</param>
         public OvertakeController(IOvertakeService overtakeService, IMapper mapper)
         {
             _overtakeService = overtakeService;
@@ -20,13 +28,12 @@ namespace WebApi.Controllers.Overtakes
         }
 
         /// <summary>
-        /// Get overtakes by session key
+        /// Retrieves the overtake count for the specified session.
         /// </summary>
-        /// <param name="sessionKey"></param>
-        /// <returns>
-        /// 200 OK - Returns a list of overtakes for the specified session key
-        /// 400 Bad Request - Returns an error message if the request is invalid
-        /// </returns>
+        /// <param name="sessionKey">Identifier of the session, supplied in the route.</param>
+        /// <returns>The overtake count and meeting/session identifiers, or an HTTP error result.</returns>
+        /// <response code="200">OvertakeCountViewModel using identifiers from the first overtake and the total number of returned overtakes.</response>
+        /// <response code="400">ErrorViewModel when the service reports a failure; ValidationProblemDetails for invalid input.</response>
         [HttpGet("get-overtakes-session/{sessionKey}")]
         [ProducesResponseType(typeof(OvertakeCountViewModel), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]

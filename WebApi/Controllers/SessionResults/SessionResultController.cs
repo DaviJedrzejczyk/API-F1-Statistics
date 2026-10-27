@@ -8,12 +8,20 @@ using WebApi.ViewModels;
 
 namespace WebApi.Controllers.SessionResults
 {
+    /// <summary>
+    /// API controller that retrieves session results.
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class SessionResultController : Controller
     {
         private readonly ISessionResultService _sessionResultService;
         private readonly IMapper _mapper;
+        /// <summary>
+        /// Creates a new instance of <see cref="SessionResultController"/>.
+        /// </summary>
+        /// <param name="sessionResultService">Service used to retrieve session results.</param>
+        /// <param name="mapper">AutoMapper instance for mapping results to view models.</param>
         public SessionResultController(ISessionResultService sessionResultService, IMapper mapper)
         {
             _sessionResultService = sessionResultService;
@@ -21,14 +29,14 @@ namespace WebApi.Controllers.SessionResults
         }
 
         /// <summary>
-        /// Get the result of session by session key.
+        /// Retrieves the results for the specified session.
         /// </summary>
-        /// <param name="sessionKey"></param>
-        /// <returns>
-        /// 200 OK - Returns a list of SessionResultListViewModel objects representing the result of the session for the specified session key.
-        /// 400 Bad Request - Returns an ErrorViewModel if the request is invalid or if there are no results for the specified session key.
-        /// 404 Not Found - Returns an ErrorViewModel if the specified session key does not exist or if there are no results for the specified session key.
-        /// </returns>
+        /// <param name="sessionKey">Identifier of the session, supplied in the query string.</param>
+        /// <returns>A list of session-result view models, or an HTTP error result.</returns>
+        /// <response code="200">A list of SessionResultListViewModel objects when neither error branch is taken.</response>
+        /// <response code="400">ErrorViewModel with status_code 404 when the service fails with a null list; ValidationProblemDetails for invalid input.</response>
+        /// <response code="404">ErrorViewModel with status_code 400 when the service fails with an empty list.</response>
+        /// <remarks>The status_code in these service-error payloads differs from the HTTP status. A failed response with a nonempty list still returns HTTP 200.</remarks>
         [HttpGet("result")]
         [ProducesResponseType(typeof(List<SessionResultListViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]

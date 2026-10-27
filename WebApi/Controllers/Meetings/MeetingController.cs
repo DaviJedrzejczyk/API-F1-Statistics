@@ -32,15 +32,13 @@ namespace WebApi.Controllers.Meetings
         /// <summary>
         /// Inserts all tracks for the specified meeting year into the database.
         /// </summary>
-        /// <param name="model">View model containing the Year to insert tracks for.</param>
-        /// <returns>
-        /// 200 OK with a Response object when insertion succeeds.
-        /// 400 BadRequest when model is invalid or insertion failed.
-        /// </returns>
+        /// <param name="model">Request body containing the season year in the year property.</param>
+        /// <returns>An insertion confirmation, or an HTTP error result.</returns>
+        /// <response code="200">SuccessViewModel containing the service message and status_code 200.</response>
+        /// <response code="400">A string containing the service failure or caught exception message; ValidationProblemDetails for invalid input.</response>
         [HttpPost("tracks-season")]
         [ProducesResponseType(typeof(SuccessViewModel), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> InsertAllTracksOfCurrentSeason(MeetingYearViewModel model)
         {
             try
@@ -59,16 +57,17 @@ namespace WebApi.Controllers.Meetings
         }
 
         /// <summary>
-        /// Search a especify meeting in database
+        /// Retrieves a meeting from the database by its key.
         /// </summary>
-        /// <param name="meetingKey">Identifier of meeting</param>
-        /// <returns>Return the meeting</returns>
-        /// <returns code="200">The meeting has be found</returns>
-        /// <returns code="404">The meeting was not found or have a problem to found</returns>
+        /// <param name="meetingKey">Identifier of the meeting, supplied in the route.</param>
+        /// <returns>The meeting view model, or an HTTP error result.</returns>
+        /// <response code="200">The mapped MeetingViewModel.</response>
+        /// <response code="400">A string containing a caught exception message; ValidationProblemDetails for invalid input.</response>
+        /// <response code="404">A string containing the service message when no meeting is returned.</response>
         [HttpGet("{meetingKey}")]
-        [ProducesResponseType(typeof(Meeting)       , StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(MeetingViewModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMeetingByKey(int meetingKey)
         {
             try
@@ -89,15 +88,14 @@ namespace WebApi.Controllers.Meetings
         /// <summary>
         /// Retrieves all meeting tracks for the specified year.
         /// </summary>
-        /// <param name="year">The year to retrieve meeting tracks for.</param>
-        /// <returns>
-        /// 200 OK with a list of MeetingViewModel when found.
-        /// 400 BadRequest when the service reports a failure.
-        /// </returns>
+        /// <param name="year">Season year to retrieve meeting tracks for, supplied in the route.</param>
+        /// <returns>A list of meeting view models, or an HTTP error result.</returns>
+        /// <response code="200">A list of MeetingViewModel objects.</response>
+        /// <response code="400">DataResponse&lt;Meeting&gt; when the service reports failure, a string for a caught exception, or ValidationProblemDetails for invalid input.</response>
         [HttpGet("all-tracks/{year}")]
         [ProducesResponseType(typeof(List<MeetingViewModel>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(DataResponse<Meeting>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetAllTracksOfCurrentYear(int year)
         {
             try
