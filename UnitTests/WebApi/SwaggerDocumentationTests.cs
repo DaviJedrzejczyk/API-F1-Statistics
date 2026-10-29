@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Writers;
 using Swashbuckle.AspNetCore.Swagger;
+using WebApi.Config;
 using WebApi.Controllers.Meetings;
 
 namespace UnitTests.WebApi
@@ -21,10 +22,10 @@ namespace UnitTests.WebApi
                 ApplicationName = typeof(MeetingController).Assembly.GetName().Name
             });
             builder.Services.AddControllers();
+            builder.Services.AddApiErrorContracts();
             builder.Services.AddSwaggerGen(options =>
             {
                 options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "WebApi.xml"));
-                options.OperationFilter<ControllerErrorResponseDocumentationFilter>();
             });
 
             await using var app = builder.Build();
@@ -60,21 +61,40 @@ namespace UnitTests.WebApi
                 Assert.That(operation.Summary, Is.Not.Null.And.Not.Empty);
                 foreach (var parameter in operation.Parameters)
                     Assert.That(parameter.Description, Is.Not.Null.And.Not.Empty, parameter.Name);
-                Assert.That(operation.Responses["400"].Content["application/problem+json"], Is.Not.Null);
-                Assert.That(operation.Responses.ContainsKey("500"), Is.False);
+                Assert.That(operation.Responses["400"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
+                Assert.That(operation.Responses["500"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
             }
         }
 
-        [TestCase("/api/Meeting/all-tracks/{year}", OperationType.Get, "MeetingDataResponse")]
-        [TestCase("/api/Session/insert-sessions", OperationType.Post, "ErrorViewModel")]
-        public void Swagger_PreservesStructuredAndStringErrors(string path, OperationType method, string expectedSchema)
+        [Test]
+        public void Swagger_ErrorResponsesUseErrorViewModelOnly()
         {
-            var response = _document.Paths[path].Operations[method].Responses["400"];
+            var json = new StringWriter();
+            _document.SerializeAsV3(new OpenApiJsonWriter(json));
+            var text = json.ToString();
 
-            Assert.That(response.Content["application/json"].Schema.AnyOf.Select(schema => schema.Reference?.Id ?? schema.Type),
-                Is.EquivalentTo(new[] { expectedSchema, "string" }));
-            Assert.That(response.Content["text/plain"].Schema.Type, Is.EqualTo("string"));
-            Assert.That(response.Content["application/problem+json"].Schema.Reference.Id, Is.EqualTo("ValidationProblemDetails"));
+            Assert.That(text, Does.Not.Contain("ProblemDetails"));
+            Assert.That(text, Does.Not.Contain("problem+json"));
+
+            foreach (var operation in _document.Paths.Values.SelectMany(path => path.Operations.Values))
+            {
+                foreach (var (status, response) in operation.Responses.Where(pair => pair.Key != "200"))
+                {
+                    Assert.That(response.Content.ContainsKey("application/json"), status);
+                    foreach (var media in response.Content.Values)
+                        Assert.That(media.Schema.Reference.Id, Is.EqualTo("ErrorViewModel"), status);
+                }
+            }
+        }
+
+        [Test]
+        public void Swagger_PostBodyOperations_DocumentUnsupportedMediaType()
+        {
+            var insert = _document.Paths["/api/Session/insert-sessions"].Operations[OperationType.Post];
+            var tracks = _document.Paths["/api/Meeting/tracks-season"].Operations[OperationType.Post];
+
+            foreach (var operation in new[] { insert, tracks })
+                Assert.That(operation.Responses["415"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
         }
 
         [Test]
@@ -85,7 +105,7 @@ namespace UnitTests.WebApi
             var insert = _document.Paths["/api/Session/insert-sessions"].Operations[OperationType.Post];
 
             Assert.That(meeting.Responses["200"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("MeetingViewModel"));
-            Assert.That(meeting.Responses["404"].Content["text/plain"].Schema.Type, Is.EqualTo("string"));
+            Assert.That(meeting.Responses["404"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
             Assert.That(session.Responses["200"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("SuccessViewModel"));
             Assert.That(session.Parameters.Single(parameter => parameter.Name == "meetingkey").In, Is.EqualTo(ParameterLocation.Query));
             Assert.That(session.Parameters.Single(parameter => parameter.Name == "sessionKey").In, Is.EqualTo(ParameterLocation.Path));
@@ -94,27 +114,26 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public void Swagger_CarDataAndLaps_DistinguishProblemDetailsFromServiceErrors()
+        public void Swagger_CarDataAndLaps_DocumentErrorViewModelForEveryFailure()
         {
             var carData = _document.Paths["/api/CarData/high-speed"].Operations[OperationType.Get];
-            Assert.That(carData.Responses["404"].Content["application/problem+json"].Schema.Reference.Id, Is.EqualTo("ProblemDetails"));
-            Assert.That(carData.Responses["400"].Content["application/problem+json"].Schema.AnyOf.Select(schema => schema.Reference.Id),
-                Is.EquivalentTo(new[] { "ProblemDetails", "ValidationProblemDetails" }));
+            Assert.That(carData.Responses["404"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
+            Assert.That(carData.Responses["400"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
 
             foreach (var path in new[] { "/api/Laps/fast_lap_session", "/api/Laps/fast_sectors_session" })
             {
                 var operation = _document.Paths[path].Operations[OperationType.Get];
-                Assert.That(operation.Responses["400"].Content.Keys, Is.EquivalentTo(new[] { "application/problem+json" }));
+                Assert.That(operation.Responses["400"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
                 Assert.That(operation.Responses["404"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
             }
         }
 
         [Test]
-        public void Swagger_SessionResult_DescribesExistingHttpAndPayloadStatusMismatch()
+        public void Swagger_SessionResult_DocumentsHttpStatusForEachServiceFailure()
         {
             var operation = _document.Paths["/api/SessionResult/result"].Operations[OperationType.Get];
-            Assert.That(operation.Responses["400"].Description, Does.Contain("status_code 404"));
-            Assert.That(operation.Responses["404"].Description, Does.Contain("status_code 400"));
+            Assert.That(operation.Responses["400"].Description, Does.Contain("null list"));
+            Assert.That(operation.Responses["404"].Description, Does.Contain("empty list"));
         }
     }
 }

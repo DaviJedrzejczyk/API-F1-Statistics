@@ -3,6 +3,7 @@ using Entities.Class;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
+using WebApi.Config;
 using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Drivers
@@ -33,21 +34,23 @@ namespace WebApi.Controllers.Drivers
         /// <param name="sessionKey">Identifier of the session, supplied in the query string.</param>
         /// <returns>A list of driver view models, or an HTTP error result.</returns>
         /// <response code="200">A list of DriverListViewModel objects.</response>
-        /// <response code="400">ErrorViewModel when the service returns an exception or a null list; ValidationProblemDetails for invalid input.</response>
+        /// <response code="400">ErrorViewModel when the service returns an exception or a null list, or for invalid input (model binding failure); the message is generic when the service reports an exception.</response>
         /// <response code="404">ErrorViewModel when the service returns an empty list without an exception.</response>
+        /// <response code="500">ErrorViewModel for unexpected server errors.</response>
         [HttpGet("drivers-session")]
         [ProducesResponseType(typeof(List<DriverListViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetAllDriversSession(int sessionKey)
         {
             var response = await _driverService.GetAllDriversSession(sessionKey);
 
             if(response.Exception != null || response.Itens == null)
-                return BadRequest(new ErrorViewModel(400, response.Message));
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
             if (response.Itens.Count == 0)
-                return NotFound(new ErrorViewModel(404, response.Message));
+                return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(response)));
 
             return Ok(_mapper.Map<List<DriverListViewModel>>(response.Itens));
         }

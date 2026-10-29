@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
+using WebApi.Config;
 using WebApi.ViewModels;
 
 namespace WebApi.Controllers.CarDatas
@@ -33,22 +34,26 @@ namespace WebApi.Controllers.CarDatas
         /// <param name="minimumSpeed">Minimum speed in km/h used to filter car data, supplied in the query string.</param>
         /// <returns>A list of driver speeds, or an HTTP error result.</returns>
         /// <response code="200">A list of SessionDriverSpeedDTO objects.</response>
-        /// <response code="400">ProblemDetails when the service fails with an exception and a nonempty list; ValidationProblemDetails for invalid input.</response>
-        /// <response code="404">ProblemDetails when the service fails with an empty list. This check takes precedence over the exception check.</response>
-        /// <remarks>The action returns bodyless error results; the API controller error filter supplies ProblemDetails.</remarks>
+        /// <response code="400">ErrorViewModel when the service fails without a list or with an exception and a nonempty list; the message is generic when the service reports an exception.</response>
+        /// <response code="404">ErrorViewModel when the service fails with an empty list. This check takes precedence over the exception check.</response>
+        /// <response code="500">ErrorViewModel for unexpected server errors.</response>
         [HttpGet("high-speed")]
         [ProducesResponseType(typeof(List<SessionDriverSpeedDTO>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> HighSpeedInSession(int sessionKey, int minimumSpeed)
         {
             DataResponse<SessionDriverSpeedDTO> response = await _carDataService.GetSortedHighSpeedsSession(sessionKey, minimumSpeed);
 
+            if (!response.HasSuccess && response.Itens == null)
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
+
             if (!response.HasSuccess && response.Itens.Count <= 0)
-                return NotFound();
+                return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(response)));
 
             if (!response.HasSuccess && response.Exception != null)
-                return BadRequest();
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
 
             return Ok(response.Itens);
         }

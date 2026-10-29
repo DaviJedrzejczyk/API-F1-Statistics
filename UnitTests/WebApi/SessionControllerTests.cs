@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WebApi.Config;
 using WebApi.ViewModels;
 using WebApi.Controllers.Sessions;
 using Moq;
@@ -61,7 +62,7 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public async Task SessionController_InsertSessionsInDataBase_ServiceThrowsException_ReturnsBadRequestWithMessage()
+        public async Task SessionController_InsertSessionsInDataBase_ServiceThrowsException_ReturnsBadRequestWithGenericMessage()
         {
             // Arrange
             var serviceMock = new Mock<ISessionService>();
@@ -76,8 +77,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
             var bad = (BadRequestObjectResult)result;
-            var message = (string)bad.Value!;
-            Assert.AreEqual("boom", message);
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.AreEqual(400, error.StatusCode);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
@@ -92,9 +94,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
             var bad = (BadRequestObjectResult)result;
-            Assert.IsInstanceOf(typeof(string), bad.Value);
-            var msg = (string)bad.Value!;
-            Assert.IsNotEmpty(msg);
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.AreEqual(400, error.StatusCode);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
@@ -138,7 +140,7 @@ namespace UnitTests.WebApi
             var bad = (BadRequestObjectResult)result;
             var error = (ErrorViewModel)bad.Value!;
             Assert.AreEqual(400, error.StatusCode);
-            Assert.AreEqual("bad", error.Message);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
