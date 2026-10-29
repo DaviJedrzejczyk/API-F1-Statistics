@@ -2,6 +2,7 @@ using Dao;
 using ExternalApi.Impls;
 using ExternalApi.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 using WebApi.BackgroundServices;
 using WebApi.Config;
 using WebApi.Controllers.Constants;
@@ -15,7 +16,12 @@ builder.Services.AddControllers();
 builder.Services.AddCors();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "WebApi.xml"));
+});
+
+builder.Services.AddApiErrorContracts();
 
 builder.Services.AddDbContext<ApiF1DB>(option =>
 {
@@ -40,6 +46,8 @@ builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddHostedService<SessionUpdateWorker>();
 
 var app = builder.Build();
+
+app.UseApiErrorContracts();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

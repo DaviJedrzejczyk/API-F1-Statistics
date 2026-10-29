@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Services.Interfaces;
 using Shared.Responses;
+using WebApi.Config;
 using WebApi.Controllers.Meetings;
 using WebApi.ViewModels;
 
@@ -68,11 +69,13 @@ namespace UnitTests.WebApi
             meetingServiceMock.Verify(s => s.InsertTracksOfCurrentYear(2021), Times.Once);
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
-            Assert.That(bad.Value, Is.EqualTo("failed"));
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(400));
+            Assert.That(error.Message, Is.EqualTo("failed"));
         }
 
         [Test]
-        public async Task InsertAllTracksOfCurrentSeason_ServiceThrowsException_ReturnsBadRequestWithExceptionMessage()
+        public async Task InsertAllTracksOfCurrentSeason_ServiceThrowsException_ReturnsBadRequestWithGenericMessage()
         {
             // Arrange
             var meetingServiceMock = new Mock<IMeetingService>();
@@ -92,7 +95,10 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
-            Assert.That(bad.Value, Is.EqualTo("boom"));
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(400));
+            Assert.That(error.Message, Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(error.Message, Does.Not.Contain("boom"));
         }
 
         [Test]
@@ -114,7 +120,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf<NotFoundObjectResult>(result);
             var notFound = (NotFoundObjectResult)result;
-            Assert.That(notFound.Value, Is.EqualTo("nope"));
+            var error = (ErrorViewModel)notFound.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(404));
+            Assert.That(error.Message, Is.EqualTo("nope"));
         }
 
         [Test]
@@ -149,7 +157,7 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public async Task GetMeetingByKey_ServiceThrowsException_ReturnsBadRequestWithExceptionMessage()
+        public async Task GetMeetingByKey_ServiceThrowsException_ReturnsBadRequestWithGenericMessage()
         {
             // Arrange
             var meetingServiceMock = new Mock<IMeetingService>();
@@ -167,7 +175,10 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
-            Assert.That(bad.Value, Is.EqualTo("err"));
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(400));
+            Assert.That(error.Message, Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(error.Message, Does.Not.Contain("err"));
         }
 
         [Test]
@@ -191,7 +202,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
-            Assert.That(bad.Value, Is.SameAs(response));
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(400));
+            Assert.That(error.Message, Is.EqualTo("bad"));
         }
 
         [Test]
@@ -228,7 +241,7 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public async Task GetAllTracksOfCurrentYear_ServiceThrowsException_ReturnsBadRequestWithExceptionMessage()
+        public async Task GetAllTracksOfCurrentYear_ServiceThrowsException_ReturnsBadRequestWithGenericMessage()
         {
             // Arrange
             var meetingServiceMock = new Mock<IMeetingService>();
@@ -246,7 +259,10 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
-            Assert.That(bad.Value, Is.EqualTo("explode"));
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.That(error.StatusCode, Is.EqualTo(400));
+            Assert.That(error.Message, Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(error.Message, Does.Not.Contain("explode"));
         }
     }
 }

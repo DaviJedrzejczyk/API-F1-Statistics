@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Services.Interfaces;
 using Shared.Responses;
+using WebApi.Config;
 using WebApi.Controllers.Drivers;
 using WebApi.ViewModels;
 
@@ -50,7 +51,8 @@ namespace UnitTests.WebApi
             Assert.IsNotNull(bad.Value);
             var vm = (ErrorViewModel)bad.Value!;
             Assert.That(vm.StatusCode, Is.EqualTo(400));
-            Assert.That(vm.Message, Is.EqualTo("err"));
+            Assert.That(vm.Message, Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(vm.Message, Does.Not.Contain("x"));
         }
 
         [Test]

@@ -3,6 +3,7 @@ using Entities.Class;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using Shared.Responses;
+using WebApi.Config;
 using WebApi.ViewModels;
 
 namespace WebApi.Controllers.Meetings
@@ -32,14 +33,16 @@ namespace WebApi.Controllers.Meetings
         /// <summary>
         /// Inserts all tracks for the specified meeting year into the database.
         /// </summary>
-        /// <param name="model">View model containing the Year to insert tracks for.</param>
-        /// <returns>
-        /// 200 OK with a Response object when insertion succeeds.
-        /// 400 BadRequest when model is invalid or insertion failed.
-        /// </returns>
+        /// <param name="model">Request body containing the season year in the year property.</param>
+        /// <returns>An insertion confirmation, or an HTTP error result.</returns>
+        /// <response code="200">SuccessViewModel containing the service message and status_code 200.</response>
+        /// <response code="400">ErrorViewModel when the service fails or the body is invalid; the message is generic when the service reports an exception.</response>
+        /// <response code="415">ErrorViewModel when the request content type is not supported.</response>
+        /// <response code="500">ErrorViewModel for unexpected server errors.</response>
         [HttpPost("tracks-season")]
         [ProducesResponseType(typeof(SuccessViewModel), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status415UnsupportedMediaType)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> InsertAllTracksOfCurrentSeason(MeetingYearViewModel model)
         {
@@ -48,25 +51,28 @@ namespace WebApi.Controllers.Meetings
                 Response response = await _meetingService.InsertTracksOfCurrentYear(model.Year);
 
                 if (!response.HasSuccess)
-                    return BadRequest(response.Message);
+                    return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(new SuccessViewModel() { StatusCode = 200, Message = response.Message} );
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
             }
         }
 
         /// <summary>
-        /// Search a especify meeting in database
+        /// Retrieves a meeting from the database by its key.
         /// </summary>
-        /// <param name="meetingKey">Identifier of meeting</param>
-        /// <returns>Return the meeting</returns>
-        /// <returns code="200">The meeting has be found</returns>
-        /// <returns code="404">The meeting was not found or have a problem to found</returns>
+        /// <param name="meetingKey">Identifier of the meeting, supplied in the route.</param>
+        /// <returns>The meeting view model, or an HTTP error result.</returns>
+        /// <response code="200">The mapped MeetingViewModel.</response>
+        /// <response code="400">ErrorViewModel when a caught exception occurs or the route value is invalid.</response>
+        /// <response code="404">ErrorViewModel when no meeting is returned.</response>
+        /// <response code="500">ErrorViewModel for unexpected server errors.</response>
         [HttpGet("{meetingKey}")]
-        [ProducesResponseType(typeof(Meeting)       , StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(MeetingViewModel), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetMeetingByKey(int meetingKey)
@@ -76,24 +82,24 @@ namespace WebApi.Controllers.Meetings
                 SingleResponse<Meeting> response = await _meetingService.GetMeetingByKey(meetingKey);
 
                 if (response.Item == null)
-                    return NotFound(response.Message);
+                    return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(_mapper.Map<MeetingViewModel>(response.Item));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
             }
         }
 
         /// <summary>
         /// Retrieves all meeting tracks for the specified year.
         /// </summary>
-        /// <param name="year">The year to retrieve meeting tracks for.</param>
-        /// <returns>
-        /// 200 OK with a list of MeetingViewModel when found.
-        /// 400 BadRequest when the service reports a failure.
-        /// </returns>
+        /// <param name="year">Season year to retrieve meeting tracks for, supplied in the route.</param>
+        /// <returns>A list of meeting view models, or an HTTP error result.</returns>
+        /// <response code="200">A list of MeetingViewModel objects.</response>
+        /// <response code="400">ErrorViewModel when the service reports failure or a caught exception occurs; the message is generic when the service reports an exception.</response>
+        /// <response code="500">ErrorViewModel for unexpected server errors.</response>
         [HttpGet("all-tracks/{year}")]
         [ProducesResponseType(typeof(List<MeetingViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
@@ -105,13 +111,13 @@ namespace WebApi.Controllers.Meetings
                 DataResponse<Meeting> response = await _meetingService.GetAllTracksOfCurrentYear(year);
 
                 if (!response.HasSuccess)
-                    return BadRequest(response);
+                    return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(_mapper.Map<List<MeetingViewModel>>(response.Itens));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
             }
         }
     }
