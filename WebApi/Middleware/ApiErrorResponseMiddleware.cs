@@ -45,7 +45,9 @@ namespace WebApi.Middleware
             }
             catch (Exception ex) when (!context.RequestAborted.IsCancellationRequested)
             {
-                _logger.LogError(ex, "Unhandled exception for {Method} {Path}.", context.Request.Method, context.Request.Path);
+                var safeMethod = SanitizeForLog(context.Request.Method);
+                var safePath = SanitizeForLog(context.Request.Path.Value);
+                _logger.LogError(ex, "Unhandled exception for {Method} {Path}.", safeMethod, safePath);
                 context.Response.Body = originalBody;
                 await WriteErrorAsync(context, StatusCodes.Status500InternalServerError, ApiErrorMessages.UnexpectedError);
                 return;
@@ -62,6 +64,11 @@ namespace WebApi.Middleware
             buffer.Position = 0;
             await buffer.CopyToAsync(originalBody, context.RequestAborted);
         }
+
+        private static string SanitizeForLog(string? value) =>
+            string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Replace("\r", " ").Replace("\n", " ");
 
         private static bool IsFrameworkErrorBody(HttpResponse response) =>
             response.ContentType == null ||
