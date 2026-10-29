@@ -1,0 +1,58 @@
+name: .NET build and integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.408
+      - name: Start disposable SQL Server
+        shell: bash
+        run: |
+          password="R02_$(openssl rand -hex 24)!"
+          echo "::add-mask::$password"
+          echo "MSSQL_SA_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "R02_SQL_CONNECTION=Server=127.0.0.1,1433;Initial Catalog=master;User ID=sa;Password=$password;Encrypt=true;TrustServerCertificate=true" >> "$GITHUB_ENV"
+          export MSSQL_SA_PASSWORD="$password"
+          docker run --detach --name r02-sql --publish 127.0.0.1:1433:1433 \
+            --env ACCEPT_EULA=Y --env MSSQL_PID=Developer --env MSSQL_SA_PASSWORD \
+            mcr.microsoft.com/mssql/server:2022-CU16-ubuntu-22.04
+      - name: Restore locked dependencies
+        run: dotnet restore "API OpenF1.sln" --locked-mode
+      - name: Build solution
+        run: dotnet build "API OpenF1.sln" --configuration Release --no-restore
+      - name: Unit tests
+        run: dotnet test UnitTests/UnitTests.csproj --configuration Release --no-build --logger "trx;LogFileName=unit.trx" --results-directory TestResults/unit --blame-hang-timeout 2m
+      - name: HTTP, SQL persistence and migrations
+        if: ${{ !cancelled() && success() }}
+        run: dotnet test IntegrationTests/IntegrationTests.csproj --configuration Release --no-build --logger "trx;LogFileName=integration.trx" --results-directory TestResults/integration --blame-hang-timeout 3m
+      - name: SQL diagnostics
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p TestResults
+          docker logs r02-sql > TestResults/sql-server.log 2>&1
+      - name: Publish test results and SQL diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove disposable SQL container
+        if: always()
+        run: docker rm --force r02-sql
