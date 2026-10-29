@@ -137,39 +137,43 @@ As rotas são derivadas do **nome da classe do controller**, não do diretório:
 
 Os GETs não leem body. Nos POSTs, envie `Content-Type: application/json` e um objeto JSON. O nome **`meeting_key`** no body é definido por `JsonPropertyName`: `meetingKey` não é um alias e é ignorado, deixando o valor em `0`.
 
-Não há `[Required]`, `[BindRequired]` ou `[Range]` para esses números. Query omitida e propriedade numérica omitida de um objeto JSON válido (`{}`) chegam à action como `0`; isso não garante sucesso no serviço. Valor não convertível para `int`, JSON inválido ou body obrigatório ausente produz **HTTP 400 `ValidationProblemDetails`** antes da action. Um tipo de mídia não aceito nos POSTs produz **HTTP 415 `ProblemDetails`**. Segmentos de rota precisam existir para a URL corresponder à operação.
+Não há `[Required]`, `[BindRequired]` ou `[Range]` para esses números. Query omitida e propriedade numérica omitida de um objeto JSON válido (`{}`) chegam à action como `0`; isso não garante sucesso no serviço.
+
+Falhas de binding são tratadas pela factory de `ApiErrorContracts` e retornam **HTTP 400** com `ErrorViewModel` e a mensagem `The request is invalid.`. Isso inclui valor não convertível para `int` em query ou rota, JSON malformado e body obrigatório ausente nos POSTs. Não há teste dedicado para binding de query/rota; o comportamento dos bodies é coberto pelos testes de regressão.
+
+Um tipo de mídia não aceito nos POSTs (por exemplo, `text/plain`) retorna **HTTP 415** com `ErrorViewModel` e `The request content type is not supported.`. Segmentos de rota precisam existir para a URL corresponder à operação; rota inexistente sob `/api` retorna **HTTP 404**, e método HTTP não permitido retorna **HTTP 405**, ambos com `ErrorViewModel`.
 
 ### Matriz de respostas das actions
 
-Esta tabela descreve os ramos implementados nos controllers. Os erros automáticos de binding acima também se aplicam. `ErrorViewModel` e `SuccessViewModel` têm os campos JSON `status_code` e `message`; **o status HTTP e o campo `status_code` são valores distintos**.
+Esta tabela descreve os ramos implementados nos controllers. Todos os erros de rota, método, mídia, binding e as exceções não tratadas listados acima também se aplicam. Os erros tratados pela action usam `ErrorViewModel` (`status_code` e `message`) e, quando o serviço não expõe exceção, a mensagem vem do serviço; quando há exceção, a mensagem é `The request could not be completed.`. **O status HTTP e o campo `status_code` são iguais nas respostas emitidas pelos controllers.**
 
 | Operação | HTTP de sucesso e corpo | Erros tratados pela action |
 | --- | --- | --- |
-| `GET /api/Driver/drivers-session` | **200** — `DriverListViewModel[]` | **400** — `ErrorViewModel` (`status_code: 400`) se houver exceção no wrapper ou `Itens == null`; **404** — `ErrorViewModel` (`status_code: 404`) se a lista estiver vazia |
-| `POST /api/Meeting/tracks-season` | **200** — `SuccessViewModel` (`status_code: 200`) | **400** — mensagem **string**, tanto na falha do serviço quanto no `catch` |
-| `GET /api/Meeting/{meetingKey}` | **200** — `MeetingViewModel` | **404** — mensagem **string** se `Item == null`; **400** — mensagem **string** no `catch` |
-| `GET /api/Meeting/all-tracks/{year}` | **200** — `MeetingViewModel[]`, inclusive `[]` | **400** — `DataResponse<Meeting>` inteiro se `HasSuccess == false`; **400** — mensagem **string** no `catch` |
-| `POST /api/Session/insert-sessions` | **200** — `SuccessViewModel` (`status_code: 200`) | **400** — `ErrorViewModel` (`status_code: 400`) na falha do serviço; mensagem **string** no `catch` |
-| `GET /api/Session/{sessionKey}` | **200** — `SuccessViewModel` (`status_code: 200`), somente mensagem | **404** — `ErrorViewModel` se falha e `Item == null`; **400** — `ErrorViewModel` se falha com item não nulo e exceção |
-| `GET /api/SessionResult/result` | **200** — `SessionResultListViewModel[]` | Se `HasSuccess == false`: **400** — `ErrorViewModel` com **`status_code: 404`** quando `Itens == null`; **404** — `ErrorViewModel` com **`status_code: 400`** quando a lista está vazia |
-| `GET /api/Laps/fast_lap_session` | **200** — `LapFastLapDto` | **404** — `ErrorViewModel` (`status_code: 404`) em qualquer falha retornada pelo serviço |
-| `GET /api/Laps/fast_sectors_session` | **200** — `LapFastSectorViewModel[]`, inclusive `[]` | **404** — `ErrorViewModel` (`status_code: 404`) em qualquer falha retornada pelo serviço |
-| `GET /api/CarData/high-speed` | **200** — `SessionDriverSpeedDTO[]` | **404** — `ProblemDetails` se falha com lista vazia; **400** — `ProblemDetails` se falha com lista não vazia e exceção; lista nula pode lançar exceção e gerar **500** |
-| `GET /api/Overtake/get-overtakes-session/{sessionKey}` | **200** — `OvertakeCountViewModel` | **400** — `ErrorViewModel` (`status_code: 400`) quando `HasSuccess == false` |
+| `GET /api/Driver/drivers-session` | **200** — `DriverListViewModel[]` | **400** — `ErrorViewModel` se houver exceção no wrapper ou `Itens == null` (inclusive sucesso interno sem novos pilotos); **404** — `ErrorViewModel` se a lista estiver vazia |
+| `POST /api/Meeting/tracks-season` | **200** — `SuccessViewModel` (`status_code: 200`) | **400** — `ErrorViewModel` com a mensagem do serviço na falha; **400** — `ErrorViewModel` com `The request could not be completed.` no `catch` |
+| `GET /api/Meeting/{meetingKey}` | **200** — `MeetingViewModel` | **404** — `ErrorViewModel` se `Item == null`, com a mensagem do serviço ou `The request could not be completed.` quando há exceção; **400** — `ErrorViewModel` no `catch` |
+| `GET /api/Meeting/all-tracks/{year}` | **200** — `MeetingViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` com a mensagem do serviço (`Year must be between 2023 and the current year.` ou `Invalid year format.`) se `HasSuccess == false`; **400** — `ErrorViewModel` no `catch` |
+| `POST /api/Session/insert-sessions` | **200** — `SuccessViewModel` (`message: "Sessions inserted successfully."`) | **400** — `ErrorViewModel` com a mensagem do serviço na falha; **400** — `ErrorViewModel` com `The request could not be completed.` no `catch` |
+| `GET /api/Session/{sessionKey}` | **200** — `SuccessViewModel` com `message: "Success"`, sem dados da sessão | **404** — `ErrorViewModel` se a falha tem `Item == null`, inclusive quando o serviço devolve falha por exceção |
+| `GET /api/SessionResult/result` | **200** — `SessionResultListViewModel[]` | Se `HasSuccess == false` e `Itens == null`: **400** — `ErrorViewModel`; se `HasSuccess == false` e `Itens` está vazio: **404** — `ErrorViewModel`; falha com lista não vazia ainda retorna 200 |
+| `GET /api/Laps/fast_lap_session` | **200** — `LapFastLapDto`, ou corpo vazio quando o serviço tem sucesso sem volta salva | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço |
+| `GET /api/Laps/fast_sectors_session` | **200** — `LapFastSectorViewModel[]`, inclusive `[]` | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço |
+| `GET /api/CarData/high-speed` | **200** — `SessionDriverSpeedDTO[]` | **400** — `ErrorViewModel` se `HasSuccess == false` e `Itens == null`, ou se `HasSuccess == false` com exceção; **404** — `ErrorViewModel` se `HasSuccess == false` com lista vazia; falha com lista não vazia e sem exceção retorna 200 |
+| `GET /api/Overtake/get-overtakes-session/{sessionKey}` | **200** — `OvertakeCountViewModel` | **400** — `ErrorViewModel` quando `HasSuccess == false`; sucesso com lista vazia não é tratado e gera **500** (ver limitações) |
 
-Os controllers de voltas têm um `BadRequest` final que não é alcançado: depois do retorno de sucesso, toda falha entra no `NotFound`. O **400** dessas rotas ainda pode ocorrer por binding, com `ValidationProblemDetails`, e não com `ErrorViewModel`.
+Nas rotas de voltas, qualquer falha do serviço vira **404**; não há um ramo 400 próprio nesses controllers.
 
-Exceções não tratadas podem produzir **HTTP 500**, mas não existe um tratamento global que garanta `ErrorViewModel` nesse caso. O corpo depende do ambiente/pipeline; não há um esquema de erro 500 uniforme. Os ramos `NotFound()` e `BadRequest()` sem objeto em `CarData` são transformados em `ProblemDetails` pelo comportamento padrão de `[ApiController]`.
+Exceções não tratadas em `/api` retornam **HTTP 500** com `ErrorViewModel` e a mensagem `An unexpected error occurred.`; o texto da exceção não é exposto e a exceção é registrada no log.
 
 ### Comportamento dos serviços e limitações atuais
 
-- **Meetings:** os GETs leem o banco; não importam dados automaticamente. A listagem valida `year` com quatro dígitos, entre 2023 e o ano atual do servidor, filtra `MeetingName` contendo `Grand Prix` e ordena por `DateStart`. Uma lista vazia retorna `200 []`. A inserção busca OpenF1, ignora meetings já existentes e também retorna 200 quando não há novos registros; não aplica a mesma validação de ano do GET. Chave de meeting menor ou igual a zero resulta em item nulo e **404 string**, não em 400 de validação.
-- **Sessions:** o POST importa sessões do meeting e retorna apenas confirmação. O GET consulta o par meeting/sessão no banco e retorna somente `SuccessViewModel`, **não `SessionViewModel`**. O serviço atual devolve item nulo nas falhas, portanto o ramo 404 prevalece sobre o 400 da action, inclusive em falhas de consulta.
-- **Drivers:** a consulta pode importar e persistir pilotos. O serviço considera completa uma lista de 22 pilotos; se houver menos, consulta OpenF1 e pode devolver apenas os novos pilotos. Quando não há novos pilotos, pode devolver sucesso interno com `Itens == null`; o controller responde **400**, inclusive com a mensagem `All drivers already in database.`. Não é garantido que cada 200 contenha o grid completo.
-- **SessionResult:** consulta o banco e, quando necessário, importa resultados de OpenF1. A resposta pública usa duração numérica e gap textual também para classificação, não os arrays do DTO externo. As falhas criadas pela fábrica normalmente deixam `Itens` nulo, levando a **HTTP 400 com `status_code: 404`**; o 404 com código invertido é o ramo para falha com lista vazia. Se um wrapper de falha trouxer lista não vazia, a action ainda retorna 200.
-- **Laps:** `fast_lap_session` busca a volta salva ou consulta pilotos/voltas externas e pode gravar a volta e os melhores setores. `fast_sectors_session` **somente lê setores já persistidos**, podendo responder `200 []` se não existirem. Consultar `SessionResult/result` não calcula os setores. A consulta de volta mais rápida pode calculá-los, mas, se a volta já estiver salva, retorna cedo sem recompor setores ausentes. A lista de setores pode ser parcial, com a informação em `observation`.
-- **CarData:** usa `minimumSpeed` como limite inclusivo (`speed >= minimumSpeed`), combina dados de pilotos e velocidades e ordena por velocidade decrescente. Pode buscar e salvar telemetria e pilotos. Há acessos a `Itens.Count` sem testar nulidade no serviço/controller: falhas com lista nula podem gerar **500**, em vez de 400/404. Os ramos 400/404 da tabela exigem listas não nulas.
-- **Overtake:** retorna a **contagem**, não uma lista com os detalhes das ultrapassagens. O serviço pode importar e salvar dados, filtrando eventos próximos de pit stops e durante intervalos das bandeiras consultadas. A ausência de ultrapassagens é falha do serviço e pode produzir 400; não há garantia de `200` com contagem zero. A action pressupõe uma lista de sucesso não vazia ao acessar o primeiro item.
+- **Meetings:** os GETs leem o banco; não importam dados automaticamente. A listagem valida `year` com quatro dígitos, entre 2023 e o ano atual do servidor, filtra `MeetingName` contendo `Grand Prix` e ordena por `DateStart`. Uma lista vazia retorna `200 []`. A inserção busca OpenF1, ignora meetings já existentes e também retorna 200 quando não há novos registros; não aplica a mesma validação de ano do GET. Chave de meeting menor ou igual a zero resulta em **404** `ErrorViewModel` com `Meeting key must be greater than 0`, não em 400 de validação.
+- **Sessions:** o POST importa sessões do meeting e retorna apenas confirmação. O GET consulta o par meeting/sessão no banco e retorna somente `SuccessViewModel` com `message: "Success"`, **não `SessionViewModel`**. O serviço devolve item nulo nas falhas, portanto o ramo 404 (`Session not found.`) prevalece, inclusive em falhas de consulta.
+- **Drivers:** a consulta pode importar e persistir pilotos. O serviço considera completa uma lista de 22 pilotos; se houver menos, consulta OpenF1 e pode devolver apenas os novos pilotos. Quando não há novos pilotos, o serviço devolve sucesso interno com `Itens == null`, e o controller responde **400** `ErrorViewModel` com a mensagem `All drivers already in database.`. Não é garantido que cada 200 contenha o grid completo.
+- **SessionResult:** consulta o banco e, quando necessário, importa resultados de OpenF1. A resposta pública usa duração numérica e gap textual também para classificação, não os arrays do DTO externo. As falhas criadas pela fábrica normalmente deixam `Itens` nulo, levando a **HTTP 400**; lista vazia em falha leva a **HTTP 404**. Ambos com `ErrorViewModel` cujo `status_code` coincide com o status HTTP. Se um wrapper de falha trouxer lista não vazia, a action ainda retorna 200.
+- **Laps:** `fast_lap_session` busca a volta salva ou consulta pilotos/voltas externas e pode gravar a volta e os melhores setores. Se o serviço não encontrar volta, a action retorna **200 sem corpo** (`Ok(null)`), e não 404. `fast_sectors_session` **somente lê setores já persistidos**, podendo responder `200 []` se não existirem. Consultar `SessionResult/result` não calcula os setores. A consulta de volta mais rápida pode calculá-los, mas, se a volta já estiver salva, retorna cedo sem recompor setores ausentes. A lista de setores pode ser parcial, com a informação em `observation`.
+- **CarData:** usa `minimumSpeed` como limite inclusivo (`speed >= minimumSpeed`), combina dados de pilotos e velocidades e ordena por velocidade decrescente. Pode buscar e salvar telemetria e pilotos. As mensagens de falha do serviço incluem `Drivers must be inserted.` e `Not found the maximum speed of the drivers`; a segunda ocorre com lista nula e responde 400.
+- **Overtake:** retorna a **contagem**, não uma lista com os detalhes das ultrapassagens. O serviço pode importar e salvar dados, filtrando eventos próximos de pit stops e durante intervalos das bandeiras consultadas. Quando o serviço tem sucesso mas a lista filtrada fica vazia, a action acessa `Itens[0]` sem verificação e a exceção vira **500** `An unexpected error occurred.`; não há resposta 200 com contagem zero.
 
 Vários GETs acima têm efeitos de escrita no banco. Os exemplos dependem de dados disponíveis na instância configurada e em OpenF1; os identificadores ilustrativos não garantem um resultado de sucesso.
 
@@ -199,42 +203,50 @@ Exemplo de sessão não encontrada no GET (**HTTP 404**):
 }
 ```
 
-A mensagem depende do serviço. Não use `status_code` para substituir o status HTTP: em `SessionResult`, por exemplo, o corpo `{"status_code":404,"message":"..."}` é enviado com **HTTP 400** no ramo de lista nula, e `{"status_code":400,"message":"..."}` com **HTTP 404** no ramo de lista vazia.
+A mensagem depende do serviço ou das constantes de `ApiErrorMessages`. Como o `status_code` do corpo sempre acompanha o status HTTP, ele pode ser usado para leitura, mas o status HTTP continua sendo a fonte de verdade.
 
-### Strings, wrapper interno e erros do framework
+### Erros de `/api` (`ErrorViewModel`)
 
-As respostas identificadas como **string** são texto simples (`text/plain`) na negociação padrão, ou uma string JSON com `Accept: application/json`. Exemplo de **HTTP 404** para `GET /api/Meeting/0` com esse header:
-
-```json
-"Meeting key must be greater than 0"
-```
-
-A falha de `GET /api/Meeting/all-tracks/2022` retorna **HTTP 400** com o wrapper `DataResponse<Meeting>`:
+Todas as respostas de erro das actions e do middleware de `/api` usam o mesmo formato, com `status_code` e `message` em `snake_case`. Exemplo de **HTTP 404** para uma rota inexistente sob `/api`:
 
 ```json
 {
-  "itens": null,
-  "message": "Year must be between 2023 and the current year.",
-  "hasSuccess": false,
-  "exception": null
+  "status_code": 404,
+  "message": "The requested resource was not found."
 }
 ```
 
-Esse wrapper usa `itens` (grafia do código), `message`, `hasSuccess` e `exception`, **sem `status_code`, `statusCode` ou `item`**. Se presentes, os elementos de `itens` são entidades `Meeting`, serializadas em `camelCase`, não `MeetingViewModel`. Uma exceção não nula não tem representação HTTP estável garantida e sua serialização pode falhar.
+Mensagens reais usadas pelo código:
 
-Erros automáticos de validação são `application/problem+json` com `status`, `title`, `type`, `errors` e `traceId`. Exemplo ilustrativo de **HTTP 400** para `?sessionKey=abc` (o `traceId` varia):
+| Origem | HTTP | `message` |
+| --- | --- | --- |
+| Rota inexistente em `/api` | 404 | `The requested resource was not found.` |
+| Método não permitido em rota existente | 405 | `The HTTP method is not allowed for this route.` |
+| Mídia não suportada no body | 415 | `The request content type is not supported.` |
+| Binding inválido, JSON malformado ou body ausente | 400 | `The request is invalid.` |
+| Falha de serviço sem exceção | 400, 404 | Mensagem do serviço, por exemplo `Session not found.` ou `Year must be between 2023 and the current year.` |
+| Falha de serviço com exceção, ou `catch` da action | 400 ou 404 | `The request could not be completed.` |
+| Exceção não tratada | 500 | `An unexpected error occurred.` |
+
+O middleware normaliza somente respostas `/api` com erro sem corpo ou com `application/problem+json`. Erros fora de `/api` (por exemplo, Swagger) mantêm o formato padrão do ASP.NET Core.
+
+Exemplo de **HTTP 415** para `POST /api/Session/insert-sessions` com `Content-Type: text/plain`:
 
 ```json
 {
-  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-  "title": "One or more validation errors occurred.",
-  "status": 400,
-  "errors": { "sessionKey": ["The value 'abc' is not valid."] },
-  "traceId": "identificador-da-requisicao"
+  "status_code": 415,
+  "message": "The request content type is not supported."
 }
 ```
 
-`ProblemDetails` (por exemplo, os 400/404 sem objeto de `CarData` e o 415 dos POSTs) usa `status`, `title`, `type` e `traceId`, sem o campo `errors` de validação. Esses formatos não usam `status_code`.
+### Respostas de sucesso sem dados
+
+Os sucessos de consulta usam o objeto ou array listado na tabela de dados. Algumas respostas são apenas confirmação com `SuccessViewModel`, e algumas podem não ter corpo, como descrito nas limitações de `Laps`.
+
+### Wrapper interno e exceções
+
+Os wrappers `Response`, `SingleResponse<T>` e `DataResponse<T>` são usados apenas entre as camadas e não aparecem no corpo público. Os corpos de erro não expõem o texto de exceções.
+
 
 ### Dados retornados com HTTP 200
 
@@ -266,7 +278,7 @@ Exemplo **ilustrativo** do objeto de volta mais rápida (sem wrapper):
 
 ## 💻 Exemplos de consumo
 
-Os comandos a seguir usam **Bash/cURL**, o perfil `http` e `Accept: application/json` para tornar explícita a negociação do corpo. Em PowerShell, use `curl.exe` e adapte a sintaxe de continuação/aspas, ou use o Swagger. Com o perfil `https`, troque a URL base por `https://localhost:7066`.
+Os comandos a seguir usam **Bash/cURL**, o perfil `http` e `Accept: application/json`. Em PowerShell, use `curl.exe` e adapte a sintaxe de continuação/aspas, ou use o Swagger. Com o perfil `https`, troque a URL base por `https://localhost:7066`.
 
 ```bash
 # Importar meetings do ano (POST com body)
@@ -323,9 +335,14 @@ dotnet build "API OpenF1.sln"
 dotnet test UnitTests/UnitTests.csproj
 ```
 
-A auditoria de contratos deve considerar as actions em `WebApi/Controllers`, os atributos JSON de `WebApi/ViewModels` e `Entities/Dtos`, os mapeamentos de `AutoMapperConfig`, a configuração de `Program.cs` e os retornos dos serviços/DAOs. Os metadados de Swagger descrevem as respostas, mas não alteram os status nem os corpos emitidos pelo código. Testes que chamam controllers diretamente não exercitam binding, negociação de conteúdo ou filtros de `[ApiController]`.
+A auditoria de contratos deve considerar as actions em `WebApi/Controllers`, os atributos JSON de `WebApi/ViewModels` e `Entities/Dtos`, os mapeamentos de `AutoMapperConfig`, a configuração de `Program.cs` e os retornos dos serviços/DAOs. Os metadados de Swagger descrevem as respostas, mas não alteram os status nem os corpos emitidos pelo código.
 
-Para conferir o HTTP sem acesso externo, use serviços simulados em um host de teste; não inicialize o worker nem execute requisições contra OpenF1 ou banco real como parte dos testes unitários.
+Os testes existentes em `UnitTests/WebApi` cobrem:
+
+- `ApiErrorResponseRegressionTests`: sobe os controllers reais sobre HTTP com `ApiErrorTestHost` (Kestrel em `127.0.0.1` com porta livre), usando `ISessionService`, `IMeetingService` e `IMapper` simulados e sem hosted services. Verifica 400 de binding, 404 de rota, 405 de método, 415 de mídia, 500 sem texto de exceção e o formato `ErrorViewModel` nesses casos.
+- `SwaggerDocumentationTests`: gera o Swagger a partir dos controllers, sem serviços de negócio nem worker. Verifica as rotas, os resumos XML, os schemas de erro baseados em `ErrorViewModel` e as descrições dos ramos 400/404 de `SessionResult`.
+
+Esses testes não consultam OpenF1, não usam banco real e não inicializam o worker. Eles não cobrem todos os ramos de cada action nem a execução contra dados reais.
 
 ---
 
@@ -345,14 +362,18 @@ public class MyService : IMyService
 
 ### Wrappers internos
 
-`Response` contém `Message`, `HasSuccess` e `Exception`; `SingleResponse<T>` acrescenta `Item`; `DataResponse<T>` acrescenta `Itens`. Esses tipos são usados entre as camadas. A API normalmente projeta seu conteúdo para os corpos descritos acima; a falha da listagem de meetings é a exceção que devolve `DataResponse<Meeting>` diretamente.
+`Response` contém `Message`, `HasSuccess` e `Exception`; `SingleResponse<T>` acrescenta `Item`; `DataResponse<T>` acrescenta `Itens`. Esses tipos são usados entre as camadas. A API projeta seu conteúdo para os corpos descritos acima e nunca devolve esses wrappers ao cliente.
 
 ## 🐛 Problemas Conhecidos
 
-- Há avisos preexistentes de nulabilidade e de análise de testes no build; eles não são uma garantia de ausência de falhas em execução. Os acessos a listas nulas e formatos de erro inconsistentes estão descritos na matriz e nas limitações.
+- Há avisos preexistentes de nulabilidade e de análise de testes no build; eles não são uma garantia de ausência de falhas em execução.
 - A conexão LocalDB versionada contém um caminho absoluto da máquina do autor e precisa ser configurada em outra máquina.
-- A consulta de sessão retorna apenas confirmação; `SessionResult` inverte `status_code` em dois ramos; setores ausentes podem retornar uma lista vazia. Estes são comportamentos atuais, não correções implementadas por esta documentação.
-- Swagger só está habilitado em Development; `WebApi.http` ainda precisa ser adaptado às rotas reais.
+- `GET /api/Session/{sessionKey}` retorna apenas confirmação (`message: "Success"`), sem os dados da sessão.
+- `GET /api/Laps/fast_lap_session` responde 200 sem corpo quando não há volta salva e o serviço não a encontra; o cliente deve tratar o corpo vazio.
+- `GET /api/Overtake/get-overtakes-session/{sessionKey}` gera 500 quando o serviço tem sucesso com lista filtrada vazia, pois a action acessa `Itens[0]`.
+- `GET /api/Laps/fast_sectors_session` lê somente setores persistidos e pode retornar `200 []`.
+- `GET /api/CarData/high-speed` e `SessionResult` dependem de listas não nulas em alguns ramos; falhas que deixam lista nula são tratadas como 400, mas não há cobertura para todos os caminhos.
+- Swagger só está habilitado em Development; `WebApi/WebApi.http` ainda contém o exemplo de template `weatherforecast`, não as rotas reais.
 
 ---
 
