@@ -401,4 +401,4 @@ Desenvolvido por **Davi Jedrzejczyk**
 - Análise de pit stops
 - Comparação de performance histórica
 - Dashboard com visualizações
-- Integração com mais fontes de dados F1
+- Integração com mais fontes de dados F1.
