@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -141,6 +141,29 @@ namespace UnitTests.Dao
             });
         }
 
+        [Test]
+        public async Task GetFastLapOfRaceBySessionKey_FailedDriverFetchDoesNotSavePartialResults()
+        {
+            const int sessionKey = 42;
+            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
+                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null! });
+            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
+            driverServiceMock.Setup(d => d.GetAllDriversSession(sessionKey))
+                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new() { new Driver { DriverNumber = 1 }, new Driver { DriverNumber = 2 } } });
+            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
+                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new() });
+            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, 1))
+                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new() { new LapListDto { DriverNumber = 1, LapDuration = 90 } } });
+            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, 2))
+                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = false, Message = "upstream failed" });
+
+            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
+
+            Assert.That(result.HasSuccess, Is.False);
+            Assert.That(result.Message, Is.EqualTo("upstream failed"));
+            lapDaoMock.Verify(d => d.SaveLap(It.IsAny<Lap>()), Times.Never);
+            lapFastSectorServiceMock.Verify(s => s.CreateListWithFastSector(It.IsAny<List<LapListFastSector>>(), It.IsAny<int>(), It.IsAny<List<LapFastSector>>()), Times.Never);
+        }
         [Test]
         public async Task GetFastLapOfRaceBySessionKey_NoLapsFound_ReturnsFailure()
         {

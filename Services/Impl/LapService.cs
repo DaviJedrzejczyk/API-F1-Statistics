@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Dao.Interface;
 using Entities.Class;
 using Entities.Dtos;
@@ -53,7 +53,7 @@ namespace Services.Impl
                 for (int i = 0; i < responseDriver.Itens.Count; i++)
                 {
                     var responseLap = await _lapClient.GetAllLapsSessionByDriver(sessionKey, responseDriver.Itens[i].DriverNumber);
-                    if (!responseLap.HasSuccess && responseLap.Exception != null)
+                    if (!responseLap.HasSuccess)
                         return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseLap.Message, responseLap.Exception);
 
                     if (responseLap.Itens == null || responseLap.Itens.Count == 0)
@@ -111,7 +111,7 @@ namespace Services.Impl
                     return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("No laps found for the given session key.");
 
                 var responseSaveLap = await SaveLap(_mapper.Map<Lap>(fastLapToSave));
-                if (!responseSaveLap.HasSuccess && responseSaveLap.Exception != null)
+                if (!responseSaveLap.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseSaveLap.Message, responseSaveLap.Exception);
 
                 return ResponseFactory.CreateInstance().CreateSuccessSingleResponse(fastLap);
