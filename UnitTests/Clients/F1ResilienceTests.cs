@@ -7,6 +7,16 @@ namespace UnitTests.Clients;
 [TestFixture]
 public class F1ResilienceTests
 {
+    private sealed class TrackedContent : StringContent
+    {
+        public bool Disposed { get; private set; }
+        public TrackedContent() : base("busy") { }
+        protected override void Dispose(bool disposing)
+        {
+            Disposed = true;
+            base.Dispose(disposing);
+        }
+    }
     private sealed class Transport : HttpMessageHandler
     {
         public int Calls;
@@ -30,6 +40,20 @@ public class F1ResilienceTests
         Assert.That(result.HasSuccess, Is.True);
         Assert.That(transport.Calls, Is.EqualTo(2));
         Assert.That(waits, Is.EqualTo(new[] { TimeSpan.FromSeconds(7) }));
+    }
+
+    [Test]
+    public async Task Retry_DisposesResponseBeforeWaiting()
+    {
+        var content = new TrackedContent();
+        var transport = new Transport { Handler = (n, _) => Task.FromResult(n == 1
+            ? new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Content = content }
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("[]") }) };
+        var client = new F1ApiClient(new HttpClient(transport) { BaseAddress = new Uri("https://fixtures.invalid/") },
+            TimeProvider.System, (_, _) => { Assert.That(content.Disposed, Is.True); return Task.CompletedTask; },
+            _ => Task.CompletedTask);
+
+        Assert.That((await client.Get("laps", "")).HasSuccess, Is.True);
     }
 
     [Test]

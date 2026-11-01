@@ -35,10 +35,11 @@ namespace ExternalApi.Impls
                 for (int attempt = 1; ; attempt++)
                 {
                     await _rateLimit(cancellationToken);
-                    using var deadline = new CancellationTokenSource(AttemptTimeout, _clock);
-                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+                    TimeSpan wait;
                     try
                     {
+                        using var deadline = new CancellationTokenSource(AttemptTimeout, _clock);
+                        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
                         using var response = await _httpClient.GetAsync(endPoint + parametersUrl, timeout.Token);
                         if (response.IsSuccessStatusCode)
                         {
@@ -48,14 +49,14 @@ namespace ExternalApi.Impls
                         if (attempt == MaxAttempts || !IsTransient(response.StatusCode))
                             return ResponseFactory.CreateInstance().CreateFailureSingleResponse<string>("Error to fetch data: " + response.ReasonPhrase);
 
-                        var wait = RetryDelay(response, attempt);
-                        await _delay(wait, cancellationToken);
+                        wait = RetryDelay(response, attempt);
                     }
                     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                     catch (Exception ex) when ((ex is HttpRequestException || ex is OperationCanceledException) && attempt < MaxAttempts)
                     {
-                        await _delay(Backoff(attempt), cancellationToken);
+                        wait = Backoff(attempt);
                     }
+                    await _delay(wait, cancellationToken);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
