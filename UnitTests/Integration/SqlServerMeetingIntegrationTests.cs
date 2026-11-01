@@ -27,6 +27,7 @@ namespace UnitTests.Integration
 
         private string _connectionString = string.Empty;
         private ApiErrorTestHost _host = null!;
+        private FixtureMeetingClient _meetingClient = null!;
 
         [OneTimeSetUp]
         public async Task SetUp()
@@ -50,13 +51,14 @@ namespace UnitTests.Integration
                 Assert.That(await database.Database.GetAppliedMigrationsAsync(), Is.Not.Empty);
             }
 
+            _meetingClient = new FixtureMeetingClient();
             _host = await ApiErrorTestHost.StartAsync(services =>
             {
                 services.AddDbContext<ApiF1DB>(options => options.UseSqlServer(_connectionString));
                 services.AddAutoMapper(configuration => configuration.AddProfile<AutoMapperConfig>());
                 services.AddScoped<IMeetingService, MeetingService>();
                 services.AddScoped<IUnityOfWork>(CreateUnityOfWork);
-                services.AddSingleton<IMeetingClient, FixtureMeetingClient>();
+                services.AddSingleton<IMeetingClient>(_meetingClient);
             });
         }
 
@@ -65,6 +67,7 @@ namespace UnitTests.Integration
         {
             await using var database = CreateDbContext();
             await database.Database.ExecuteSqlRawAsync("DELETE FROM [F1_MEETINGS]");
+            _meetingClient.Reset();
         }
 
         [OneTimeTearDown]
@@ -125,8 +128,15 @@ namespace UnitTests.Integration
 
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
 
-            using JsonDocument body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            Assert.That(body.RootElement.GetProperty("message").GetString(), Is.EqualTo(FixtureMeetingClient.ExternalFailureMessage));
+            string responseBody = await response.Content.ReadAsStringAsync();
+            using JsonDocument body = JsonDocument.Parse(responseBody);
+            Assert.That(body.RootElement.GetProperty("status_code").GetInt32(), Is.EqualTo((int)HttpStatusCode.BadRequest));
+            Assert.That(body.RootElement.GetProperty("message").GetString(), Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(responseBody, Does.Not.Contain(FixtureMeetingClient.ExternalFailureMessage));
+            Assert.That(_meetingClient.RequestedYears, Is.EqualTo(new[] { 2025 }));
+
+            await using var database = CreateDbContext();
+            Assert.That(await database.Meetings.CountAsync(), Is.Zero);
         }
 
         private ApiF1DB CreateDbContext()
@@ -157,8 +167,14 @@ namespace UnitTests.Integration
             public const int MeetingKey = 910001;
             public const string ExternalFailureMessage = "Simulated upstream failure.";
 
+            public List<int> RequestedYears { get; } = new();
+
+            public void Reset() => RequestedYears.Clear();
+
             public Task<DataResponse<Meeting>> GetMeetingsByYear(int year)
             {
+                RequestedYears.Add(year);
+
                 if (year == 2025)
                 {
                     return Task.FromResult(ResponseFactory.CreateInstance()
