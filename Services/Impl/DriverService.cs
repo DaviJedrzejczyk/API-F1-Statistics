@@ -41,13 +41,17 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey)
+            => await GetAllDriversSession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
                 if (sessionKey <= 0) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Session key must be informed!");
 
-                return await SearchDriversExternalApi(new DriverInsertDTO { SessionKey = sessionKey });
+                return await SearchDriversExternalApi(new DriverInsertDTO { SessionKey = sessionKey }, cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);
@@ -103,40 +107,59 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO)
+            => await SearchDriversExternalApi(driverInsertDTO, CancellationToken.None);
+
+        private async Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO, CancellationToken cancellationToken)
         {
-            DataResponse<Driver> driversDatabase = await SearchDriversDatabase(driverInsertDTO);
+            string key = driverInsertDTO.SessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var cached = await ImportWindowCache.Read<Driver>(_unityOfWork, "drivers", key, cancellationToken);
+            if (cached != null)
+                return WindowResult(cached);
+
+            DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO, cancellationToken);
+            
+            if (!drivers.HasSuccess || drivers.Itens == null)
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(drivers.Message, drivers.Exception);
+
+            if (drivers.Itens.Any(x => x.SessionKey != driverInsertDTO.SessionKey) ||
+                drivers.Itens.Select(x => x.DriverNumber).Distinct().Count() != drivers.Itens.Count)
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Invalid driver window returned by upstream.");
+
+            await using var transaction = await _unityOfWork.BeginImport("drivers", key, cancellationToken);
+            cached = await ImportWindowCache.Read<Driver>(_unityOfWork, "drivers", key, cancellationToken);
+            if (cached != null)
+                return WindowResult(cached);
+
+            DataResponse<Driver> driversDatabase = await _unityOfWork.DriverDao.GetAllDriversSession(driverInsertDTO.SessionKey, cancellationToken);
             if (!driversDatabase.HasSuccess)
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(driversDatabase.Message, driversDatabase.Exception);
-            
-            if (driversDatabase.Itens.Count == 22) 
-                return driversDatabase;
-
-            DataResponse<Driver> drivers = await _driverClient.GetAllDriversSessionSelected(driverInsertDTO);
-            
-            if (drivers.Itens == null || drivers.Itens.Count <= 0)
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("The Drivers in the most recent meeting was not found");
 
             List<Driver> newDrivers = GetNewDrivers(driversDatabase, drivers);
-            if (newDrivers == null || newDrivers.Count == 0)
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Driver>("All drivers already in database.");
-
-            var responseInsert = await InsertDrivers(newDrivers);
-            
-            if(!responseInsert.HasSuccess)
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("Failed to insert new drivers: " + responseInsert.Message, responseInsert.Exception);
-
-            return ResponseFactory.CreateInstance().CreateSuccessDataResponse(newDrivers);
+            if (newDrivers.Count > 0)
+            {
+                var responseInsert = await _unityOfWork.DriverDao.InsertDrivers(newDrivers, cancellationToken);
+                if (!responseInsert.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(responseInsert.Message, responseInsert.Exception);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            await ImportWindowCache.Stage(_unityOfWork, "drivers", key, drivers.Itens, cancellationToken);
+            var commit = await _unityOfWork.Commit(cancellationToken);
+            if (!commit.HasSuccess)
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(commit.Message, commit.Exception);
+            await transaction.CommitAsync(cancellationToken);
+            return WindowResult(drivers.Itens);
         }
+
+        private static DataResponse<Driver> WindowResult(List<Driver> drivers)
+            => drivers.Count == 0
+                ? ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>("The Drivers in the most recent meeting was not found")
+                : ResponseFactory.CreateInstance().CreateSuccessDataResponse(drivers);
 
         private static List<Driver> GetNewDrivers(DataResponse<Driver> driversDatabase, DataResponse<Driver> drivers)
         {
-            var newDrivers = drivers.Itens;
-            if (driversDatabase.Itens.Count < 22)
-            {
-                newDrivers = drivers.Itens
+            var newDrivers = drivers.Itens
                     .Where(x => !driversDatabase.Itens.Any(y => y.DriverNumber == x.DriverNumber && y.SessionKey == x.SessionKey))
                     .ToList();
-            }
 
             return newDrivers;
         }

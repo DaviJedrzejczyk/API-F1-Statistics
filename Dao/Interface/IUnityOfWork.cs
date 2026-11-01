@@ -79,5 +79,10 @@ namespace Dao.Interface
         /// </summary>
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         Task<Response> Commit();
+
+        Task<Dao.Cache.ImportWindow?> GetImportWindow(string dataset, string windowKey, CancellationToken cancellationToken = default);
+        Task StageImportWindow(Dao.Cache.ImportWindow window, CancellationToken cancellationToken = default);
+        Task<Response> Commit(CancellationToken cancellationToken);
+        Task<IImportTransaction> BeginImport(string dataset, string windowKey, CancellationToken cancellationToken);
     }
 }

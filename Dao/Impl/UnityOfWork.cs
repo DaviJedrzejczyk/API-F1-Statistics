@@ -1,6 +1,11 @@
 ﻿using Dao.Interface;
 using Shared.Responses;
 using Shared.Common.Atrributes;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
 
 
 namespace Dao.Impl
@@ -42,16 +47,51 @@ namespace Dao.Impl
         }
 
         public async Task<Response> Commit()
+            => await Commit(CancellationToken.None);
+
+        public async Task<Response> Commit(CancellationToken cancellationToken)
         {
             try
             {
-                await _db.SaveChangesAsync();
+                await _db.SaveChangesAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse();
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
+        }
+
+        public async Task<Dao.Cache.ImportWindow?> GetImportWindow(string dataset, string windowKey, CancellationToken cancellationToken = default)
+            => await _db.ImportWindows.AsNoTracking().SingleOrDefaultAsync(x => x.Dataset == dataset && x.WindowKey == windowKey, cancellationToken);
+
+        public async Task StageImportWindow(Dao.Cache.ImportWindow window, CancellationToken cancellationToken = default)
+        {
+            var existing = await _db.ImportWindows.FindAsync(new object[] { window.Dataset, window.WindowKey }, cancellationToken);
+            if (existing == null)
+                _db.ImportWindows.Add(window);
+            else
+                _db.Entry(existing).CurrentValues.SetValues(window);
+        }
+
+        public async Task<IImportTransaction> BeginImport(string dataset, string windowKey, CancellationToken cancellationToken)
+        {
+            var ownsTransaction = _db.Database.CurrentTransaction == null;
+            var transaction = _db.Database.CurrentTransaction ?? await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            try
+            {
+                var resource = "F1-import-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(dataset + "\n" + windowKey)));
+                await _db.Database.ExecuteSqlInterpolatedAsync($"DECLARE @result int; EXEC @result = sp_getapplock @Resource={resource}, @LockMode='Exclusive', @LockOwner='Transaction', @LockTimeout=30000; IF @result < 0 THROW 50000, 'Unable to lock import window', 1;", cancellationToken);
+                return new ImportTransaction(transaction, ownsTransaction);
+            }
+            catch { if (ownsTransaction) await transaction.DisposeAsync(); throw; }
+        }
+
+        private sealed class ImportTransaction(IDbContextTransaction transaction, bool ownsTransaction) : IImportTransaction
+        {
+            public Task CommitAsync(CancellationToken cancellationToken) => ownsTransaction ? transaction.CommitAsync(cancellationToken) : Task.CompletedTask;
+            public ValueTask DisposeAsync() => ownsTransaction ? transaction.DisposeAsync() : ValueTask.CompletedTask;
         }
         public ISessionDao SessionDao
         {

@@ -25,35 +25,61 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey)
+            => await GetOvertakesSessionApi(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                var responseDb = await GetOvertakesSessionDb(sessionKey);
-                if (responseDb.HasSuccess && responseDb.Itens != null && responseDb.Itens.Count > 0)
-                    return responseDb;
-
-                DataResponse<Overtake> responseApi = await _client.GetOvertakesSession(sessionKey);
-                if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
-                    return responseApi;
-
-                List<Overtake> overtakesFiltered = await FilterOvertakesMadeInPits(sessionKey, responseApi);
-
-                var responseRaceControls = await _raceControlService.GetRaceControlsBySessionFlags(sessionKey, ["YELLOW", "DOUBLE YELLOW", "CLEAR"]);
-                if (!responseRaceControls.HasSuccess) 
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseRaceControls.Message, responseRaceControls.Exception);
-                
-                overtakesFiltered = FilterOvertakesMadeInYellowFlags(overtakesFiltered, responseRaceControls);
-
-                Response responseSave = await SaveOvertakes(overtakesFiltered);
-                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(responseSave.Message, responseSave.Exception);
-
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(overtakesFiltered);
+                var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<Overtake>(_unityOfWork, "overtakes", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                var responseApi = await _client.GetOvertakesSession(sessionKey, cancellationToken);
+                if (!responseApi.HasSuccess || responseApi.Itens == null) return responseApi;
+                if (responseApi.Itens.Any(x => x.SessionKey != sessionKey) ||
+                    responseApi.Itens.Select(x => (x.MeetingKey, x.SessionKey, x.OvertakingDriverNumber, x.OvertakedDriverNumber, x.Date, x.Position)).Distinct().Count() != responseApi.Itens.Count)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>("Invalid overtake window returned by upstream.");
+                await using var transaction = await _unityOfWork.BeginImport("overtakes", key, cancellationToken);
+                cached = await ImportWindowCache.Read<Overtake>(_unityOfWork, "overtakes", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                var overtakesFiltered = responseApi.Itens;
+                if (overtakesFiltered.Count > 0)
+                {
+                    var pits = await _pitService.GetPitsBySessionKeyApi(sessionKey, cancellationToken);
+                    if (!pits.HasSuccess || pits.Itens == null)
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(pits.Message, pits.Exception);
+                    overtakesFiltered = FilterOvertakesMadeInPits(overtakesFiltered, pits.Itens);
+                    var controls = await _raceControlService.GetRaceControlsBySessionFlags(sessionKey, ["YELLOW", "DOUBLE YELLOW", "CLEAR"], cancellationToken);
+                    if (!controls.HasSuccess || controls.Itens == null)
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(controls.Message, controls.Exception);
+                    overtakesFiltered = FilterOvertakesMadeInYellowFlags(overtakesFiltered, controls);
+                }
+                var db = await _unityOfWork.OvertakeDao.GetOvertakesBySession(sessionKey, cancellationToken);
+                if (!db.HasSuccess || db.Itens == null) return db;
+                var existing = db.Itens.Select(x => (x.MeetingKey, x.SessionKey, x.OvertakingDriverNumber, x.OvertakedDriverNumber, x.Date, x.Position)).ToHashSet();
+                var missing = overtakesFiltered.Where(x => !existing.Contains((x.MeetingKey, x.SessionKey, x.OvertakingDriverNumber, x.OvertakedDriverNumber, x.Date, x.Position))).ToList();
+                if (missing.Count > 0)
+                {
+                    var save = await _unityOfWork.OvertakeDao.SaveOvertakes(missing, cancellationToken);
+                    if (!save.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(save.Message, save.Exception);
+                }
+                await ImportWindowCache.Stage(_unityOfWork, "overtakes", key, overtakesFiltered, cancellationToken);
+                var commit = await _unityOfWork.Commit(cancellationToken);
+                if (!commit.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(commit.Message, commit.Exception);
+                await transaction.CommitAsync(cancellationToken);
+                return WindowResult(overtakesFiltered);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>(ex);
             }
         }
+
+        private static DataResponse<Overtake> WindowResult(List<Overtake> items)
+            => items.Count == 0
+                ? ResponseFactory.CreateInstance().CreateFailureDataResponse<Overtake>("Overtakes in this session not found!")
+                : ResponseFactory.CreateInstance().CreateSuccessDataResponse(items);
 
         public async Task<DataResponse<Overtake>> GetOvertakesSessionDb(int sessionKey)
         {
@@ -104,17 +130,15 @@ namespace Services.Impl
             return overtakesFiltered;
         }
 
-        private async Task<List<Overtake>> FilterOvertakesMadeInPits(int sessionKey, DataResponse<Overtake> responseApi)
+        private static List<Overtake> FilterOvertakesMadeInPits(List<Overtake> overtakes, List<Pit> pits)
         {
-            DataResponse<Pit> pitsResponse = await _pitService.GetPitsBySessionKeyApi(sessionKey);
-
-            List<Overtake> overtakesFiltered = responseApi.Itens.Where(overtake =>
+            List<Overtake> overtakesFiltered = overtakes.Where(overtake =>
             {
-                bool isOvertakingDriverInPit = pitsResponse.Itens.Any(pit =>
+                bool isOvertakingDriverInPit = pits.Any(pit =>
                     pit.DriverNumber == overtake.OvertakingDriverNumber &&
                     (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
 
-                bool isOvertakenDriverInPit = pitsResponse.Itens.Any(pit =>
+                bool isOvertakenDriverInPit = pits.Any(pit =>
                     pit.DriverNumber == overtake.OvertakedDriverNumber &&
                     (pit.Date - overtake.Date).Duration() <= TimeSpan.FromSeconds(23));
 

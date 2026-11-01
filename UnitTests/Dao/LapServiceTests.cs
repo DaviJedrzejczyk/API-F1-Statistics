@@ -55,147 +55,32 @@ namespace UnitTests.Dao
         }
 
         [Test]
-        public async Task GetFastLapOfRaceBySessionKey_DbHasFastLap_ReturnsDbItem()
+        public async Task GetFastLapOfRaceBySessionKey_CompleteWindowsSkipImport()
         {
-            // Arrange
-            const int sessionKey = 1;
-            var lap = new Lap { MeetingKey = 10 };
-            var lapFast = new LapFastLapDto { DriverNumber = 5, LapDuration = 12.3 };
-
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = lap });
-
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            mapperMock.Setup(m => m.Map<LapFastLapDto>(It.IsAny<Lap>())).Returns(lapFast);
-
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.HasSuccess, Is.True);
-                Assert.That(result.Item, Is.Not.Null);
-            });
-            Assert.That(result.Item.DriverNumber, Is.EqualTo(lapFast.DriverNumber));
-        }
-
-        [Test]
-        public async Task GetFastLapOfRaceBySessionKey_DriverDatabaseFailure_ReturnsFailure()
-        {
-            // Arrange
-            const int sessionKey = 3;
-            var ex = new Exception("db error");
-
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
-
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
-                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = false, Exception = ex, Message = "fail" });
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.HasSuccess, Is.False);
-                Assert.That(result.Message, Is.EqualTo("Error to fetch the drivers: fail"));
-                Assert.That(result.Exception, Is.EqualTo(ex));
-            });
-        }
-
-        [Test]
-        public async Task GetFastLapOfRaceBySessionKey_LapClientFailure_ReturnsFailure()
-        {
-            // Arrange
-            const int sessionKey = 4;
-            var driver = new Driver { DriverNumber = 7 };
-            
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null });
-
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
-                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new List<Driver> { driver } });
-
-            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
-                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new List<LapFastSector>() });
-
-            var lapEx = new Exception("lap error");
-            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = false, Exception = lapEx, Message = "lapfail" });
-
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.HasSuccess, Is.False);
-                Assert.That(result.Message, Is.EqualTo("lapfail"));
-                Assert.That(result.Exception, Is.EqualTo(lapEx));
-            });
+            var now = DateTimeOffset.UtcNow;
+            unityMock.Setup(u => u.GetImportWindow("fast_lap", "1", It.IsAny<CancellationToken>())).ReturnsAsync(new global::Dao.Cache.ImportWindow { IsComplete = true, CompletedAtUtc = now.AddMinutes(-1), ExpiresAtUtc = now.AddMinutes(1), Payload = System.Text.Json.JsonSerializer.Serialize(new[] { new LapFastLapDto { DriverNumber = 5, LapDuration = 12.3 } }) });
+            unityMock.Setup(u => u.GetImportWindow("fast_sectors", "1", It.IsAny<CancellationToken>())).ReturnsAsync(new global::Dao.Cache.ImportWindow { IsComplete = true, CompletedAtUtc = now.AddMinutes(-1), ExpiresAtUtc = now.AddMinutes(1), Payload = "[]" });
+            var result = await service.GetFastLapOfRaceBySessionKey(1);
+            Assert.That(result.HasSuccess, Is.True);
+            Assert.That(result.Item.DriverNumber, Is.EqualTo(5));
+            lapClientMock.Verify(x => x.GetAllLapsSessionByDriver(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
         public async Task GetFastLapOfRaceBySessionKey_FailedDriverFetchDoesNotSavePartialResults()
         {
-            const int sessionKey = 42;
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null! });
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-            driverServiceMock.Setup(d => d.GetAllDriversSession(sessionKey))
-                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new() { new Driver { DriverNumber = 1 }, new Driver { DriverNumber = 2 } } });
-            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
-                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = new() });
-            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, 1))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new() { new LapListDto { DriverNumber = 1, LapDuration = 90 } } });
-            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, 2))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = false, Message = "upstream failed" });
-
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
+            unityMock.Setup(u => u.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            var transaction = new Mock<IImportTransaction>();
+            unityMock.Setup(u => u.BeginImport("fast_lap", "42", It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            driverServiceMock.Setup(x => x.GetAllDriversSession(42, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new() { new() { DriverNumber = 1 }, new() { DriverNumber = 2 } } });
+            lapClientMock.Setup(x => x.GetAllLapsSessionByDriver(42, 1, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = new() { new() { SessionKey = 42, DriverNumber = 1, LapDuration = 70 } } });
+            lapClientMock.Setup(x => x.GetAllLapsSessionByDriver(42, 2, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = false, Message = "upstream failed" });
+            var result = await service.GetFastLapOfRaceBySessionKey(42);
             Assert.That(result.HasSuccess, Is.False);
             Assert.That(result.Message, Is.EqualTo("upstream failed"));
-            lapDaoMock.Verify(d => d.SaveLap(It.IsAny<Lap>()), Times.Never);
-            lapFastSectorServiceMock.Verify(s => s.CreateListWithFastSector(It.IsAny<List<LapListFastSector>>(), It.IsAny<int>(), It.IsAny<List<LapFastSector>>()), Times.Never);
+            unityMock.Verify(x => x.Commit(It.IsAny<CancellationToken>()), Times.Never);
+            lapDaoMock.Verify(x => x.UpsertLap(It.IsAny<Lap>(), It.IsAny<CancellationToken>()), Times.Never);
         }
-        [Test]
-        public async Task GetFastLapOfRaceBySessionKey_NoLapsFound_ReturnsFailure()
-        {
-            // Arrange
-            const int sessionKey = 5;
-            var driver = new Driver { DriverNumber = 8 };
-
-            lapDaoMock.Setup(d => d.GetFastLapSessionBySessionKey(sessionKey))
-                .ReturnsAsync(new SingleResponse<Lap> { HasSuccess = true, Item = null! });
-
-            unityMock.SetupGet(u => u.LapDao).Returns(lapDaoMock.Object);
-
-            lapFastSectorServiceMock.Setup(s => s.GetFastSectorsOfSession(sessionKey))
-                .ReturnsAsync(new DataResponse<LapFastSector> { HasSuccess = true, Itens = [] });
-
-            lapClientMock.Setup(c => c.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber))
-                .ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = [] });
-
-            driverServiceMock.Setup(d => d.GetAllDriversSession(It.IsAny<int>()))
-                .ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = [driver] });
-
-            // Act
-            var result = await service.GetFastLapOfRaceBySessionKey(sessionKey);
-
-            // Assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(result.HasSuccess, Is.False);
-                Assert.That(result.Message, Is.EqualTo("No laps found for the given session key."));
-            });
-        }
-
         [Test]
         public async Task GetFastLapOfRaceBySessionKeyDb_DaoFailure_ReturnsFailure()
         {

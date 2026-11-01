@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface IMeetingClient
     {
         Task<DataResponse<Meeting>> GetMeetingsByYear(int year);
+        Task<DataResponse<Meeting>> GetMeetingsByYear(int year, CancellationToken cancellationToken);
     }
 }

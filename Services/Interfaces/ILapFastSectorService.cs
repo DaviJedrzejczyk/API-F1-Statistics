@@ -8,6 +8,7 @@ namespace Services.Interfaces
     public interface ILapFastSectorService
     {
         Task<DataResponse<LapFastSector>> GetFastSectorsOfSession(int sessionKey);
+        Task<DataResponse<LapFastSector>> GetFastSectorsOfSession(int sessionKey, CancellationToken cancellationToken);
         Task<Response> SaveFastSectors(List<LapFastSector> lapFastSectors, string observation);
         Task<DataResponse<LapFastSector>> CreateListWithFastSector(List<LapListFastSector> listFastSectorAllDrivers, int sessionKey, List<LapFastSector> listFastSector);
     }

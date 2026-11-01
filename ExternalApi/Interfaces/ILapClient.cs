@@ -8,5 +8,6 @@ namespace ExternalApi.Interfaces
     public interface ILapClient
     {
         Task<DataResponse<LapListDto>> GetAllLapsSessionByDriver(int sessionKey, int driverNumber);
+        Task<DataResponse<LapListDto>> GetAllLapsSessionByDriver(int sessionKey, int driverNumber, CancellationToken cancellationToken);
     }
 }

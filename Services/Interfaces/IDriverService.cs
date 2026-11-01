@@ -11,6 +11,7 @@ namespace Services.Interfaces
         Task<Response> DeleteDriver(Driver driver);
         Task<SingleResponse<Driver>> GetDriverById(int id);
         Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey);
+        Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey, CancellationToken cancellationToken);
         Task<DataResponse<Driver>> SearchDriversDatabase(DriverInsertDTO driverInsertDTO);
         Task<DataResponse<Driver>> SearchDriversExternalApi(DriverInsertDTO driverInsertDTO);
         Task<SingleResponse<string>> GetDriverName(int driverNumber, int sessionKey);

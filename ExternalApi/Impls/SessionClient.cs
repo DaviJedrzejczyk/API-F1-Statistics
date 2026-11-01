@@ -21,10 +21,13 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<Session>> GetSessionsByMeetingKey(int meetingKey)
+            => await GetSessionsByMeetingKey(meetingKey, CancellationToken.None);
+
+        public async Task<DataResponse<Session>> GetSessionsByMeetingKey(int meetingKey, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<String> response = await _f1ApiClient.Get("sessions?", $"meeting_key={meetingKey}");
+                SingleResponse<String> response = await _f1ApiClient.Get("sessions?", $"meeting_key={meetingKey}", cancellationToken);
 
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Session>(response.Message, response.Exception);
@@ -34,6 +37,7 @@ namespace ExternalApi.Impls
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Session>(_mapper.Map<List<Session>>(sessions));
 
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 throw new InvalidOperationException("Error occurred while fetching sessions.", ex);

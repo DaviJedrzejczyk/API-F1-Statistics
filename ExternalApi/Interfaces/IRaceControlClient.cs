@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface IRaceControlClient
     {
         Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags);
+        Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags, CancellationToken cancellationToken);
     }
 }

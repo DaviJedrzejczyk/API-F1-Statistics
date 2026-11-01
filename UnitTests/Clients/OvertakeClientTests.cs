@@ -61,7 +61,7 @@ namespace UnitTests.Impls
         }
 
         [Test]
-        public async Task GetOvertakesSession_WhenApiReturnsEmptyList_ReturnsNotFoundFailure()
+        public async Task GetOvertakesSession_WhenApiReturnsEmptyList_ReturnsEmptySuccess()
         {
             // Arrange
             var mockClient = new Mock<IF1ApiClient>();
@@ -76,6 +76,7 @@ namespace UnitTests.Impls
 
             mockClient.Setup(m => m.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(apiResponse);
+            mockMapper.Setup(m => m.Map<List<Overtake>>(It.IsAny<List<OvertakeDto>>())).Returns(new List<Overtake>());
 
             var client = new OvertakeClient(mockClient.Object, mockMapper.Object);
 
@@ -83,8 +84,8 @@ namespace UnitTests.Impls
             var result = await client.GetOvertakesSession(1);
 
             // Assert
-            Assert.IsFalse(result.HasSuccess);
-            Assert.That(result.Message, Is.EqualTo("Overtakes in this session not found!"));
+            Assert.That(result.HasSuccess, Is.True);
+            Assert.That(result.Itens, Is.Empty);
         }
 
         [Test]

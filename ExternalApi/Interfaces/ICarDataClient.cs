@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface ICarDataClient
     {
         Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed); 
+        Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed, CancellationToken cancellationToken);
     }
 }

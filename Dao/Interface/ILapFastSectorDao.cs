@@ -16,6 +16,7 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> SaveLapFastSector(List<LapFastSector> lapFastSectors);
+        Task<Response> UpsertLapFastSectors(List<LapFastSector> lapFastSectors, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta todos os setores rápidos de voltas de uma sessão.
@@ -23,5 +24,6 @@ namespace Dao.Interface
         /// <param name="sessionKey">Chave da sessão consultada.</param>
         /// <returns>Uma tarefa que retorna uma resposta com a lista de setores rápidos da sessão, ou uma indicação de falha em caso de erro.</returns>
         Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey);
+        Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey, CancellationToken cancellationToken);
     }
 }

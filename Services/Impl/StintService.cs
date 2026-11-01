@@ -19,24 +19,41 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey)
+            => await GetStintsBySessionKey(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                var responseDb = await GetStintsBySessionKeyDb(sessionKey);
-                if (!responseDb.HasSuccess || (responseDb.Itens != null && responseDb.Itens.Count > 0))
-                    return responseDb;
-
-                var responseApi = await GetStintsBySessionKeyApi(sessionKey);
-                if (!responseApi.HasSuccess || (responseApi.Itens == null || responseApi.Itens.Count == 0))
+                var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<Stint>(_unityOfWork, "stints", key, cancellationToken);
+                if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessDataResponse(cached);
+                var responseApi = await _client.GetAllStintsBySession(sessionKey, cancellationToken);
+                if (!responseApi.HasSuccess || responseApi.Itens == null)
                     return responseApi;
-                
-                var responseSave = await SaveStints(responseApi.Itens);
+                if (responseApi.Itens.Any(x => x.SessionKey != sessionKey) ||
+                    responseApi.Itens.Select(x => (x.MeetingKey, x.SessionKey, x.DriverNumber, x.StintNumber)).Distinct().Count() != responseApi.Itens.Count)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>("Invalid stint window returned by upstream.");
 
-                if (!responseSave.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(responseSave.Message, responseSave.Exception);
-
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(responseApi.Itens, "Stints retrieved from API and saved to database successfully.");
+                await using var transaction = await _unityOfWork.BeginImport("stints", key, cancellationToken);
+                cached = await ImportWindowCache.Read<Stint>(_unityOfWork, "stints", key, cancellationToken);
+                if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessDataResponse(cached);
+                var responseDb = await _unityOfWork.StintDao.GetStintsBySessionKey(sessionKey, cancellationToken);
+                if (!responseDb.HasSuccess || responseDb.Itens == null) return responseDb;
+                var existing = responseDb.Itens.Select(x => (x.MeetingKey, x.SessionKey, x.DriverNumber, x.StintNumber)).ToHashSet();
+                var missing = responseApi.Itens.Where(x => !existing.Contains((x.MeetingKey, x.SessionKey, x.DriverNumber, x.StintNumber))).ToList();
+                if (missing.Count > 0)
+                {
+                    var saved = await _unityOfWork.StintDao.SaveStints(missing, cancellationToken);
+                    if (!saved.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(saved.Message, saved.Exception);
+                }
+                await ImportWindowCache.Stage(_unityOfWork, "stints", key, responseApi.Itens, cancellationToken);
+                var commit = await _unityOfWork.Commit(cancellationToken);
+                if (!commit.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(commit.Message, commit.Exception);
+                await transaction.CommitAsync(cancellationToken);
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(responseApi.Itens);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(ex);

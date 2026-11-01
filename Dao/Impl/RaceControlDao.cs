@@ -29,12 +29,27 @@ namespace Dao.Impl
         }
 
         public async Task<Response> SaveRaceControls(List<RaceControl> raceControls)
+            => await SaveRaceControls(raceControls, CancellationToken.None);
+
+        public async Task<DataResponse<RaceControl>> GetRaceControlsBySession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                await _db.RaceControls.AddRangeAsync(raceControls);
+                var items = await _db.RaceControls.Where(x => x.SessionKey == sessionKey).AsNoTracking().ToListAsync(cancellationToken);
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(items);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>(ex); }
+        }
+
+        public async Task<Response> SaveRaceControls(List<RaceControl> raceControls, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _db.RaceControls.AddRangeAsync(raceControls, cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Race controls saved successfully");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse("Error saving race controls", ex);

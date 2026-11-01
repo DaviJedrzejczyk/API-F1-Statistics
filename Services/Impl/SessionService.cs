@@ -25,16 +25,20 @@ namespace Services.Impl
         }
 
         public async Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey)
+            => await GetSessionByMeetingKeySessionKey(meetingKey, sessionKey, CancellationToken.None);
+
+        public async Task<SingleResponse<Session>> GetSessionByMeetingKeySessionKey(int meetingKey, int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<Session> response = await _unityOfWork.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey);
+                SingleResponse<Session> response = await _unityOfWork.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey, cancellationToken);
 
                 if (response.Item == null)
                     return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Session>("Session not found.");
 
                 return ResponseFactory.CreateInstance().CreateSuccessSingleResponse<Session>(response.Item);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureSingleResponse<Session>("Error occurred while fetching session: " + ex.Message, ex);
@@ -42,26 +46,42 @@ namespace Services.Impl
         }
 
         public async Task<Response> InsertSessions(int meetingKey)
+            => await InsertSessions(meetingKey, CancellationToken.None);
+
+        public async Task<Response> InsertSessions(int meetingKey, CancellationToken cancellationToken)
         {
             try
             {
-                DataResponse<Session> sessions = await _sessionClient.GetSessionsByMeetingKey(meetingKey);
+                var key = meetingKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<Session>(_unityOfWork, "sessions", key, cancellationToken);
+                if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessResponse("Sessions inserted successfully.");
+                DataResponse<Session> sessions = await _sessionClient.GetSessionsByMeetingKey(meetingKey, cancellationToken);
                 
-                if (!sessions.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to fetch sessions: " + sessions.Message);
-
-                Response response = await _unityOfWork.SessionDao.InsertSessions(sessions.Itens);
-
-                if (!response.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert sessions.");
-
-                response = await _unityOfWork.Commit();
-
-                if (!response.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to commit session.");
-
+                if (!sessions.HasSuccess || sessions.Itens == null)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to fetch sessions: " + sessions.Message, sessions.Exception);
+                if (sessions.Itens.Any(x => x.MeetingKey != meetingKey) || sessions.Itens.Select(x => x.SessionKey).Distinct().Count() != sessions.Itens.Count)
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("Invalid session window returned by upstream.");
+                await using var transaction = await _unityOfWork.BeginImport("sessions", key, cancellationToken);
+                cached = await ImportWindowCache.Read<Session>(_unityOfWork, "sessions", key, cancellationToken);
+                if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessResponse("Sessions inserted successfully.");
+                var db = await _unityOfWork.SessionDao.GetSessionsByKeys(sessions.Itens.Select(x => x.SessionKey).ToList(), cancellationToken);
+                if (!db.HasSuccess || db.Itens == null) return ResponseFactory.CreateInstance().CreateFailureResponse(db.Message, db.Exception);
+                if (db.Itens.Any(x => x.MeetingKey != meetingKey))
+                    return ResponseFactory.CreateInstance().CreateFailureResponse("An existing session belongs to another meeting.");
+                var keys = db.Itens.Select(x => x.SessionKey).ToHashSet();
+                var missing = sessions.Itens.Where(x => !keys.Contains(x.SessionKey)).ToList();
+                if (missing.Count > 0)
+                {
+                    var insert = await _unityOfWork.SessionDao.InsertSessions(missing, cancellationToken);
+                    if (!insert.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to insert sessions.", insert.Exception);
+                }
+                await ImportWindowCache.Stage(_unityOfWork, "sessions", key, sessions.Itens, cancellationToken);
+                var response = await _unityOfWork.Commit(cancellationToken);
+                if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureResponse("Failed to commit session.", response.Exception);
+                await transaction.CommitAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Sessions inserted successfully.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
@@ -69,11 +89,15 @@ namespace Services.Impl
         }
 
         public async Task<Response> ReturnAlreadyHaveSession(int meetingKey)
+            => await ReturnAlreadyHaveSession(meetingKey, CancellationToken.None);
+
+        public async Task<Response> ReturnAlreadyHaveSession(int meetingKey, CancellationToken cancellationToken)
         {
             try
             {
-                return await _unityOfWork.SessionDao.GetAlreadyHaveSession(meetingKey);
+                return await _unityOfWork.SessionDao.GetAlreadyHaveSession(meetingKey, cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
@@ -85,29 +109,26 @@ namespace Services.Impl
         /// </summary>
         /// <returns></returns>
         public async Task<Response> UpdateRecentSession()
+            => await UpdateRecentSession(CancellationToken.None);
+
+        public async Task<Response> UpdateRecentSession(CancellationToken cancellationToken)
         {
             try
             {
-                var meetingKeyResponse = await _meetingService.GetRecentMeetingKey();
+                var meetingKeyResponse = await _meetingService.GetRecentMeetingKey(cancellationToken);
                 if (!meetingKeyResponse.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("An error has occurred when fetching the recent meeting key: " + meetingKeyResponse.Message, meetingKeyResponse.Exception);
 
                 if (meetingKeyResponse.Item == 0)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("No recent meeting key found.");
 
-                var responseSession = await ReturnAlreadyHaveSession(meetingKeyResponse.Item);
-                if (!responseSession.HasSuccess && responseSession.Exception != null) 
-                    return ResponseFactory.CreateInstance().CreateFailureResponse(responseSession.Message, responseSession.Exception);
-
-                if(responseSession.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateSuccessResponse("Recent session already exists, no update needed.");
-
-                Response response = await InsertSessions(meetingKeyResponse.Item);
+                Response response = await InsertSessions(meetingKeyResponse.Item, cancellationToken);
                 if (!response.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureResponse("An error has occurred when inserting sessions: " + response.Message, response.Exception);
 
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Recent session updated successfully.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (TaskCanceledException tex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse("Request timed out or was canceled: " + tex.Message, tex);

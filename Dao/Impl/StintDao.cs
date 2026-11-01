@@ -16,12 +16,16 @@ namespace Dao.Impl
         }
 
         public async Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey)
+            => await GetStintsBySessionKey(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                List<Stint> stints = await _apiF1.Stints.Where(s => s.SessionKey == sessionKey).AsNoTracking().ToListAsync();
+                List<Stint> stints = await _apiF1.Stints.Where(s => s.SessionKey == sessionKey).AsNoTracking().ToListAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Stint>(stints);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(ex);
@@ -29,12 +33,16 @@ namespace Dao.Impl
         }
 
         public async Task<Response> SaveStints(List<Stint> stints)
+            => await SaveStints(stints, CancellationToken.None);
+
+        public async Task<Response> SaveStints(List<Stint> stints, CancellationToken cancellationToken)
         {
             try
             {
-                await _apiF1.Stints.AddRangeAsync(stints);
+                await _apiF1.Stints.AddRangeAsync(stints, cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Stints saved successfully.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);

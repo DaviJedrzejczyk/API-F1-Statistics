@@ -7,5 +7,6 @@ namespace ExternalApi.Interfaces
     public interface IDriverClient
     {
         Task<DataResponse<Driver>> GetAllDriversSessionSelected(DriverInsertDTO driverInsertDTO);
+        Task<DataResponse<Driver>> GetAllDriversSessionSelected(DriverInsertDTO driverInsertDTO, CancellationToken cancellationToken);
     }
 }

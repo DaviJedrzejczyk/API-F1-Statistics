@@ -23,45 +23,53 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<CarData>> GetHighSpeedsSessionApi(int sessionKey, int minimunSpeed)
+            => await GetHighSpeedsSessionApi(sessionKey, minimunSpeed, CancellationToken.None);
+
+        public async Task<DataResponse<CarData>> GetHighSpeedsSessionApi(int sessionKey, int minimunSpeed, CancellationToken cancellationToken)
         {
             try
             {
-                var responseDatabase = await GetHighSpeedSessionDatabase(sessionKey, minimunSpeed);
-
-                if (!responseDatabase.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(responseDatabase.Message, responseDatabase.Exception);
-
-                if (responseDatabase.Itens.Count >= 15)
-                    return responseDatabase;
-                
-                DataResponse<CarData> response = await _carDataClient.GetHighSpeedsSession(sessionKey, minimunSpeed);
-
-                if (!response.HasSuccess || response.Itens.Count <= 0)
+                var session = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var key = session + ":" + minimunSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<CarData>(_unityOfWork, "car_data", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                DataResponse<CarData> response = await _carDataClient.GetHighSpeedsSession(sessionKey, minimunSpeed, cancellationToken);
+                if (!response.HasSuccess || response.Itens == null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(response.Message, response.Exception);
-
+                if (response.Itens.Any(x => x.SessionKey != sessionKey || x.Speed < minimunSpeed))
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>("Invalid car data window returned by upstream.");
                 List<CarData> carDatas = response.Itens.GroupBy(x => x.DriverNumber).Select(x => x.MaxBy(y => y.Speed)!).ToList();
-
-                var carDatasToSave = (carDatas ?? Enumerable.Empty<CarData>()).ToList();
-
-                if (responseDatabase?.Itens != null && responseDatabase.Itens.Count > 0 && carDatasToSave.Count > 0)
+                await using var transaction = await _unityOfWork.BeginImport("car_data", session, cancellationToken);
+                cached = await ImportWindowCache.Read<CarData>(_unityOfWork, "car_data", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                var responseDatabase = await _unityOfWork.CarDataDao.GetHighSpeedSessionDatabase(sessionKey, minimunSpeed, cancellationToken);
+                if (!responseDatabase.HasSuccess || responseDatabase.Itens == null)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(responseDatabase.Message, responseDatabase.Exception);
+                var existing = responseDatabase.Itens.Select(x => (x.SessionKey, x.DriverNumber, x.Date)).ToHashSet();
+                var missing = carDatas.Where(x => !existing.Contains((x.SessionKey, x.DriverNumber, x.Date))).ToList();
+                if (missing.Count > 0)
                 {
-                    carDatasToSave = carDatasToSave
-                        .Where(x => !responseDatabase.Itens.Any(y => y.DriverNumber == x.DriverNumber))
-                        .ToList();
+                    var insert = await _unityOfWork.CarDataDao.SaveCarDatas(missing, cancellationToken);
+                    if (!insert.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(insert.Message, insert.Exception);
                 }
-
-                Response insertResponse = await SaveCarDatas(carDatasToSave);
-
-                if (!insertResponse.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(insertResponse.Message, insertResponse.Exception);
-
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(carDatas);
+                await ImportWindowCache.Stage(_unityOfWork, "car_data", key, carDatas, cancellationToken);
+                var commit = await _unityOfWork.Commit(cancellationToken);
+                if (!commit.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(commit.Message, commit.Exception);
+                await transaction.CommitAsync(cancellationToken);
+                return WindowResult(carDatas);
 
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(ex);
             }
         }
+
+        private static DataResponse<CarData> WindowResult(List<CarData> items)
+            => items.Count == 0
+                ? ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>("Not found the maximum speed of the drivers")
+                : ResponseFactory.CreateInstance().CreateSuccessDataResponse(items);
 
         public async Task<Response> SaveCarDatas(List<CarData> data)
         {
@@ -81,13 +89,16 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<SessionDriverSpeedDTO>> GetSortedHighSpeedsSession(int sessionKey, int minimunSpeed)
-        {
-            DataResponse<Driver> driversList = await _driverService.GetAllDriversSession(sessionKey);
+            => await GetSortedHighSpeedsSession(sessionKey, minimunSpeed, CancellationToken.None);
 
-            if (driversList.Itens.Count <= 0)
+        public async Task<DataResponse<SessionDriverSpeedDTO>> GetSortedHighSpeedsSession(int sessionKey, int minimunSpeed, CancellationToken cancellationToken)
+        {
+            DataResponse<Driver> driversList = await _driverService.GetAllDriversSession(sessionKey, cancellationToken);
+
+            if (!driversList.HasSuccess || driversList.Itens == null || driversList.Itens.Count <= 0)
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Drivers must be inserted.");
 
-            DataResponse<CarData> carDataResponse = await GetHighSpeedsSessionApi(sessionKey, minimunSpeed);
+            DataResponse<CarData> carDataResponse = await GetHighSpeedsSessionApi(sessionKey, minimunSpeed, cancellationToken);
             
             if (carDataResponse.Itens == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionDriverSpeedDTO>("Not found the maximum speed of the drivers");
             

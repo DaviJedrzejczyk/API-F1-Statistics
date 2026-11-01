@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Moq;
@@ -34,96 +34,53 @@ namespace UnitTests.Service
         }
 
         [Test]
-        public async Task GetOvertakesSessionApi_DatabaseHasItems_ReturnsDbResponse()
+        public async Task GetOvertakesSessionApi_CompleteWindowSkipsUpstream()
         {
-            // Arrange
-            var clientMock = new Mock<IOvertakeClient>();
-            var uowMock = new Mock<IUnityOfWork>();
-            var overtakeDaoMock = new Mock<IOvertakeDao>();
-            var pitServiceMock = new Mock<IPitService>();
-            var raceControlMock = new Mock<IRaceControlService>();
-
-            var dbResponse = new DataResponse<Overtake> { HasSuccess = true, Itens = new List<Overtake> { new Overtake() } };
-            overtakeDaoMock.Setup(d => d.GetOvertakesBySession(It.IsAny<int>())).ReturnsAsync(dbResponse);
-            uowMock.Setup(u => u.OvertakeDao).Returns(overtakeDaoMock.Object);
-
-            var svc = new OvertakeService(clientMock.Object, uowMock.Object, pitServiceMock.Object, raceControlMock.Object);
-
-            // Act
-            var result = await svc.GetOvertakesSessionApi(1);
-
-            // Assert
-            Assert.That(result, Is.SameAs(dbResponse));
-            clientMock.Verify(c => c.GetOvertakesSession(It.IsAny<int>()), Times.Never);
+            var client = new Mock<IOvertakeClient>();
+            var uow = new Mock<IUnityOfWork>();
+            var items = new List<Overtake> { new() { SessionKey = 1 } };
+            uow.Setup(x => x.GetImportWindow("overtakes", "1", It.IsAny<CancellationToken>())).ReturnsAsync(new global::Dao.Cache.ImportWindow { IsComplete = true, CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1), ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1), Payload = System.Text.Json.JsonSerializer.Serialize(items) });
+            var result = await new OvertakeService(client.Object, uow.Object, Mock.Of<IPitService>(), Mock.Of<IRaceControlService>()).GetOvertakesSessionApi(1);
+            Assert.That(result.HasSuccess, Is.True);
+            Assert.That(result.Itens.Count, Is.EqualTo(1));
+            client.Verify(x => x.GetOvertakesSession(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
-        public async Task GetOvertakesSessionApi_ApiReturnsFailure_ReturnsApiResponse()
+        public async Task GetOvertakesSessionApi_PitFailure_DoesNotCommit()
         {
-            // Arrange
-            var clientMock = new Mock<IOvertakeClient>();
-            var uowMock = new Mock<IUnityOfWork>();
-            var overtakeDaoMock = new Mock<IOvertakeDao>();
-            var pitServiceMock = new Mock<IPitService>();
-            var raceControlMock = new Mock<IRaceControlService>();
-
-            // DB returns empty list
-            var dbResponse = new DataResponse<Overtake> { HasSuccess = true, Itens = new List<Overtake>() };
-            overtakeDaoMock.Setup(d => d.GetOvertakesBySession(It.IsAny<int>())).ReturnsAsync(dbResponse);
-            uowMock.Setup(u => u.OvertakeDao).Returns(overtakeDaoMock.Object);
-
-            var apiResponse = new DataResponse<Overtake> { HasSuccess = false, Message = "api fail" };
-            clientMock.Setup(c => c.GetOvertakesSession(It.IsAny<int>())).ReturnsAsync(apiResponse);
-
-            var svc = new OvertakeService(clientMock.Object, uowMock.Object, pitServiceMock.Object, raceControlMock.Object);
-
-            // Act
-            var result = await svc.GetOvertakesSessionApi(2);
-
-            // Assert
-            Assert.That(result, Is.SameAs(apiResponse));
+            var client = new Mock<IOvertakeClient>();
+            var uow = new Mock<IUnityOfWork>();
+            var pits = new Mock<IPitService>();
+            uow.Setup(x => x.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            var transaction = new Mock<IImportTransaction>();
+            uow.Setup(x => x.BeginImport("overtakes", "3", It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            client.Setup(x => x.GetOvertakesSession(3, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Overtake> { HasSuccess = true, Itens = new() { new() { SessionKey = 3 } } });
+            pits.Setup(x => x.GetPitsBySessionKeyApi(3, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Pit> { HasSuccess = false, Message = "pit failure" });
+            var result = await new OvertakeService(client.Object, uow.Object, pits.Object, Mock.Of<IRaceControlService>()).GetOvertakesSessionApi(3);
+            Assert.That(result.HasSuccess, Is.False);
+            Assert.That(result.Message, Is.EqualTo("pit failure"));
+            uow.Verify(x => x.Commit(It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
-        public async Task GetOvertakesSessionApi_RaceControlFailure_ReturnsFailureDataResponse()
+        public async Task GetOvertakesSessionApi_RaceControlFailure_DoesNotCommit()
         {
-            // Arrange
-            var clientMock = new Mock<IOvertakeClient>();
-            var uowMock = new Mock<IUnityOfWork>();
-            var overtakeDaoMock = new Mock<IOvertakeDao>();
-            var pitServiceMock = new Mock<IPitService>();
-            var raceControlMock = new Mock<IRaceControlService>();
-
-            // DB returns empty
-            var dbResponse = new DataResponse<Overtake> { HasSuccess = true, Itens = new List<Overtake>() };
-            overtakeDaoMock.Setup(d => d.GetOvertakesBySession(It.IsAny<int>())).ReturnsAsync(dbResponse);
-            uowMock.Setup(u => u.OvertakeDao).Returns(overtakeDaoMock.Object);
-
-            // API returns some overtakes
-            var overtakesApi = new List<Overtake> { new Overtake { Date = DateTime.UtcNow, OvertakingDriverNumber = 1, OvertakedDriverNumber = 2 } };
-            var apiResponse = new DataResponse<Overtake> { HasSuccess = true, Itens = overtakesApi };
-            clientMock.Setup(c => c.GetOvertakesSession(It.IsAny<int>())).ReturnsAsync(apiResponse);
-
-            // pit service returns empty pits (so nothing is filtered)
-            var pitsResponse = new DataResponse<Pit> { HasSuccess = true, Itens = new List<Pit>() };
-            pitServiceMock.Setup(p => p.GetPitsBySessionKeyApi(It.IsAny<int>())).ReturnsAsync(pitsResponse);
-
-            // race control returns failure
-            var rcResponse = new DataResponse<RaceControlFilterDto> { HasSuccess = false, Message = "rc fail" };
-            raceControlMock.Setup(r => r.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>())).ReturnsAsync(rcResponse);
-
-            var svc = new OvertakeService(clientMock.Object, uowMock.Object, pitServiceMock.Object, raceControlMock.Object);
-
-            // Act
-            var result = await svc.GetOvertakesSessionApi(3);
-
-            // Assert
+            var client = new Mock<IOvertakeClient>();
+            var uow = new Mock<IUnityOfWork>();
+            var pits = new Mock<IPitService>();
+            var controls = new Mock<IRaceControlService>();
+            uow.Setup(x => x.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            var transaction = new Mock<IImportTransaction>();
+            uow.Setup(x => x.BeginImport("overtakes", "3", It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            client.Setup(x => x.GetOvertakesSession(3, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Overtake> { HasSuccess = true, Itens = new() { new() { SessionKey = 3 } } });
+            pits.Setup(x => x.GetPitsBySessionKeyApi(3, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Pit> { HasSuccess = true, Itens = new() });
+            controls.Setup(x => x.GetRaceControlsBySessionFlags(3, It.IsAny<string[]>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<RaceControlFilterDto> { HasSuccess = false, Message = "rc fail" });
+            var result = await new OvertakeService(client.Object, uow.Object, pits.Object, controls.Object).GetOvertakesSessionApi(3);
             Assert.That(result.HasSuccess, Is.False);
             Assert.That(result.Message, Is.EqualTo("rc fail"));
-            // Save should not be called when race control fails
-            overtakeDaoMock.Verify(d => d.SaveOvertakes(It.IsAny<List<Overtake>>()), Times.Never);
+            uow.Verify(x => x.Commit(It.IsAny<CancellationToken>()), Times.Never);
         }
-
         [Test]
         public async Task GetOvertakesSessionDb_NoItems_SetsMessageAndReturns()
         {

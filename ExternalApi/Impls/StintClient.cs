@@ -20,10 +20,15 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<Stint>> GetAllStintsBySession(int sessionKey)
+            => await GetAllStintsBySession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Stint>> GetAllStintsBySession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<string> response = await _api.Get("stints?", $"session_key={sessionKey}");
+                SingleResponse<string> response = await _api.Get("stints?", $"session_key={sessionKey}", cancellationToken);
+                if (!response.HasSuccess)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(response.Message, response.Exception);
 
                 List<StintListDTO>? stList = JsonSerializer.Deserialize<List<StintListDTO>>(response.Item);
                 if (stList == null)
@@ -31,6 +36,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Stint>(_mapper.Map<List<Stint>>(stList));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Stint>(ex);

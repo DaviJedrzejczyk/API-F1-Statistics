@@ -43,9 +43,9 @@ namespace WebApi.Controllers.SessionResults
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetSessionResultBySessionKey(int sessionKey)
+        public async Task<IActionResult> GetSessionResultBySessionKey(int sessionKey, CancellationToken cancellationToken = default)
         {
-            DataResponse<SessionResult> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey);
+            DataResponse<SessionResult> response = await _sessionResultService.GetSessionResultBySessionKeyApi(sessionKey, cancellationToken);
 
             if (!response.HasSuccess)
             {

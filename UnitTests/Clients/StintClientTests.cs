@@ -35,7 +35,7 @@ namespace UnitTests.Impls
             var json = JsonSerializer.Serialize(dtoList);
 
             apiMock.Setup(a => a.Get("stints?", "session_key=5", It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new SingleResponse<string> { Item = json });
+                .ReturnsAsync(new SingleResponse<string> { Item = json, HasSuccess = true });
 
             var mapped = new List<Stint> { new Stint { Compound = dto.Compound, DriverNumber = dto.DriverNumber, SessionKey = dto.SessionKey } };
             mapperMock.Setup(m => m.Map<List<Stint>>(It.IsAny<List<StintListDTO>>())).Returns(mapped);
@@ -64,7 +64,7 @@ namespace UnitTests.Impls
             var mapperMock = new Mock<IMapper>();
 
             apiMock.Setup(a => a.Get(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new SingleResponse<string> { Item = "null" });
+                .ReturnsAsync(new SingleResponse<string> { Item = "null", HasSuccess = true });
 
             var client = new StintClient(apiMock.Object, mapperMock.Object);
 

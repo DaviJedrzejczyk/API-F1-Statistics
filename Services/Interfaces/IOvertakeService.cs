@@ -8,6 +8,7 @@ namespace Services.Interfaces
     {
         Task<Response> SaveOvertakes(List<Overtake> overtakes);
         Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey);
+        Task<DataResponse<Overtake>> GetOvertakesSessionApi(int sessionKey, CancellationToken cancellationToken);
         Task<DataResponse<Overtake>> GetOvertakesSessionDb(int sessionKey);
     }
 }
