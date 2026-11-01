@@ -1,4 +1,4 @@
-﻿using System.Data.Common;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -140,15 +140,13 @@ public class SqlServerImportIntegrationTests
         private bool unexpected;
         public void Reset() { expected = null; calls = 0; unexpected = false; }
         public void Expect(string path, HttpStatusCode responseStatus, string responseBody) { expected = path; status = responseStatus; body = responseBody; }
-        public void Verify() { Assert.That(unexpected, Is.False, "Unexpected upstream request"); Assert.That(calls, Is.EqualTo(expected == null ? 0 : 1), "Unexpected number of upstream requests"); }
+        public void Verify() { Assert.That(unexpected, Is.False, "Unexpected upstream request"); Assert.That(calls, Is.EqualTo(expected == null ? 0 : status == HttpStatusCode.ServiceUnavailable ? 3 : 1), "Unexpected number of upstream requests"); }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             calls++;
-            if (request.Method != HttpMethod.Get || request.RequestUri?.Host != "fixtures.invalid" || request.RequestUri.PathAndQuery != expected || calls != 1)
+            if (request.Method != HttpMethod.Get || request.RequestUri?.Host != "fixtures.invalid" || request.RequestUri.PathAndQuery != expected || calls > (status == HttpStatusCode.ServiceUnavailable ? 3 : 1))
             { unexpected = true; throw new InvalidOperationException($"Unexpected upstream request: {request.RequestUri}"); }
             return Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
         }
     }
 }
-
-
