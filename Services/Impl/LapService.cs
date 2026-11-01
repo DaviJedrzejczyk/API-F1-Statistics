@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Dao.Interface;
 using Entities.Class;
 using Entities.Dtos;
@@ -28,100 +28,69 @@ namespace Services.Impl
         }
 
         public async Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKey(int sessionKey)
+            => await GetFastLapOfRaceBySessionKey(sessionKey, CancellationToken.None);
+
+        public async Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKey(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                var responseDb = await GetFastLapOfRaceBySessionKeyDb(sessionKey);
-                if (responseDb.HasSuccess && responseDb.Item != null)
-                    return responseDb;
-
-                var responseDriver = await _driverService.GetAllDriversSession(sessionKey);
-
-                if (!responseDriver.HasSuccess)
-                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("Error to fetch the drivers: " + responseDriver.Message, responseDriver.Exception);
-
-                var responseLapFastSector = await _lapFastSectorService.GetFastSectorsOfSession(sessionKey);
-                if (!responseLapFastSector.HasSuccess && responseLapFastSector.Exception != null)
-                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseLapFastSector.Message, responseLapFastSector.Exception);
-
-                LapFastLapDto fastLap = new();
-                LapListDto fastLapToSave = new();
-                List<LapListFastSector> listFastSectorAllDrivers = [];
-                List<LapFastSector> listFastSector = responseLapFastSector.Itens ?? [];
-                bool isFastSectorsAlreadySaved = listFastSector.Count > 0;
-
-                for (int i = 0; i < responseDriver.Itens.Count; i++)
+                var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<LapFastLapDto>(_unityOfWork, "fast_lap", key, cancellationToken);
+                var cachedSectors = await ImportWindowCache.Read<LapFastSector>(_unityOfWork, "fast_sectors", key, cancellationToken);
+                if (cached != null && cachedSectors != null) return LapWindowResult(cached);
+                await using var transaction = await _unityOfWork.BeginImport("fast_lap", key, cancellationToken);
+                cached = await ImportWindowCache.Read<LapFastLapDto>(_unityOfWork, "fast_lap", key, cancellationToken);
+                cachedSectors = await ImportWindowCache.Read<LapFastSector>(_unityOfWork, "fast_sectors", key, cancellationToken);
+                if (cached != null && cachedSectors != null) return LapWindowResult(cached);
+                var drivers = await _driverService.GetAllDriversSession(sessionKey, cancellationToken);
+                if (!drivers.HasSuccess || drivers.Itens == null)
+                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(drivers.Message, drivers.Exception);
+                var laps = new List<LapListDto>();
+                foreach (var driver in drivers.Itens)
                 {
-                    var responseLap = await _lapClient.GetAllLapsSessionByDriver(sessionKey, responseDriver.Itens[i].DriverNumber);
-                    if (!responseLap.HasSuccess && responseLap.Exception != null)
-                        return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseLap.Message, responseLap.Exception);
-
-                    if (responseLap.Itens == null || responseLap.Itens.Count == 0)
-                        continue;
-
-                    if (!isFastSectorsAlreadySaved)
-                    {
-                        var fastSectors = new LapListFastSector
-                        {
-                            DriverNumber = responseLap.Itens.First().DriverNumber,
-
-                            Sector1Duration = responseLap.Itens
-                                .Where(l => l.DurationSector1 > 0)
-                                .Min(l => (double?)l.DurationSector1) ?? 0,
-
-                            Sector2Duration = responseLap.Itens
-                                .Where(l => l.DurationSector2 > 0)
-                                .Min(l => (double?)l.DurationSector2) ?? 0,
-
-                            Sector3Duration = responseLap.Itens
-                                .Where(l => l.DurationSector3 > 0)
-                                .Min(l => (double?)l.DurationSector3) ?? 0
-                        };
-
-                        listFastSectorAllDrivers.Add(fastSectors);
-                    }
-
-                    LapListDto? fastLapDriver = responseLap.Itens.MinBy(l => l.LapDuration);
-                    if (fastLapDriver == null) continue;
-
-                    if (fastLap.LapDuration > 0 && fastLapDriver.LapDuration >= fastLap.LapDuration || fastLapDriver.LapDuration == 0)
-                        continue;
-
-                    fastLapToSave = fastLapDriver;
-                    fastLapToSave.IsFastLap = true;
-
-                    fastLap = new LapFastLapDto
-                    {
-                        DriverNumber = responseDriver.Itens[i].DriverNumber,
-                        LapDuration = fastLapDriver.LapDuration,
-                        IsFastLap = true,
-                        MeetingKey = fastLapToSave.MeetingKey,
-                        SessionKey = sessionKey
-                    };
+                    var response = await _lapClient.GetAllLapsSessionByDriver(sessionKey, driver.DriverNumber, cancellationToken);
+                    if (!response.HasSuccess || response.Itens == null)
+                        return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(response.Message, response.Exception);
+                    if (response.Itens.Any(x => x.SessionKey != sessionKey || x.DriverNumber != driver.DriverNumber))
+                        return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("Invalid lap window returned by upstream.");
+                    laps.AddRange(response.Itens);
                 }
-
-                if (!isFastSectorsAlreadySaved && listFastSectorAllDrivers.Count > 0)
+                var fastest = laps.Where(x => x.LapDuration > 0).MinBy(x => x.LapDuration);
+                var sectors = new List<LapFastSector>();
+                for (int sector = 1; sector <= 3; sector++)
                 {
-                    var responseSaveFastSectors = await _lapFastSectorService.CreateListWithFastSector(listFastSectorAllDrivers, sessionKey, listFastSector);
-                    if (!responseSaveFastSectors.HasSuccess)
-                        return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseSaveFastSectors.Message, responseSaveFastSectors.Exception);
+                    double Duration(LapListDto x) => sector == 1 ? x.DurationSector1 : sector == 2 ? x.DurationSector2 : x.DurationSector3;
+                    var best = laps.Where(x => Duration(x) > 0).MinBy(Duration);
+                    if (best == null) continue;
+                    var driver = drivers.Itens.First(x => x.DriverNumber == best.DriverNumber);
+                    if (string.IsNullOrEmpty(driver.LastName))
+                        return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("Driver name not found for fastest sector.");
+                    sectors.Add(new LapFastSector { SessionKey = sessionKey, DriverNumber = best.DriverNumber, DriverName = driver.LastName, Sector = sector, Duration = Duration(best) });
                 }
-
-                if (fastLap.LapDuration == 0)
-                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("No laps found for the given session key.");
-
-                var responseSaveLap = await SaveLap(_mapper.Map<Lap>(fastLapToSave));
-                if (!responseSaveLap.HasSuccess && responseSaveLap.Exception != null)
-                    return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(responseSaveLap.Message, responseSaveLap.Exception);
-
-                return ResponseFactory.CreateInstance().CreateSuccessSingleResponse(fastLap);
+                if (sectors.Count < 3) foreach (var sector in sectors) sector.Observation = "Not all fast sectors were found.";
+                var result = new List<LapFastLapDto>();
+                if (fastest != null)
+                {
+                    fastest.IsFastLap = true;
+                    var saved = await _unityOfWork.LapDao.UpsertLap(_mapper.Map<Lap>(fastest), cancellationToken);
+                    if (!saved.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(saved.Message, saved.Exception);
+                    result.Add(new LapFastLapDto { SessionKey = sessionKey, MeetingKey = fastest.MeetingKey, DriverNumber = fastest.DriverNumber, LapDuration = fastest.LapDuration, IsFastLap = true });
+                }
+                var saveSectors = await _unityOfWork.LapFastSectorDao.UpsertLapFastSectors(sectors, cancellationToken);
+                if (!saveSectors.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(saveSectors.Message, saveSectors.Exception);
+                await ImportWindowCache.Stage(_unityOfWork, "fast_lap", key, result, cancellationToken);
+                await ImportWindowCache.Stage(_unityOfWork, "fast_sectors", key, sectors, cancellationToken);
+                var commit = await _unityOfWork.Commit(cancellationToken);
+                if (!commit.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(commit.Message, commit.Exception);
+                await transaction.CommitAsync(cancellationToken);
+                return LapWindowResult(result);
             }
-            catch (Exception ex)
-            {
-                return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(ex);
-            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(ex); }
         }
 
+        private static SingleResponse<LapFastLapDto> LapWindowResult(List<LapFastLapDto> laps)
+            => laps.Count == 0 ? ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("No laps found for the given session key.") : ResponseFactory.CreateInstance().CreateSuccessSingleResponse(laps[0]);
         public async Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKeyDb(int sessionKey)
         {
             try

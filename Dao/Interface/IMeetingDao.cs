@@ -15,6 +15,7 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings);
+        Task<Response> InsertTracksOfCurrentYear(List<Meeting> meetings, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta os eventos cujo nome contém Grand Prix no ano informado, ordenados pela data de início.
@@ -22,6 +23,7 @@ namespace Dao.Interface
         /// <param name="year">Ano dos eventos consultados.</param>
         /// <returns>Uma tarefa que retorna uma resposta com a lista de eventos ordenada pela data de início, ou uma indicação de falha em caso de erro.</returns>
         Task<DataResponse<Meeting>> GetAllTracksOfCurrentYear(int year);
+        Task<DataResponse<Meeting>> GetAllTracksOfCurrentYear(int year, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta um evento pela sua chave.
@@ -29,11 +31,13 @@ namespace Dao.Interface
         /// <param name="meetingKey">Chave do evento consultado.</param>
         /// <returns>Uma tarefa que retorna uma resposta com o evento encontrado, ou valor nulo quando não houver correspondência, ou uma indicação de falha em caso de erro.</returns>
         Task<SingleResponse<Meeting>> GetMeetingByKey(int meetingKey);
+        Task<SingleResponse<Meeting>> GetMeetingByKey(int meetingKey, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta a chave do primeiro evento não cancelado, por data de início, cujo término ocorre entre agora e os próximos sete dias em UTC.
         /// </summary>
         /// <returns>Uma tarefa que retorna uma resposta com a chave do evento encontrado, ou zero quando não houver correspondência, ou uma indicação de falha em caso de erro.</returns>
         Task<SingleResponse<int>> GetRecentMeetingKey();
+        Task<SingleResponse<int>> GetRecentMeetingKey(CancellationToken cancellationToken);
     }
 }

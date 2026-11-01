@@ -42,9 +42,9 @@ namespace WebApi.Controllers.CarDatas
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> HighSpeedInSession(int sessionKey, int minimumSpeed)
+        public async Task<IActionResult> HighSpeedInSession(int sessionKey, int minimumSpeed, CancellationToken cancellationToken = default)
         {
-            DataResponse<SessionDriverSpeedDTO> response = await _carDataService.GetSortedHighSpeedsSession(sessionKey, minimumSpeed);
+            DataResponse<SessionDriverSpeedDTO> response = await _carDataService.GetSortedHighSpeedsSession(sessionKey, minimumSpeed, cancellationToken);
 
             if (!response.HasSuccess && response.Itens == null)
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));

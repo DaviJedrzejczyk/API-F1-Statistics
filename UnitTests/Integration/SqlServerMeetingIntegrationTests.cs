@@ -153,7 +153,7 @@ namespace UnitTests.Integration
             ApiF1DB database = serviceProvider.GetRequiredService<ApiF1DB>();
             var unitOfWork = new Mock<IUnityOfWork>();
             unitOfWork.SetupGet(value => value.MeetingDao).Returns(new MeetingDao(database));
-            unitOfWork.Setup(value => value.Commit()).Returns(async () =>
+            unitOfWork.Setup(value => value.Commit(It.IsAny<CancellationToken>())).Returns(async () =>
             {
                 await database.SaveChangesAsync();
                 return ResponseFactory.CreateInstance().CreateSuccessResponse();
@@ -172,7 +172,11 @@ namespace UnitTests.Integration
             public void Reset() => RequestedYears.Clear();
 
             public Task<DataResponse<Meeting>> GetMeetingsByYear(int year)
+                => GetMeetingsByYear(year, CancellationToken.None);
+
+            public Task<DataResponse<Meeting>> GetMeetingsByYear(int year, CancellationToken cancellationToken)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 RequestedYears.Add(year);
 
                 if (year == 2025)

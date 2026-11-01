@@ -1,4 +1,4 @@
-﻿using Dao.Interface;
+using Dao.Interface;
 using Entities.Class;
 using ExternalApi.Interfaces;
 using Moq;
@@ -23,6 +23,12 @@ namespace UnitTests.Service
             _unityOfWorkMock = new Mock<IUnityOfWork>();
             _sessionClient = new Mock<ISessionClient>();
             _meetingServiceMock = new Mock<IMeetingService>();
+            _unityOfWorkMock.Setup(x => x.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            _unityOfWorkMock.Setup(x => x.StageImportWindow(It.IsAny<global::Dao.Cache.ImportWindow>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            var transaction = new Mock<IImportTransaction>();
+            transaction.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            _unityOfWorkMock.Setup(x => x.BeginImport(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionsByKeys(It.IsAny<List<int>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Session> { HasSuccess = true, Itens = new() });
             _service = new SessionService(_unityOfWorkMock.Object, _sessionClient.Object, _meetingServiceMock.Object);
         }
 
@@ -32,7 +38,7 @@ namespace UnitTests.Service
             int meetingKey = 1;
             int sessionKey = 1;
             
-            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey)).ReturnsAsync(MakeSingleResponse(true, new Session()));
+            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeSingleResponse(true, new Session()));
 
             var response = await _service.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey);
 
@@ -45,7 +51,7 @@ namespace UnitTests.Service
             int meetingKey = 1;
             int sessionKey = 1;
 
-            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey)).ReturnsAsync(MakeSingleResponse(false, null));
+            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeSingleResponse(false, null));
             
             SingleResponse<Session> response = await _service.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey);
             
@@ -62,7 +68,7 @@ namespace UnitTests.Service
             int meetingKey = 1;
             int sessionKey = 1;
             
-            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey)).ThrowsAsync(new Exception("Database error"));
+            _unityOfWorkMock.Setup(x => x.SessionDao.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey, It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("Database error"));
 
             var response = await _service.GetSessionByMeetingKeySessionKey(meetingKey, sessionKey);
 
@@ -75,11 +81,11 @@ namespace UnitTests.Service
         {
             var meetingKey = 1;
 
-            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey)).ReturnsAsync(MakeDataResponse(true));
+            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeDataResponse(true));
 
-            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>())).ReturnsAsync(MakeResponseSuccess(true));
+            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>(), It.IsAny<CancellationToken>())).ReturnsAsync(MakeResponseSuccess(true));
 
-            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(MakeResponseSuccess(true));
+            _unityOfWorkMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(MakeResponseSuccess(true));
 
             var response = await _service.InsertSessions(meetingKey);
 
@@ -91,7 +97,7 @@ namespace UnitTests.Service
         {
             var meetingKey = 1;
 
-            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey)).ReturnsAsync(MakeDataResponse(false, "API error"));
+            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeDataResponse(false, "API error"));
 
             var response = await _service.InsertSessions(meetingKey);
             
@@ -107,9 +113,9 @@ namespace UnitTests.Service
         {
             var meetingKey = 1;
             
-            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey)).ReturnsAsync(MakeDataResponse(true));
+            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeDataResponse(true));
             
-            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>())).ReturnsAsync(MakeResponseSuccess(false));
+            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>(), It.IsAny<CancellationToken>())).ReturnsAsync(MakeResponseSuccess(false));
             
             var response = await _service.InsertSessions(meetingKey);
             
@@ -125,11 +131,11 @@ namespace UnitTests.Service
         {
             var meetingKey = 1;
 
-            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey)).ReturnsAsync(MakeDataResponse(true));
+            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey, It.IsAny<CancellationToken>())).ReturnsAsync(MakeDataResponse(true));
 
-            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>())).ReturnsAsync(MakeResponseSuccess(true));
+            _unityOfWorkMock.Setup(x => x.SessionDao.InsertSessions(It.IsAny<List<Session>>(), It.IsAny<CancellationToken>())).ReturnsAsync(MakeResponseSuccess(true));
 
-            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = false });
+            _unityOfWorkMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = false });
 
             var response = await _service.InsertSessions(meetingKey);
 
@@ -145,7 +151,7 @@ namespace UnitTests.Service
         {
             var meetingKey = 1;
             
-            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey)).ThrowsAsync(new Exception("API error"));
+            _sessionClient.Setup(x => x.GetSessionsByMeetingKey(meetingKey, It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("API error"));
             
             var response = await _service.InsertSessions(meetingKey);
          
@@ -159,7 +165,7 @@ namespace UnitTests.Service
 
         private Response MakeResponseSuccess(bool isTrue) => new() { HasSuccess = isTrue };
 
-        private DataResponse<Session> MakeDataResponse(bool isTrue, string message = null!) => new() { Itens = [new Session()], HasSuccess = isTrue, Message = message };
+        private DataResponse<Session> MakeDataResponse(bool isTrue, string message = null!) => new() { Itens = [new Session { MeetingKey = 1, SessionKey = 1 }], HasSuccess = isTrue, Message = message };
 
         private SingleResponse<Session> MakeSingleResponse(bool isTrue, Session session = null!, string message = null!) => new() { Item = session, HasSuccess = isTrue, Message = message };
 

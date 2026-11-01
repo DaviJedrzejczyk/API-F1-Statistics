@@ -8,6 +8,7 @@ namespace Services.Interfaces
     {
         Task<Response> SavePits(List<Pit> pits);
         Task<DataResponse<Pit>> GetPitsBySessionKeyApi(int sessionKey);
+        Task<DataResponse<Pit>> GetPitsBySessionKeyApi(int sessionKey, CancellationToken cancellationToken);
         Task<DataResponse<Pit>> GetPitsBySessionKeyDb(int sessionKey);
     }
 }

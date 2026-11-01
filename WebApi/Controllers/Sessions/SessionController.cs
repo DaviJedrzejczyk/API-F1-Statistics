@@ -38,17 +38,18 @@ namespace WebApi.Controllers.Sessions
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status415UnsupportedMediaType)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> InsertSessionsInDataBase(SessionMeetingKeyViewModel keyViewModel)
+        public async Task<IActionResult> InsertSessionsInDataBase(SessionMeetingKeyViewModel keyViewModel, CancellationToken cancellationToken = default)
         {
             try
             {
-                var response = await _sessionService.InsertSessions(keyViewModel.MeetingKey);
+                var response = await _sessionService.InsertSessions(keyViewModel.MeetingKey, cancellationToken);
 
                 if (!response.HasSuccess)
                     return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(new SuccessViewModel() { StatusCode = 200, Message = response.Message });
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception)
             {
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
@@ -70,9 +71,9 @@ namespace WebApi.Controllers.Sessions
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetSessionBySessionKey(int meetingkey, int sessionKey)
+        public async Task<IActionResult> GetSessionBySessionKey(int meetingkey, int sessionKey, CancellationToken cancellationToken = default)
         {
-            var response = await _sessionService.GetSessionByMeetingKeySessionKey(meetingkey, sessionKey);
+            var response = await _sessionService.GetSessionByMeetingKeySessionKey(meetingkey, sessionKey, cancellationToken);
 
             if (!response.HasSuccess && response.Item == null) return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(response)));
             if (!response.HasSuccess && response.Exception != null) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));

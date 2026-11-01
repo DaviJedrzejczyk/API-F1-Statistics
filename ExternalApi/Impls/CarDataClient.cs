@@ -21,10 +21,13 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed)
+            => await GetHighSpeedsSession(sessionKey, minimunSpeed, CancellationToken.None);
+
+        public async Task<DataResponse<CarData>> GetHighSpeedsSession(int sessionKey, int minimunSpeed, CancellationToken cancellationToken)
         {
 			try
 			{
-                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&speed>={minimunSpeed}");
+                SingleResponse<string> carData = await _f1ApiClient.Get("car_data?", $"session_key={sessionKey}&speed>={minimunSpeed}", cancellationToken);
 
                 if (!carData.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(carData.Message, carData.Exception);
@@ -33,6 +36,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<CarData>>(carDataViewModels));
             }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
 			catch (Exception ex)
 			{
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<CarData>(ex);

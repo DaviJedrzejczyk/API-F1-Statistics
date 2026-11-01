@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Entities.Class;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -28,7 +28,7 @@ namespace UnitTests.WebApi
             var model = new MeetingYearViewModel { Year = 2023 };
 
             meetingServiceMock
-                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Response { HasSuccess = true, Message = "inserted" });
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -37,7 +37,7 @@ namespace UnitTests.WebApi
             var result = await controller.InsertAllTracksOfCurrentSeason(model);
 
             // Assert
-            meetingServiceMock.Verify(s => s.InsertTracksOfCurrentYear(2023), Times.Once);
+            meetingServiceMock.Verify(s => s.InsertTracksOfCurrentYear(2023, It.IsAny<CancellationToken>()), Times.Once);
             Assert.IsInstanceOf<OkObjectResult>(result);
             var ok = (OkObjectResult)result;
             Assert.IsInstanceOf<SuccessViewModel>(ok.Value);
@@ -57,7 +57,7 @@ namespace UnitTests.WebApi
             var model = new MeetingYearViewModel { Year = 2021 };
 
             meetingServiceMock
-                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Response { HasSuccess = false, Message = "failed" });
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -66,7 +66,7 @@ namespace UnitTests.WebApi
             var result = await controller.InsertAllTracksOfCurrentSeason(model);
 
             // Assert
-            meetingServiceMock.Verify(s => s.InsertTracksOfCurrentYear(2021), Times.Once);
+            meetingServiceMock.Verify(s => s.InsertTracksOfCurrentYear(2021, It.IsAny<CancellationToken>()), Times.Once);
             Assert.IsInstanceOf<BadRequestObjectResult>(result);
             var bad = (BadRequestObjectResult)result;
             var error = (ErrorViewModel)bad.Value!;
@@ -84,7 +84,7 @@ namespace UnitTests.WebApi
             var model = new MeetingYearViewModel { Year = 2000 };
 
             meetingServiceMock
-                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.InsertTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("boom"));
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -109,7 +109,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             meetingServiceMock
-                .Setup(s => s.GetMeetingByKey(It.IsAny<int>()))
+                .Setup(s => s.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SingleResponse<Meeting> { Item = null!, Message = "nope" });
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -136,7 +136,7 @@ namespace UnitTests.WebApi
             var mapped = new MeetingViewModel { MeetingKey = 123 };
 
             meetingServiceMock
-                .Setup(s => s.GetMeetingByKey(It.IsAny<int>()))
+                .Setup(s => s.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new SingleResponse<Meeting> { Item = meeting });
 
             mapperMock
@@ -149,7 +149,7 @@ namespace UnitTests.WebApi
             var result = await controller.GetMeetingByKey(7);
 
             // Assert
-            meetingServiceMock.Verify(s => s.GetMeetingByKey(7), Times.Once);
+            meetingServiceMock.Verify(s => s.GetMeetingByKey(7, It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<MeetingViewModel>(meeting), Times.Once);
             Assert.IsInstanceOf<OkObjectResult>(result);
             var ok = (OkObjectResult)result;
@@ -164,7 +164,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             meetingServiceMock
-                .Setup(s => s.GetMeetingByKey(It.IsAny<int>()))
+                .Setup(s => s.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("err"));
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -191,7 +191,7 @@ namespace UnitTests.WebApi
             var response = new DataResponse<Meeting> { HasSuccess = false, Message = "bad" };
 
             meetingServiceMock
-                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);
@@ -220,7 +220,7 @@ namespace UnitTests.WebApi
             var mappedList = new List<MeetingViewModel> { new MeetingViewModel { MeetingKey = 1 }, new MeetingViewModel { MeetingKey = 2 } };
 
             meetingServiceMock
-                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(response);
 
             mapperMock
@@ -233,7 +233,7 @@ namespace UnitTests.WebApi
             var result = await controller.GetAllTracksOfCurrentYear(2019);
 
             // Assert
-            meetingServiceMock.Verify(s => s.GetAllTracksOfCurrentYear(2019), Times.Once);
+            meetingServiceMock.Verify(s => s.GetAllTracksOfCurrentYear(2019, It.IsAny<CancellationToken>()), Times.Once);
             mapperMock.Verify(m => m.Map<List<MeetingViewModel>>(meetings), Times.Once);
             Assert.IsInstanceOf<OkObjectResult>(result);
             var ok = (OkObjectResult)result;
@@ -248,7 +248,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             meetingServiceMock
-                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>()))
+                .Setup(s => s.GetAllTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("explode"));
 
             var controller = new MeetingController(meetingServiceMock.Object, mapperMock.Object);

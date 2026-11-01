@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface IStintClient
     {
         Task<DataResponse<Stint>> GetAllStintsBySession(int sessionKey);
+        Task<DataResponse<Stint>> GetAllStintsBySession(int sessionKey, CancellationToken cancellationToken);
     }
 }

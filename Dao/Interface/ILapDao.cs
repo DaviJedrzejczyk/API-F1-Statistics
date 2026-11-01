@@ -24,5 +24,6 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> SaveLap(Lap lap);
+        Task<Response> UpsertLap(Lap lap, CancellationToken cancellationToken);
     }
 }

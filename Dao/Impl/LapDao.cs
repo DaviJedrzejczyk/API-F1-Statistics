@@ -42,5 +42,18 @@ namespace Dao.Impl
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
         }
+
+        public async Task<Response> UpsertLap(Lap lap, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var existing = await _db.Laps.FindAsync(new object[] { lap.MeetingKey, lap.SessionKey, lap.DriverNumber, lap.LapNumber }, cancellationToken);
+                if (existing == null) await _db.Laps.AddAsync(lap, cancellationToken);
+                else _db.Entry(existing).CurrentValues.SetValues(lap);
+                return ResponseFactory.CreateInstance().CreateSuccessResponse();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureResponse(ex); }
+        }
     }
 }

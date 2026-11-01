@@ -1,4 +1,4 @@
-﻿using Dao.Interface;
+using Dao.Interface;
 using Entities.Class;
 using ExternalApi.Interfaces;
 using Moq;
@@ -28,10 +28,10 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeInsertAllMeetingOfCurrentYear()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = true});
-            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings, It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = true});
+            _unityOfWorkMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = true });
 
             var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
@@ -41,12 +41,12 @@ namespace UnitTests.Service
        [Test]
        public async Task ShouldBeInsertOnlyNewMeetingOfCurrentYear()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(1)).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting() });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(2)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2))).ReturnsAsync(new Response() { HasSuccess = true });
-            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = true });
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(1, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting() });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(2, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2), It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = true });
+            _unityOfWorkMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = true });
 
             var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
@@ -56,11 +56,11 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnExceptionIfMeetingKeyIsNotFound()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(1)).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting() });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(2)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3)).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2))).ThrowsAsync(new Exception("No meeting found with the specified key."));
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(1, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting() });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(2, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(3, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(It.Is<List<Meeting>>(m => m.Count == 2), It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("No meeting found with the specified key."));
             
             Response ex = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
@@ -70,9 +70,9 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnExceptionIfInsertMeetingFailed()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ThrowsAsync(new Exception("Failed to insert meetings."));
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings, It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("Failed to insert meetings."));
             
             Response ex = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
@@ -82,10 +82,10 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeNotInsertMeeting()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 1 } });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 2 } });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 3 } });
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 1 } });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 2 } });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = new Meeting { CircuitKey = 3 } });
          
             var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             Assert.That(service.Message, Is.EqualTo("No new meetings to insert."));
@@ -102,7 +102,7 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnNullIfMeetingKeyNotFound()
         {
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(999)).ReturnsAsync(new SingleResponse<Meeting>());
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(999, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>());
             var service = await _service.GetMeetingByKey(999);
             Assert.Multiple(() =>
             {
@@ -127,9 +127,9 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnMessageWhenInsertFails()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to insert meetings." });
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings, It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to insert meetings." });
             
             var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
             
@@ -139,10 +139,10 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnMessageWhenSaveFails()
         {
-            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
-            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings)).ReturnsAsync(new Response() { HasSuccess = true });
-            _unityOfWorkMock.Setup(x => x.Commit()).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to save meetings." });
+            _meetClientMock.Setup(x => x.GetMeetingsByYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { HasSuccess = true, Itens = _meetings });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetMeetingByKey(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting>() { Item = null });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.InsertTracksOfCurrentYear(_meetings, It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = true });
+            _unityOfWorkMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response() { HasSuccess = false, Message = "Failed to save meetings." });
 
             var service = await _service.InsertTracksOfCurrentYear(DateTime.Now.Year);
 
@@ -153,7 +153,7 @@ namespace UnitTests.Service
         [Test]
         public async Task ShouldBeReturnAllTrakcsOfCurrentYear()
         {
-            _unityOfWorkMock.Setup(x => x.MeetingDao.GetAllTracksOfCurrentYear(It.IsAny<int>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings, HasSuccess = true });
+            _unityOfWorkMock.Setup(x => x.MeetingDao.GetAllTracksOfCurrentYear(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Meeting>() { Itens = _meetings, HasSuccess = true });
             
             var service = await _service.GetAllTracksOfCurrentYear(DateTime.Now.Year);
             

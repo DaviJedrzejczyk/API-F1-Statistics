@@ -44,17 +44,18 @@ namespace WebApi.Controllers.Meetings
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status415UnsupportedMediaType)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> InsertAllTracksOfCurrentSeason(MeetingYearViewModel model)
+        public async Task<IActionResult> InsertAllTracksOfCurrentSeason(MeetingYearViewModel model, CancellationToken cancellationToken = default)
         {
             try
             {
-                Response response = await _meetingService.InsertTracksOfCurrentYear(model.Year);
+                Response response = await _meetingService.InsertTracksOfCurrentYear(model.Year, cancellationToken);
 
                 if (!response.HasSuccess)
                     return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(new SuccessViewModel() { StatusCode = 200, Message = response.Message} );
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception)
             {
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
@@ -75,17 +76,18 @@ namespace WebApi.Controllers.Meetings
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetMeetingByKey(int meetingKey)
+        public async Task<IActionResult> GetMeetingByKey(int meetingKey, CancellationToken cancellationToken = default)
         {
             try
             {
-                SingleResponse<Meeting> response = await _meetingService.GetMeetingByKey(meetingKey);
+                SingleResponse<Meeting> response = await _meetingService.GetMeetingByKey(meetingKey, cancellationToken);
 
                 if (response.Item == null)
                     return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(_mapper.Map<MeetingViewModel>(response.Item));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception)
             {
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));
@@ -104,17 +106,18 @@ namespace WebApi.Controllers.Meetings
         [ProducesResponseType(typeof(List<MeetingViewModel>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllTracksOfCurrentYear(int year)
+        public async Task<IActionResult> GetAllTracksOfCurrentYear(int year, CancellationToken cancellationToken = default)
         {
             try
             {
-                DataResponse<Meeting> response = await _meetingService.GetAllTracksOfCurrentYear(year);
+                DataResponse<Meeting> response = await _meetingService.GetAllTracksOfCurrentYear(year, cancellationToken);
 
                 if (!response.HasSuccess)
                     return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
                 return Ok(_mapper.Map<List<MeetingViewModel>>(response.Itens));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception)
             {
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.RequestFailed));

@@ -1,4 +1,4 @@
-﻿using Dao.Interface;
+using Dao.Interface;
 using Entities.Class;
 using Entities.Dtos;
 using ExternalApi.Interfaces;
@@ -30,47 +30,88 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyApi(int sessionKey)
+            => await GetSessionResultBySessionKeyApi(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyApi(int sessionKey, CancellationToken cancellationToken)
         {
-			try
+            try
             {
-                DataResponse<SessionResult> sessionResult = await GetSessionResultBySessionKeyDatabase(sessionKey);
-
-                if (sessionResult.HasSuccess && sessionResult.Itens.Count > 0 || !sessionResult.HasSuccess && sessionResult.Exception != null)
-                    return sessionResult; 
-
-                DataResponse<SessionResultDto> response = await _sessionResultClient.GetSessionResultApi(sessionKey);
-                
-                if (!response.HasSuccess || response.Itens == null || response.Itens.Count == 0)
+                var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<SessionResult>(_unityOfWork, "session_results", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                var response = await _sessionResultClient.GetSessionResultApi(sessionKey, cancellationToken);
+                if (!response.HasSuccess || response.Itens == null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(response.Message, response.Exception);
+                if (response.Itens.Any(x => x.SessionKey != sessionKey) || response.Itens.Select(x => x.DriverNumber).Distinct().Count() != response.Itens.Count)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>("Invalid session result window returned by upstream.");
 
-                Response responseSave = new();
-                if (response.HasSuccess && response.Itens[0].Duration != null && response.Itens[0].Duration.Count > 1)
+                await using var transaction = await _unityOfWork.BeginImport("session_results", key, cancellationToken);
+                cached = await ImportWindowCache.Read<SessionResult>(_unityOfWork, "session_results", key, cancellationToken);
+                if (cached != null) return WindowResult(cached);
+                var source = response.Itens;
+                var qualifying = source.Any(x => x.Duration != null && x.Duration.Count > 1);
+                var results = new List<SessionResult>();
+                var qualis = new List<SessionResultQualify>();
+                if (qualifying)
                 {
-                    var qualifyingResults = await GetQualyfingResult(response.Itens);
-
-                    if (!qualifyingResults.HasSuccess) 
-                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(qualifyingResults.Message, qualifyingResults.Exception);
-
-                    responseSave = await SaveSessionResults(qualifyingResults.Itens);
-                    if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, responseSave.Exception);
-
-                    return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<SessionResult>>(qualifyingResults.Itens));
+                    var stints = await _stintService.GetStintsBySessionKey(sessionKey, cancellationToken);
+                    if (!stints.HasSuccess || stints.Itens == null)
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(stints.Message, stints.Exception);
+                    foreach (var item in source)
+                    {
+                        var durations = item.Duration ?? new List<double>();
+                        var phase = Enumerable.Range(0, Math.Min(3, durations.Count)).Where(i => durations[i] > 0).DefaultIfEmpty(0).Last();
+                        var duration = phase < durations.Count ? durations[phase] : 0;
+                        var gaps = (item.GapToLeader ?? string.Empty).Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        var gap = phase < gaps.Length && double.TryParse(gaps[phase], out var parsed) ? parsed : 0;
+                        qualis.Add(new SessionResultQualify { SessionKey = sessionKey, MeetingKey = item.MeetingKey, DriverNumber = item.DriverNumber, QualifyingPhase = $"Q{phase + 1}", Duration = duration, GapToLeader = gap });
+                        results.Add(new SessionResult { SessionKey = sessionKey, MeetingKey = item.MeetingKey, DriverNumber = item.DriverNumber, Dnf = item.Dnf, Dns = item.Dns, Dsq = item.Dsq, NumberOfLaps = item.NumberOfLaps, Position = item.Position, Duration = duration, IsQualy = true, Compound = stints.Itens.FirstOrDefault(x => x.DriverNumber == item.DriverNumber && x.LapEnd == item.NumberOfLaps)?.Compound ?? string.Empty });
+                    }
+                    var leader = results.Where(x => x.Duration > 0).Select(x => x.Duration).DefaultIfEmpty(0).Min();
+                    foreach (var item in results) item.GapToLeader = Math.Round(leader - item.Duration, 3).ToString();
+                    var existingQualis = await _unityOfWork.SessionResultQualifyDao.GetQualifyingResultBySessionKey(sessionKey, cancellationToken);
+                    if (!existingQualis.HasSuccess || existingQualis.Itens == null)
+                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(existingQualis.Message, existingQualis.Exception);
+                    var keys = existingQualis.Itens.Select(x => (x.MeetingKey, x.SessionKey, x.DriverNumber, x.QualifyingPhase)).ToHashSet();
+                    var missing = qualis.Where(x => !keys.Contains((x.MeetingKey, x.SessionKey, x.DriverNumber, x.QualifyingPhase))).ToList();
+                    if (missing.Count > 0)
+                    {
+                        var saved = await _unityOfWork.SessionResultQualifyDao.SaveQualifyResult(missing, cancellationToken);
+                        if (!saved.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(saved.Message, saved.Exception);
+                    }
                 }
-                
-                var responseCreatList = await CreateListSessionResult(response.Itens);
-                if (!responseCreatList.HasSuccess) return responseCreatList;
-
-                responseSave = await SaveSessionResults(_mapper.Map<List<SessionResult>>(responseCreatList.Itens));
-                if (!responseSave.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(responseSave.Message, response.Exception);
-
-                return responseCreatList;
+                else
+                {
+                    var mapped = await CreateListSessionResult(source);
+                    if (!mapped.HasSuccess || mapped.Itens == null) return mapped;
+                    results = mapped.Itens;
+                }
+                var existing = await _unityOfWork.SessionResultDao.GetSessionResultsBySesssionKey(sessionKey, cancellationToken);
+                if (!existing.HasSuccess || existing.Itens == null)
+                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(existing.Message, existing.Exception);
+                var drivers = existing.Itens.Select(x => x.DriverNumber).ToHashSet();
+                var newResults = results.Where(x => !drivers.Contains(x.DriverNumber)).ToList();
+                if (newResults.Count > 0)
+                {
+                    var saved = await _unityOfWork.SessionResultDao.SaveSessionResults(newResults, cancellationToken);
+                    if (!saved.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(saved.Message, saved.Exception);
+                }
+                results = qualifying
+                    ? results.OrderBy(x => x.Position == 0 ? int.MaxValue : x.Position).ToList()
+                    : results.Where(x => !(x.Dnf || x.Dsq || x.Dns)).OrderBy(x => x.Position == 0 ? int.MaxValue : x.Position)
+                        .Concat(results.Where(x => x.Dnf || x.Dsq || x.Dns).OrderByDescending(x => x.NumberOfLaps)).ToList();
+                await ImportWindowCache.Stage(_unityOfWork, "session_results", key, results, cancellationToken);
+                var commit = await _unityOfWork.Commit(cancellationToken);
+                if (!commit.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(commit.Message, commit.Exception);
+                await transaction.CommitAsync(cancellationToken);
+                return WindowResult(results);
             }
-            catch (Exception ex)
-			{
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
-			}
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex); }
         }
 
+        private static DataResponse<SessionResult> WindowResult(List<SessionResult> results)
+            => results.Count == 0 ? ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>("Not found the results of this session.") : ResponseFactory.CreateInstance().CreateSuccessDataResponse(results);
         public async Task<DataResponse<SessionResult>> GetSessionResultBySessionKeyDatabase(int sessionKey)
         {
             try
@@ -144,75 +185,5 @@ namespace Services.Impl
             }
         }
 
-        private async Task<DataResponse<SessionResult>> GetQualyfingResult(List<SessionResultDto> itens)
-        {
-            try
-            {
-                List<SessionResultQualify> qualis = [];
-                List<SessionResult> sessionResults = [];
-
-                DataResponse<SessionResultQualify> response = await _sessionResultQualifyings.GetQualyBySessionKey(itens[0].SessionKey);
-
-                if (!response.HasSuccess && response.Exception != null)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(response.Message, response.Exception);
-
-                if (response.HasSuccess && response.Itens.Count > 0)
-                    qualis = response.Itens;
-                else
-                {
-                    var qualifyingResults = await _sessionResultQualifyings.CreateListResultQualyfing(itens);
-
-                    if (!qualifyingResults.HasSuccess)
-                        return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(qualifyingResults.Message, qualifyingResults.Exception);
-
-                    qualis = qualifyingResults.Itens;
-                }
-
-                double timeLeader = qualis.Min(x => x.Duration);
-                for (int i = 0; i < qualis.Count; i++)
-                {
-                    sessionResults.Add(new SessionResult
-                    {
-                        Dnf = itens[i].Dnf,
-                        Dns = itens[i].Dns,
-                        Dsq = itens[i].Dsq,
-                        DriverNumber = qualis[i].DriverNumber,
-                        Duration = qualis[i].Duration,
-                        GapToLeader = Math.Round(timeLeader - qualis[i].Duration, 3).ToString(),
-                        NumberOfLaps = itens[i].NumberOfLaps,
-                        MeetingKey = qualis[i].MeetingKey,
-                        Position = itens[i].Position,
-                        SessionKey = qualis[i].SessionKey,
-                        IsQualy = true
-                    });
-                }
-
-
-                var stints = await _stintService.GetStintsBySessionKey(itens[0].SessionKey);
-                if (!stints.HasSuccess && stints.Exception != null)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(stints.Message, stints.Exception);
-                
-                ApplyLastCompoundUsed(sessionResults, stints);
-
-                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(sessionResults);
-            }
-            catch (Exception ex)
-            {
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResult>(ex);
-            }
-        }
-
-        private static void ApplyLastCompoundUsed(List<SessionResult> sessionResults, DataResponse<Stint> stints)
-        {
-            if (stints.HasSuccess && stints.Itens.Count > 0)
-            {
-                for (int i = 0; i < sessionResults.Count; i++)
-                {
-                    var stint = stints.Itens.FirstOrDefault(x => x.LapEnd == sessionResults[i].NumberOfLaps && x.DriverNumber == sessionResults[i].DriverNumber);
-                    if (stint != null)
-                        sessionResults[i].Compound = stint.Compound;
-                }
-            }
-        }
     }
 }

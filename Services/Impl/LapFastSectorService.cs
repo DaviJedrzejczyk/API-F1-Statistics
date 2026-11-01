@@ -100,19 +100,22 @@ namespace Services.Impl
         }
 
         public async Task<DataResponse<LapFastSector>> GetFastSectorsOfSession(int sessionKey)
+            => await GetFastSectorsOfSession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<LapFastSector>> GetFastSectorsOfSession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                var lapFastSectors = await _unityOfWork.LapFastSectorDao.GetAllLapFastSectorsSession(sessionKey);
-
-                if (lapFastSectors.HasSuccess) return lapFastSectors;
-
-                if (lapFastSectors.Exception != null)
-                    return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(lapFastSectors.Message, lapFastSectors.Exception);
-
-                return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>("The fastest sectors could not be retrieved or not found.");
+                var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var cached = await ImportWindowCache.Read<LapFastSector>(_unityOfWork, "fast_sectors", key, cancellationToken);
+                if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessDataResponse(cached);
+                var window = await _unityOfWork.GetImportWindow("fast_sectors", key, cancellationToken);
+                if (window != null) return ResponseFactory.CreateInstance().CreateSuccessDataResponse(new List<LapFastSector>());
+                // This endpoint is a raw read of saved sectors; it never establishes import completeness.
+                return await _unityOfWork.LapFastSectorDao.GetAllLapFastSectorsSession(sessionKey, cancellationToken);
 
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(ex);

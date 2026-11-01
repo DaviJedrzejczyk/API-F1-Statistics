@@ -17,12 +17,16 @@ namespace Dao.Impl
         }
 
         public async Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey)
+            => await GetAllLapFastSectorsSession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<LapFastSector>> GetAllLapFastSectorsSession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                var lapFastSectors = await _db.LapFastSectors.Where(l => l.SessionKey == sessionKey).AsNoTracking().ToListAsync();
+                var lapFastSectors = await _db.LapFastSectors.Where(l => l.SessionKey == sessionKey).AsNoTracking().ToListAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(lapFastSectors);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapFastSector>(ex);
@@ -40,6 +44,22 @@ namespace Dao.Impl
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
             }
+        }
+
+        public async Task<Response> UpsertLapFastSectors(List<LapFastSector> lapFastSectors, CancellationToken cancellationToken)
+        {
+            try
+            {
+                foreach (var sector in lapFastSectors)
+                {
+                    var existing = await _db.LapFastSectors.FindAsync(new object[] { sector.SessionKey, sector.DriverNumber, sector.Sector }, cancellationToken);
+                    if (existing == null) await _db.LapFastSectors.AddAsync(sector, cancellationToken);
+                    else _db.Entry(existing).CurrentValues.SetValues(sector);
+                }
+                return ResponseFactory.CreateInstance().CreateSuccessResponse();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureResponse(ex); }
         }
     }
 }
