@@ -55,15 +55,15 @@ namespace Services.Impl
                 var response = await _race.GetRaceControlsBySessionFlags(sessionKey, orderedFlags, cancellationToken);
                 if (!response.HasSuccess || response.Itens == null) return response;
                 if (response.Itens.Any(x => x.SessionKey != sessionKey) ||
-                    response.Itens.Select(x => (x.Date, x.SessionKey, x.MeetingKey)).Distinct().Count() != response.Itens.Count)
+                    response.Itens.Select(x => (x.Date, x.SessionKey, x.MeetingKey, x.Category, x.DriverNumber, x.Flag, x.LapNumber, x.Message, x.QualifyingPhase, x.Scope, x.Sector)).Distinct().Count() != response.Itens.Count)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>("Invalid race control window returned by upstream.");
                 await using var transaction = await _unitOfWork.BeginImport("race_control", session, cancellationToken);
                 cached = await ImportWindowCache.Read<RaceControl>(_unitOfWork, "race_control", key, cancellationToken);
                 if (cached != null) return ResponseFactory.CreateInstance().CreateSuccessDataResponse(cached);
                 var db = await _unitOfWork.RaceControlDao.GetRaceControlsBySession(sessionKey, cancellationToken);
                 if (!db.HasSuccess || db.Itens == null) return db;
-                var existing = db.Itens.Select(x => (x.Date, x.SessionKey, x.MeetingKey)).ToHashSet();
-                var missing = response.Itens.Where(x => !existing.Contains((x.Date, x.SessionKey, x.MeetingKey))).ToList();
+                var existing = db.Itens.Select(x => (x.Date, x.SessionKey, x.MeetingKey, x.Category, x.DriverNumber, x.Flag, x.LapNumber, x.Message, x.QualifyingPhase, x.Scope, x.Sector)).ToHashSet();
+                var missing = response.Itens.Where(x => !existing.Contains((x.Date, x.SessionKey, x.MeetingKey, x.Category, x.DriverNumber, x.Flag, x.LapNumber, x.Message, x.QualifyingPhase, x.Scope, x.Sector))).ToList();
                 if (missing.Count > 0)
                 {
                     var saved = await _unitOfWork.RaceControlDao.SaveRaceControls(missing, cancellationToken);

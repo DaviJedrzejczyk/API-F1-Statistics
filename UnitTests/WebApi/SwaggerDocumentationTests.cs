@@ -51,6 +51,12 @@ namespace UnitTests.WebApi
                 "/api/Meeting/{meetingKey}",
                 "/api/Meeting/all-tracks/{year}",
                 "/api/Overtake/get-overtakes-session/{sessionKey}",
+                "/api/Pit/{sessionKey}",
+                "/api/Pit/{sessionKey}/import",
+                "/api/Stint/{sessionKey}",
+                "/api/Stint/{sessionKey}/import",
+                "/api/RaceControl/{sessionKey}",
+                "/api/RaceControl/{sessionKey}/import",
                 "/api/SessionResult/result",
                 "/api/Session/insert-sessions",
                 "/api/Session/{sessionKey}"

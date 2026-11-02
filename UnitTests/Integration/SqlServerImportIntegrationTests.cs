@@ -314,7 +314,7 @@ public class SqlServerImportIntegrationTests
         var now = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         await using (var db = Open())
         {
-            db.RaceControls.Add(new RaceControl { SessionKey = 9056, MeetingKey = 1234, Date = now, Flag = "YELLOW" });
+            db.RaceControls.Add(new RaceControl { SessionKey = 9056, MeetingKey = 1234, Date = now, Flag = "YELLOW", Sector = 1 });
             await db.SaveChangesAsync();
         }
         const string body = "[{\"date\":\"2024-01-01T00:00:00Z\",\"meeting_key\":1234,\"session_key\":9056,\"flag\":\"YELLOW\",\"sector\":1},{\"date\":\"2024-01-01T00:00:10Z\",\"meeting_key\":1234,\"session_key\":9056,\"flag\":\"CLEAR\",\"sector\":1}]";
@@ -334,6 +334,59 @@ public class SqlServerImportIntegrationTests
         await using var check = Open();
         Assert.That(await check.RaceControls.CountAsync(), Is.EqualTo(2));
         Assert.That(await check.ImportWindows.CountAsync(), Is.EqualTo(1));
+    }
+
+    [TestCase("Pit", "pit")]
+    [TestCase("Stint", "stints")]
+    [TestCase("RaceControl", "race_control")]
+    public async Task ResourceEndpoints_EmptyAndUpstreamFailureUseContracts(string resource, string upstream)
+    {
+        using (var empty = await host.Client.GetAsync($"/api/{resource}/9056"))
+        {
+            Assert.That(empty.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            using var json = JsonDocument.Parse(await empty.Content.ReadAsStringAsync());
+            Assert.That(json.RootElement.GetArrayLength(), Is.Zero);
+        }
+        transport.Expect($"/v1/{upstream}?session_key=9056", HttpStatusCode.ServiceUnavailable, "unavailable");
+        using var failed = await host.Client.PostAsync($"/api/{resource}/9056/import", null);
+        await AssertEnvelope(failed, HttpStatusCode.BadRequest);
+        await using var db = Open();
+        Assert.That(await db.ImportWindows.CountAsync(), Is.Zero);
+    }
+
+    [Test]
+    public async Task ResourceEndpoints_ImportReadAndReimportWithoutDuplicates()
+    {
+        const string pits = "[{\"date\":\"2024-01-01T00:00:00Z\",\"meeting_key\":1234,\"session_key\":9056,\"driver_number\":1},{\"date\":\"2024-01-01T00:00:10Z\",\"meeting_key\":1234,\"session_key\":9056,\"driver_number\":2}]";
+        const string stints = "[{\"meeting_key\":1234,\"session_key\":9056,\"driver_number\":1,\"stint_number\":1,\"compound\":\"SOFT\"}]";
+        const string controls = "[{\"date\":\"2024-01-01T00:00:00Z\",\"meeting_key\":1234,\"session_key\":9056,\"flag\":\"YELLOW\",\"sector\":1},{\"date\":\"2024-01-01T00:00:00Z\",\"meeting_key\":1234,\"session_key\":9056,\"flag\":\"YELLOW\",\"sector\":2}]";
+        await using (var db = Open())
+        {
+            db.Pits.Add(new Pit { SessionKey = 9056, MeetingKey = 1234, DriverNumber = 1, Date = new DateTime(2024, 1, 1) });
+            await db.SaveChangesAsync();
+        }
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            transport.ExpectSequence(("/v1/pit?session_key=9056", HttpStatusCode.OK, pits),
+                ("/v1/stints?session_key=9056", HttpStatusCode.OK, stints),
+                ("/v1/race_control?session_key=9056", HttpStatusCode.OK, controls));
+            foreach (var resource in new[] { "Pit", "Stint", "RaceControl" })
+            {
+                using var imported = await host.Client.PostAsync($"/api/{resource}/9056/import", null);
+                Assert.That(imported.StatusCode, Is.EqualTo(HttpStatusCode.OK), await imported.Content.ReadAsStringAsync());
+                using var read = await host.Client.GetAsync($"/api/{resource}/9056");
+                Assert.That(read.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+                using var json = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
+                Assert.That(json.RootElement.GetArrayLength(), Is.EqualTo(resource == "Stint" ? 1 : 2));
+            }
+            transport.Verify(); transport.Reset();
+            await using var db = Open();
+            await db.ImportWindows.ExecuteDeleteAsync();
+        }
+        await using var check = Open();
+        Assert.That(await check.Pits.CountAsync(), Is.EqualTo(2));
+        Assert.That(await check.Stints.CountAsync(), Is.EqualTo(1));
+        Assert.That(await check.RaceControls.CountAsync(), Is.EqualTo(2));
     }
 
     [Test]

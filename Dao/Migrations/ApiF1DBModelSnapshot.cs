@@ -400,6 +400,12 @@ namespace Dao.Migrations
 
             modelBuilder.Entity("Entities.Class.RaceControl", b =>
                 {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
@@ -437,7 +443,7 @@ namespace Dao.Migrations
                     b.Property<int?>("Sector")
                         .HasColumnType("int");
 
-                    b.HasKey("Date", "SessionKey", "MeetingKey");
+                    b.HasKey("Id");
 
                     b.ToTable("F1_RACE_CONTROLS", (string)null);
                 });

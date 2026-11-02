@@ -26,8 +26,8 @@ namespace ExternalApi.Impls
         {
             try
             {
-                var flagQuery = string.Join("&flag=", flags);
-                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}&flag={flagQuery}", cancellationToken);
+                var flagQuery = string.Join("", flags.Select(flag => "&flag=" + Uri.EscapeDataString(flag)));
+                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}{flagQuery}", cancellationToken);
                 
                 if (!response.HasSuccess || response.Item == null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>(response.Message, response.Exception);

@@ -1,0 +1,53 @@
+using Entities.Class;
+using Microsoft.AspNetCore.Mvc;
+using Services.Interfaces;
+using WebApi.Config;
+using WebApi.ViewModels;
+
+namespace WebApi.Controllers.RaceControls;
+
+/// <summary>Queries and imports racecontrol data for a session.</summary>
+[ApiController]
+[Route("api/[controller]")]
+public class RaceControlController : ControllerBase
+{
+    private readonly IRaceControlService service;
+    /// <summary>Creates the controller.</summary>
+    /// <param name="service">The resource service.</param>
+    public RaceControlController(IRaceControlService service) => this.service = service;
+
+    /// <summary>Reads persisted racecontrol data for a session.</summary>
+    /// <param name="sessionKey">Session identifier.</param>
+    /// <param name="flags">Flags to include in the results.</param>
+    /// <response code="200">The persisted records, possibly empty.</response>
+    /// <response code="400">The request or service failed.</response>
+    /// <response code="500">Unexpected server error.</response>
+    [HttpGet("{sessionKey}")]
+    [ProducesResponseType(typeof(List<RaceControl>), 200)]
+    [ProducesResponseType(typeof(ErrorViewModel), 400)]
+    [ProducesResponseType(typeof(ErrorViewModel), 500)]
+    public async Task<IActionResult> Get(int sessionKey, [FromQuery] string[] flags)
+    {
+        var response = await service.GetRaceControlsBySessionFlagsDb(sessionKey, flags);
+        if (!response.HasSuccess || response.Itens == null) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
+        return Ok(response.Itens);
+    }
+
+    /// <summary>Imports the racecontrol window for a session.</summary>
+    /// <param name="sessionKey">Session identifier.</param>
+    /// <param name="flags">Flags to include in the results.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <response code="200">The imported records, possibly empty.</response>
+    /// <response code="400">The request or import failed.</response>
+    /// <response code="500">Unexpected server error.</response>
+    [HttpPost("{sessionKey}/import")]
+    [ProducesResponseType(typeof(List<RaceControl>), 200)]
+    [ProducesResponseType(typeof(ErrorViewModel), 400)]
+    [ProducesResponseType(typeof(ErrorViewModel), 500)]
+    public async Task<IActionResult> Import(int sessionKey, [FromQuery] string[] flags, CancellationToken cancellationToken)
+    {
+        var response = await service.GetRaceControlsBySessionFlagsApi(sessionKey, flags, cancellationToken);
+        if (!response.HasSuccess || response.Itens == null) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
+        return Ok(response.Itens);
+    }
+}

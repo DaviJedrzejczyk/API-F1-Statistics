@@ -2,6 +2,8 @@
 {
     public class RaceControl
     {
+        [System.Text.Json.Serialization.JsonIgnore]
+        public long Id { get; set; }
         public string Category { get; set; } = string.Empty;
         public DateTime Date { get; set; }
         public int? DriverNumber { get; set; }
