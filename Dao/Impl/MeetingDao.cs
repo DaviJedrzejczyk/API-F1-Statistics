@@ -42,7 +42,9 @@ namespace Dao.Impl
         {
             try
             {
-                var meeting = await _db.Meetings.FindAsync(new object[] { meetingKey }, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                var meeting = _db.Meetings.Local.FirstOrDefault(x => x.MeetingKey == meetingKey)
+                    ?? await _db.Meetings.FirstOrDefaultAsync(x => x.MeetingKey == meetingKey, cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessSingleResponse<Meeting>(meeting);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }

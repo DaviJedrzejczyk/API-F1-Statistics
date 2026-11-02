@@ -7,23 +7,6 @@ namespace UnitTests.Clients;
 [TestFixture]
 public class F1ResilienceTests
 {
-    private sealed class TrackedContent : StringContent
-    {
-        public bool Disposed { get; private set; }
-        public TrackedContent() : base("busy") { }
-        protected override void Dispose(bool disposing)
-        {
-            Disposed = true;
-            base.Dispose(disposing);
-        }
-    }
-    private sealed class Transport : HttpMessageHandler
-    {
-        public int Calls;
-        public Func<int, CancellationToken, Task<HttpResponseMessage>> Handler = null!;
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) => Handler(++Calls, token);
-    }
-
     private static F1ApiClient Client(Transport transport, List<TimeSpan> waits) =>
         new(new HttpClient(transport) { BaseAddress = new Uri("https://fixtures.invalid/") }, TimeProvider.System,
             (delay, token) => { token.ThrowIfCancellationRequested(); waits.Add(delay); return Task.CompletedTask; },
@@ -75,11 +58,6 @@ public class F1ResilienceTests
         Assert.CatchAsync<OperationCanceledException>(async () => await Client(transport, new()).Get("laps", "", cancel.Token));
         Assert.That(transport.Calls, Is.EqualTo(1));
     }
-    private sealed class FixedClock : TimeProvider
-    {
-        public DateTimeOffset Now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
-        public override DateTimeOffset GetUtcNow() => Now;
-    }
 
     [Test]
     public async Task RetryAfterDate_UsesServerDelay()
@@ -107,24 +85,6 @@ public class F1ResilienceTests
         Assert.That(waits.Last(), Is.EqualTo(TimeSpan.FromSeconds(51)));
         Assert.That(clock.Now, Is.EqualTo(new DateTimeOffset(2026, 1, 1, 0, 1, 0, TimeSpan.Zero)));
     }
-    private sealed class ManualTimeoutClock : TimeProvider
-    {
-        private TimerCallback? callback;
-        private object? state;
-        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
-        {
-            this.callback = callback;
-            this.state = state;
-            return new ManualTimer();
-        }
-        public void Expire() => callback!(state);
-        private sealed class ManualTimer : ITimer
-        {
-            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
-            public void Dispose() { }
-            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
-        }
-    }
 
     [Test]
     public async Task AttemptTimeout_RetriesAndStopsAtLimit()
@@ -139,4 +99,48 @@ public class F1ResilienceTests
         Assert.That(transport.Calls, Is.EqualTo(3));
         Assert.That(waits, Is.EqualTo(new[] { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2) }));
     }
+}
+
+internal sealed class ManualTimer : ITimer
+{
+    public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+    public void Dispose() { }
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
+
+internal sealed class TrackedContent : StringContent
+{
+    public bool Disposed { get; private set; }
+    public TrackedContent() : base("busy") { }
+    protected override void Dispose(bool disposing)
+    {
+        Disposed = true;
+        base.Dispose(disposing);
+    }
+}
+
+internal sealed class Transport : HttpMessageHandler
+{
+    public int Calls;
+    public Func<int, CancellationToken, Task<HttpResponseMessage>> Handler = null!;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token) => Handler(++Calls, token);
+}
+
+internal sealed class FixedClock : TimeProvider
+{
+    public DateTimeOffset Now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    public override DateTimeOffset GetUtcNow() => Now;
+}
+
+internal sealed class ManualTimeoutClock : TimeProvider
+{
+    private TimerCallback? callback;
+    private object? state;
+    public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+    {
+        this.callback = callback;
+        this.state = state;
+        return new ManualTimer();
+    }
+    public void Expire() => callback!(state);
 }

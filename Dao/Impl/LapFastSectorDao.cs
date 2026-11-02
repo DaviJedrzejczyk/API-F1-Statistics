@@ -52,7 +52,9 @@ namespace Dao.Impl
             {
                 foreach (var sector in lapFastSectors)
                 {
-                    var existing = await _db.LapFastSectors.FindAsync(new object[] { sector.SessionKey, sector.DriverNumber, sector.Sector }, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var existing = _db.LapFastSectors.Local.FirstOrDefault(x => x.SessionKey == sector.SessionKey && x.DriverNumber == sector.DriverNumber && x.Sector == sector.Sector)
+                        ?? await _db.LapFastSectors.FirstOrDefaultAsync(x => x.SessionKey == sector.SessionKey && x.DriverNumber == sector.DriverNumber && x.Sector == sector.Sector, cancellationToken);
                     if (existing == null) await _db.LapFastSectors.AddAsync(sector, cancellationToken);
                     else _db.Entry(existing).CurrentValues.SetValues(sector);
                 }

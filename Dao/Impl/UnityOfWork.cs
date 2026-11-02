@@ -2,7 +2,6 @@
 using Shared.Responses;
 using Shared.Common.Atrributes;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
@@ -68,7 +67,9 @@ namespace Dao.Impl
 
         public async Task StageImportWindow(Dao.Cache.ImportWindow window, CancellationToken cancellationToken = default)
         {
-            var existing = await _db.ImportWindows.FindAsync(new object[] { window.Dataset, window.WindowKey }, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var existing = _db.ImportWindows.Local.FirstOrDefault(x => x.Dataset == window.Dataset && x.WindowKey == window.WindowKey)
+                ?? await _db.ImportWindows.FirstOrDefaultAsync(x => x.Dataset == window.Dataset && x.WindowKey == window.WindowKey, cancellationToken);
             if (existing == null)
                 _db.ImportWindows.Add(window);
             else
@@ -88,11 +89,6 @@ namespace Dao.Impl
             catch { if (ownsTransaction) await transaction.DisposeAsync(); throw; }
         }
 
-        private sealed class ImportTransaction(IDbContextTransaction transaction, bool ownsTransaction) : IImportTransaction
-        {
-            public Task CommitAsync(CancellationToken cancellationToken) => ownsTransaction ? transaction.CommitAsync(cancellationToken) : Task.CompletedTask;
-            public ValueTask DisposeAsync() => ownsTransaction ? transaction.DisposeAsync() : ValueTask.CompletedTask;
-        }
         public ISessionDao SessionDao
         {
             get
