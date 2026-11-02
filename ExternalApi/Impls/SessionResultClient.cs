@@ -19,10 +19,13 @@ namespace ExternalApi.Impls
             _mapper = mapper;
         }
         public async Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey)
+            => await GetSessionResultApi(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<string> response = await _f1ApiClient.Get("session_result?", $"session_key={sessionKey}");
+                SingleResponse<string> response = await _f1ApiClient.Get("session_result?", $"session_key={sessionKey}", cancellationToken);
                 if (!response.HasSuccess || response.Item == null) return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultDto>(response.Message, response.Exception);
                 
                 List<SessionResultDto>? dto = JsonSerializer.Deserialize<List<SessionResultDto>>(response.Item); 
@@ -30,6 +33,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(dto);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<SessionResultDto>(ex);

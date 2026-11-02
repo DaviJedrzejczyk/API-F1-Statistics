@@ -48,7 +48,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task InsertSessions_ValidBody_ReturnsSuccessViewModel()
         {
-            _sessionService.Setup(s => s.InsertSessions(7)).ReturnsAsync(new Response { HasSuccess = true, Message = "inserted" });
+            _sessionService.Setup(s => s.InsertSessions(7, It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true, Message = "inserted" });
 
             using var response = await PostAsync("/api/Session/insert-sessions", "{\"meeting_key\":7}");
 
@@ -61,7 +61,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task InsertSessions_ServiceFailure_Returns400WithServiceMessage()
         {
-            _sessionService.Setup(s => s.InsertSessions(7)).ReturnsAsync(new Response { HasSuccess = false, Message = "Meeting not found" });
+            _sessionService.Setup(s => s.InsertSessions(7, It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = false, Message = "Meeting not found" });
 
             using var response = await PostAsync("/api/Session/insert-sessions", "{\"meeting_key\":7}");
 
@@ -71,7 +71,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task InsertSessions_ServiceThrows_Returns400WithoutExceptionText()
         {
-            _sessionService.Setup(s => s.InsertSessions(7)).ThrowsAsync(new Exception("connection string secret"));
+            _sessionService.Setup(s => s.InsertSessions(7, It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("connection string secret"));
 
             using var response = await PostAsync("/api/Session/insert-sessions", "{\"meeting_key\":7}");
 
@@ -133,7 +133,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task GetMeeting_NullItem_Returns404WithServiceMessage()
         {
-            _meetingService.Setup(s => s.GetMeetingByKey(5)).ReturnsAsync(new SingleResponse<Meeting> { Item = null!, Message = "Meeting 5 not found" });
+            _meetingService.Setup(s => s.GetMeetingByKey(5, It.IsAny<CancellationToken>())).ReturnsAsync(new SingleResponse<Meeting> { Item = null!, Message = "Meeting 5 not found" });
 
             using var response = await _host.Client.GetAsync("/api/Meeting/5");
 
@@ -143,7 +143,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task GetMeeting_ServiceThrows_Returns400WithoutExceptionText()
         {
-            _meetingService.Setup(s => s.GetMeetingByKey(5)).ThrowsAsync(new Exception("stack trace detail"));
+            _meetingService.Setup(s => s.GetMeetingByKey(5, It.IsAny<CancellationToken>())).ThrowsAsync(new Exception("stack trace detail"));
 
             using var response = await _host.Client.GetAsync("/api/Meeting/5");
 
@@ -153,7 +153,7 @@ namespace UnitTests.WebApi
         [Test]
         public async Task GetSession_UnhandledException_Returns500WithoutExceptionText()
         {
-            _sessionService.Setup(s => s.GetSessionByMeetingKeySessionKey(1, 3)).ThrowsAsync(new InvalidOperationException("internal state detail"));
+            _sessionService.Setup(s => s.GetSessionByMeetingKeySessionKey(1, 3, It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("internal state detail"));
 
             using var response = await _host.Client.GetAsync("/api/Session/3?meetingkey=1");
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +31,11 @@ namespace UnitTests.Service
             _carDataDaoMock = new Mock<ICarDataDao>();
 
             _unityMock.Setup(u => u.CarDataDao).Returns(_carDataDaoMock.Object);
+            _unityMock.Setup(u => u.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            _unityMock.Setup(u => u.StageImportWindow(It.IsAny<global::Dao.Cache.ImportWindow>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            var transaction = new Mock<IImportTransaction>();
+            transaction.Setup(t => t.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            _unityMock.Setup(u => u.BeginImport(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
         }
 
         [Test]
@@ -84,7 +89,8 @@ namespace UnitTests.Service
         {
             // Arrange
             var databaseResponse = new DataResponse<CarData> { HasSuccess = false, Message = "db fail" };
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(1, 10)).ReturnsAsync(databaseResponse);
+            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(1, 10, It.IsAny<CancellationToken>())).ReturnsAsync(databaseResponse);
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(1, 10, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<CarData> { HasSuccess = true, Itens = new() });
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -101,8 +107,7 @@ namespace UnitTests.Service
         {
             // Arrange
             var list = Enumerable.Range(1, 15).Select(i => new CarData { DriverNumber = i }).ToList();
-            var databaseResponse = new DataResponse<CarData> { HasSuccess = true, Itens = list };
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(2, 5)).ReturnsAsync(databaseResponse);
+            _unityMock.Setup(u => u.GetImportWindow("car_data", "2:5", It.IsAny<CancellationToken>())).ReturnsAsync(new global::Dao.Cache.ImportWindow { IsComplete = true, CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1), ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1), Payload = System.Text.Json.JsonSerializer.Serialize(list) });
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -119,10 +124,10 @@ namespace UnitTests.Service
         {
             // Arrange
             var databaseResponse = new DataResponse<CarData> { HasSuccess = true, Itens = new List<CarData>() };
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(3, 20)).ReturnsAsync(databaseResponse);
+            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(3, 20, It.IsAny<CancellationToken>())).ReturnsAsync(databaseResponse);
 
             var clientResponse = new DataResponse<CarData> { HasSuccess = false, Message = "api fail" };
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(3, 20)).ReturnsAsync(clientResponse);
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(3, 20, It.IsAny<CancellationToken>())).ReturnsAsync(clientResponse);
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -138,25 +143,25 @@ namespace UnitTests.Service
         public async Task GetHighSpeedsSessionApi_Success_SavesOnlyNewCarDatasAndReturnsMaxPerDriver()
         {
             // Arrange
-            var dbList = new List<CarData> { new() { DriverNumber = 1 } };
+            var dbList = new List<CarData> { new() { DriverNumber = 1, SessionKey = 4 } };
             var databaseResponse = new DataResponse<CarData> { HasSuccess = true, Itens = dbList };
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(4, 50)).ReturnsAsync(databaseResponse);
+            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(4, 50, It.IsAny<CancellationToken>())).ReturnsAsync(databaseResponse);
 
             // Client returns two entries for driver 1 (speeds 100 and 110) and one for driver 2 (speed 105)
             var clientList = new List<CarData>
             {
-                new() { DriverNumber = 1, Speed = 100 },
-                new() { DriverNumber = 1, Speed = 110 },
-                new() { DriverNumber = 2, Speed = 105 }
+                new() { DriverNumber = 1, SessionKey = 4, Speed = 100 },
+                new() { DriverNumber = 1, SessionKey = 4, Speed = 110 },
+                new() { DriverNumber = 2, SessionKey = 4, Speed = 105 }
             };
             var clientResponse = new DataResponse<CarData> { HasSuccess = true, Itens = clientList };
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(4, 50)).ReturnsAsync(clientResponse);
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(4, 50, It.IsAny<CancellationToken>())).ReturnsAsync(clientResponse);
 
             // SaveCarDatas will be called with only driver 2 (since driver 1 exists in db)
             var saveResponse = new Response { HasSuccess = true };
-            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>())).ReturnsAsync(saveResponse);
+            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>(), It.IsAny<CancellationToken>())).ReturnsAsync(saveResponse);
             var commitResponse = new Response { HasSuccess = true };
-            _unityMock.Setup(u => u.Commit()).ReturnsAsync(commitResponse);
+            _unityMock.Setup(u => u.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(commitResponse);
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -173,8 +178,8 @@ namespace UnitTests.Service
             Assert.That(d2.Speed, Is.EqualTo(105));
 
             // Verify SaveCarDatas called with only driver2
-            _carDataDaoMock.Verify(d => d.SaveCarDatas(It.Is<List<CarData>>(l => l.Count == 1 && l[0].DriverNumber == 2)), Times.Once);
-            _unityMock.Verify(u => u.Commit(), Times.Once);
+            _carDataDaoMock.Verify(d => d.SaveCarDatas(It.Is<List<CarData>>(l => l.Count == 1 && l[0].DriverNumber == 2), It.IsAny<CancellationToken>()), Times.Once);
+            _unityMock.Verify(u => u.Commit(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Test]
@@ -183,14 +188,14 @@ namespace UnitTests.Service
             // Arrange
             var dbList = new List<CarData>();
             var databaseResponse = new DataResponse<CarData> { HasSuccess = true, Itens = dbList };
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(5, 30)).ReturnsAsync(databaseResponse);
+            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(5, 30, It.IsAny<CancellationToken>())).ReturnsAsync(databaseResponse);
 
-            var clientList = new List<CarData> { new() { DriverNumber = 7, Speed = 88 } };
+            var clientList = new List<CarData> { new() { DriverNumber = 7, SessionKey = 5, Speed = 88 } };
             var clientResponse = new DataResponse<CarData> { HasSuccess = true, Itens = clientList };
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(5, 30)).ReturnsAsync(clientResponse);
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(5, 30, It.IsAny<CancellationToken>())).ReturnsAsync(clientResponse);
 
             var saveResponse = new Response { HasSuccess = false, Message = "insert failed" };
-            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>())).ReturnsAsync(saveResponse);
+            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>(), It.IsAny<CancellationToken>())).ReturnsAsync(saveResponse);
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -207,7 +212,7 @@ namespace UnitTests.Service
         {
             // Arrange
             _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new DataResponse<CarData> { HasSuccess = true, Itens = new List<CarData>() });
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(It.IsAny<int>(), It.IsAny<int>())).ThrowsAsync(new InvalidOperationException("boom"));
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException("boom"));
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -226,7 +231,7 @@ namespace UnitTests.Service
         {
             // Arrange
             var emptyDrivers = new DataResponse<Driver> { HasSuccess = true, Itens = new List<Driver>() };
-            _driverServiceMock.Setup(d => d.GetAllDriversSession(10)).ReturnsAsync(emptyDrivers);
+            _driverServiceMock.Setup(d => d.GetAllDriversSession(10, It.IsAny<CancellationToken>())).ReturnsAsync(emptyDrivers);
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 
@@ -246,10 +251,10 @@ namespace UnitTests.Service
             {
                 new() { DriverNumber = 11, SessionKey = 20, LastName = "X", HeadshotUrl = "u", TeamColour = "c", TeamName = "t" }
             };
-            _driverServiceMock.Setup(d => d.GetAllDriversSession(20)).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = drivers });
+            _driverServiceMock.Setup(d => d.GetAllDriversSession(20, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = drivers });
 
             // Arrange car client to return a failure/empty response so GetHighSpeedsSessionApi will produce a DataResponse<CarData> with Itens == null
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(20, 0)).ReturnsAsync(new DataResponse<CarData> { HasSuccess = false, Itens = null! });
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(20, 0, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<CarData> { HasSuccess = false, Itens = null! });
 
             // Use real service instance (do not attempt to Setup non-overridable members)
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
@@ -272,7 +277,7 @@ namespace UnitTests.Service
                 new() { DriverNumber = 1, SessionKey = sessionKey, LastName = "A", HeadshotUrl = "u1", TeamColour = "c1", TeamName = "t1" },
                 new() { DriverNumber = 2, SessionKey = sessionKey, LastName = "B", HeadshotUrl = "u2", TeamColour = "c2", TeamName = "t2" }
             };
-            _driverServiceMock.Setup(d => d.GetAllDriversSession(sessionKey)).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = drivers });
+            _driverServiceMock.Setup(d => d.GetAllDriversSession(sessionKey, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = drivers });
 
             var carDataList = new List<CarData>
             {
@@ -282,10 +287,10 @@ namespace UnitTests.Service
             var carDataResponse = new DataResponse<CarData> { HasSuccess = true, Itens = carDataList };
 
             // Use real service instance (do not attempt to Setup non-overridable members)
-            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(sessionKey, 0)).ReturnsAsync(new DataResponse<CarData> { HasSuccess = true, Itens = new List<CarData>() });
-            _carClientMock.Setup(c => c.GetHighSpeedsSession(sessionKey, 0)).ReturnsAsync(carDataResponse);
-            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>())).ReturnsAsync(new Response { HasSuccess = true });
-            _unityMock.Setup(u => u.Commit()).ReturnsAsync(new Response { HasSuccess = true });
+            _carDataDaoMock.Setup(d => d.GetHighSpeedSessionDatabase(sessionKey, 0, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<CarData> { HasSuccess = true, Itens = new List<CarData>() });
+            _carClientMock.Setup(c => c.GetHighSpeedsSession(sessionKey, 0, It.IsAny<CancellationToken>())).ReturnsAsync(carDataResponse);
+            _carDataDaoMock.Setup(d => d.SaveCarDatas(It.IsAny<List<CarData>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            _unityMock.Setup(u => u.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
 
             var service = new CarDataService(_unityMock.Object, _carClientMock.Object, _driverServiceMock.Object);
 

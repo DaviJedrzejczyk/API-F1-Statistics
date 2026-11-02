@@ -26,6 +26,7 @@ namespace Dao
         public DbSet<Lap> Laps { get; set; }
         public DbSet<LapSegment> LapSegments { get; set; }
         public DbSet<LapFastSector> LapFastSectors { get; set; }
+        public DbSet<Dao.Cache.ImportWindow> ImportWindows { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

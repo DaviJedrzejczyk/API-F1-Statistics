@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface IOvertakeClient
     {
         Task<DataResponse<Overtake>> GetOvertakesSession(int sessionKey);
+        Task<DataResponse<Overtake>> GetOvertakesSession(int sessionKey, CancellationToken cancellationToken);
     }
 }

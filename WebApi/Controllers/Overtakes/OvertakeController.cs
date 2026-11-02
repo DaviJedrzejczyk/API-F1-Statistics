@@ -40,9 +40,9 @@ namespace WebApi.Controllers.Overtakes
         [ProducesResponseType(typeof(OvertakeCountViewModel), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetOvertakesSession(int sessionKey)
+        public async Task<IActionResult> GetOvertakesSession(int sessionKey, CancellationToken cancellationToken = default)
         {
-            var response = await _overtakeService.GetOvertakesSessionApi(sessionKey);
+            var response = await _overtakeService.GetOvertakesSessionApi(sessionKey, cancellationToken);
             if (!response.HasSuccess) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
 
             return Ok(new OvertakeCountViewModel(response.Itens[0].MeetingKey, response.Itens[0].SessionKey, response.Itens.Count));

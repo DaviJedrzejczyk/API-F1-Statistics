@@ -20,11 +20,14 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags)
+            => await GetRaceControlsBySessionFlags(sessionKey, flags, CancellationToken.None);
+
+        public async Task<DataResponse<RaceControl>> GetRaceControlsBySessionFlags(int sessionKey, string[] flags, CancellationToken cancellationToken)
         {
             try
             {
                 var flagQuery = string.Join("&flag=", flags);
-                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}&flag={flagQuery}");
+                SingleResponse<string> response = await _client.Get("race_control?", $"session_key={sessionKey}&flag={flagQuery}", cancellationToken);
                 
                 if (!response.HasSuccess || response.Item == null)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>(response.Message, response.Exception);
@@ -35,6 +38,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<RaceControl>>(raceControls));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<RaceControl>(ex);

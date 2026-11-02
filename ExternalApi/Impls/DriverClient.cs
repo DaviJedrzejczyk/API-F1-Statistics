@@ -21,10 +21,13 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<Driver>> GetAllDriversSessionSelected(DriverInsertDTO driverInsertDTO)
+            => await GetAllDriversSessionSelected(driverInsertDTO, CancellationToken.None);
+
+        public async Task<DataResponse<Driver>> GetAllDriversSessionSelected(DriverInsertDTO driverInsertDTO, CancellationToken cancellationToken)
         {
 			try
 			{
-                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers?", $"session_key={driverInsertDTO.SessionKey}");
+                SingleResponse<string> tracks = await _f1ApiClient.Get("drivers?", $"session_key={driverInsertDTO.SessionKey}", cancellationToken);
 
                 if (!tracks.HasSuccess)
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(tracks.Message, tracks.Exception);
@@ -33,6 +36,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Driver>>(driverViewModels));
             }
+			catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
 			catch (Exception ex)
 			{
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);

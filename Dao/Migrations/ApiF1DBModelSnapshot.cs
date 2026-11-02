@@ -22,6 +22,36 @@ namespace Dao.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Dao.Cache.ImportWindow", b =>
+                {
+                    b.Property<string>("Dataset")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("WindowKey")
+                        .HasMaxLength(256)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<DateTimeOffset>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsComplete")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Dataset", "WindowKey");
+
+                    b.ToTable("F1_IMPORT_WINDOWS", (string)null);
+                });
+
             modelBuilder.Entity("Entities.Class.CarData", b =>
                 {
                     b.Property<int>("SessionKey")

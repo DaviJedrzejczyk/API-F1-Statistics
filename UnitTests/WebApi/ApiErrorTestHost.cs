@@ -21,6 +21,7 @@ namespace UnitTests.WebApi
         }
 
         public HttpClient Client { get; }
+        public IServiceProvider Services => _app.Services;
 
         public static async Task<ApiErrorTestHost> StartAsync(Action<IServiceCollection> registerServices)
         {

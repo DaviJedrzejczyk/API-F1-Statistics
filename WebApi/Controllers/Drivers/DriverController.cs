@@ -42,9 +42,9 @@ namespace WebApi.Controllers.Drivers
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetAllDriversSession(int sessionKey)
+        public async Task<IActionResult> GetAllDriversSession(int sessionKey, CancellationToken cancellationToken = default)
         {
-            var response = await _driverService.GetAllDriversSession(sessionKey);
+            var response = await _driverService.GetAllDriversSession(sessionKey, cancellationToken);
 
             if(response.Exception != null || response.Itens == null)
                 return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));

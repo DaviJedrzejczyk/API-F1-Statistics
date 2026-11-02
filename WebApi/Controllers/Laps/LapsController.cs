@@ -46,9 +46,9 @@ namespace WebApi.Controllers
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetFastLapSession(int sessionKey)
+        public async Task<IActionResult> GetFastLapSession(int sessionKey, CancellationToken cancellationToken = default)
         {
-            var result = await _lapService.GetFastLapOfRaceBySessionKey(sessionKey);
+            var result = await _lapService.GetFastLapOfRaceBySessionKey(sessionKey, cancellationToken);
 
             if (result.HasSuccess) return Ok(result.Item);
 
@@ -72,9 +72,9 @@ namespace WebApi.Controllers
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetFastSectorsSession(int sessionKey)
+        public async Task<IActionResult> GetFastSectorsSession(int sessionKey, CancellationToken cancellationToken = default)
         {
-            var result = await _lapFastSectorService.GetFastSectorsOfSession(sessionKey);
+            var result = await _lapFastSectorService.GetFastSectorsOfSession(sessionKey, cancellationToken);
             if (result.HasSuccess) return Ok(_mapper.Map<List<LapFastSectorViewModel>>(result.Itens));
 
             return NotFound(new ErrorViewModel(404, ApiErrorMessages.FromResponse(result)));
