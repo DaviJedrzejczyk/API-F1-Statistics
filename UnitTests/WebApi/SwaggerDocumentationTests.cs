@@ -134,6 +134,20 @@ namespace UnitTests.WebApi
             }
         }
 
+        [TestCase("Pit", "PitViewModel", "stop_duration")]
+        [TestCase("Stint", "StintViewModel", "tyre_age_at_start")]
+        [TestCase("RaceControl", "RaceControlViewModel", "qualifying_phase")]
+        public void Swagger_ResourceOperations_UseSnakeCaseViewModels(string resource, string model, string field)
+        {
+            foreach (var (suffix, method) in new[] { ("", OperationType.Get), ("/import", OperationType.Post) })
+            {
+                var response = _document.Paths[$"/api/{resource}/{{sessionKey}}{suffix}"].Operations[method].Responses["200"];
+                Assert.That(response.Content["application/json"].Schema.Items.Reference.Id, Is.EqualTo(model));
+            }
+            Assert.That(_document.Components.Schemas[model].Properties.Keys, Does.Contain(field));
+            Assert.That(_document.Components.Schemas[model].Properties.Keys, Does.Not.Contain("id"));
+        }
+
         [Test]
         public void Swagger_SessionResult_DocumentsHttpStatusForEachServiceFailure()
         {

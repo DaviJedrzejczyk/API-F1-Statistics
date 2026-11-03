@@ -374,10 +374,10 @@ public class SqlServerImportIntegrationTests
             {
                 using var imported = await host.Client.PostAsync($"/api/{resource}/9056/import", null);
                 Assert.That(imported.StatusCode, Is.EqualTo(HttpStatusCode.OK), await imported.Content.ReadAsStringAsync());
+                AssertResourceBody(resource, await imported.Content.ReadAsStringAsync());
                 using var read = await host.Client.GetAsync($"/api/{resource}/9056");
                 Assert.That(read.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-                using var json = JsonDocument.Parse(await read.Content.ReadAsStringAsync());
-                Assert.That(json.RootElement.GetArrayLength(), Is.EqualTo(resource == "Stint" ? 1 : 2));
+                AssertResourceBody(resource, await read.Content.ReadAsStringAsync());
             }
             transport.Verify(); transport.Reset();
             await using var db = Open();
@@ -582,6 +582,24 @@ public class SqlServerImportIntegrationTests
         await db.RaceControls.Take(1).ToListAsync(); await db.Stints.Take(1).ToListAsync();
         await db.Laps.Take(1).ToListAsync(); await db.LapSegments.Take(1).ToListAsync();
         await db.LapFastSectors.Take(1).ToListAsync();
+    }
+
+    private static void AssertResourceBody(string resource, string body)
+    {
+        using var json = JsonDocument.Parse(body);
+        Assert.That(json.RootElement.GetArrayLength(), Is.EqualTo(resource == "Stint" ? 1 : 2));
+        var item = json.RootElement[0];
+        var expected = resource switch
+        {
+            "Pit" => new[] { "date", "driver_number", "lane_duration", "lap_number", "meeting_key", "pit_duration", "session_key", "stop_duration" },
+            "Stint" => new[] { "compound", "driver_number", "lap_end", "lap_start", "meeting_key", "session_key", "stint_number", "tyre_age_at_start" },
+            _ => new[] { "category", "date", "driver_number", "flag", "lap_number", "meeting_key", "message", "qualifying_phase", "scope", "sector", "session_key" }
+        };
+        Assert.That(item.EnumerateObject().Select(property => property.Name), Is.EquivalentTo(expected));
+        Assert.That(item.GetProperty("session_key").GetInt32(), Is.EqualTo(9056));
+        Assert.That(item.GetProperty("meeting_key").GetInt32(), Is.EqualTo(1234));
+        if (resource == "Stint") Assert.That(item.GetProperty("compound").GetString(), Is.EqualTo("SOFT"));
+        if (resource == "RaceControl") Assert.That(item.GetProperty("flag").GetString(), Is.EqualTo("YELLOW"));
     }
 
     private ApiF1DB Open() => new(new DbContextOptionsBuilder<ApiF1DB>().UseSqlServer(connection).Options);

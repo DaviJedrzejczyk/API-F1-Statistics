@@ -21,6 +21,10 @@ namespace WebApi.Config
             CreateMap<DriverListViewModel, Driver>().ReverseMap();
             CreateMap<SessionResult, SessionResultListViewModel>().ReverseMap();
 
+            CreateMap<Pit, PitViewModel>();
+            CreateMap<Stint, StintViewModel>();
+            CreateMap<RaceControl, RaceControlViewModel>();
+
             //External Api / Entities
             CreateMap<CarDataDto, CarData>().ReverseMap();
             CreateMap<Meeting, MeetingDto>().ReverseMap();

@@ -1,4 +1,4 @@
-using Entities.Class;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
 using WebApi.Config;
@@ -12,9 +12,15 @@ namespace WebApi.Controllers.Stints;
 public class StintController : ControllerBase
 {
     private readonly IStintService service;
+    private readonly IMapper mapper;
     /// <summary>Creates the controller.</summary>
     /// <param name="service">The resource service.</param>
-    public StintController(IStintService service) => this.service = service;
+    /// <param name="mapper">Maps records to their public representation.</param>
+    public StintController(IStintService service, IMapper mapper)
+    {
+        this.service = service;
+        this.mapper = mapper;
+    }
 
     /// <summary>Reads persisted stint data for a session.</summary>
     /// <param name="sessionKey">Session identifier.</param>
@@ -22,14 +28,14 @@ public class StintController : ControllerBase
     /// <response code="400">The request or service failed.</response>
     /// <response code="500">Unexpected server error.</response>
     [HttpGet("{sessionKey}")]
-    [ProducesResponseType(typeof(List<Stint>), 200)]
+    [ProducesResponseType(typeof(List<StintViewModel>), 200)]
     [ProducesResponseType(typeof(ErrorViewModel), 400)]
     [ProducesResponseType(typeof(ErrorViewModel), 500)]
     public async Task<IActionResult> Get(int sessionKey)
     {
         var response = await service.GetStintsBySessionKeyDb(sessionKey);
         if (!response.HasSuccess || response.Itens == null) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
-        return Ok(response.Itens);
+        return Ok(mapper.Map<List<StintViewModel>>(response.Itens));
     }
 
     /// <summary>Imports the stint window for a session.</summary>
@@ -39,13 +45,13 @@ public class StintController : ControllerBase
     /// <response code="400">The request or import failed.</response>
     /// <response code="500">Unexpected server error.</response>
     [HttpPost("{sessionKey}/import")]
-    [ProducesResponseType(typeof(List<Stint>), 200)]
+    [ProducesResponseType(typeof(List<StintViewModel>), 200)]
     [ProducesResponseType(typeof(ErrorViewModel), 400)]
     [ProducesResponseType(typeof(ErrorViewModel), 500)]
     public async Task<IActionResult> Import(int sessionKey, CancellationToken cancellationToken)
     {
         var response = await service.GetStintsBySessionKey(sessionKey, cancellationToken);
         if (!response.HasSuccess || response.Itens == null) return BadRequest(new ErrorViewModel(400, ApiErrorMessages.FromResponse(response)));
-        return Ok(response.Itens);
+        return Ok(mapper.Map<List<StintViewModel>>(response.Itens));
     }
 }
