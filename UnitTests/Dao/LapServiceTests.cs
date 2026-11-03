@@ -82,6 +82,48 @@ namespace UnitTests.Dao
             lapDaoMock.Verify(x => x.UpsertLap(It.IsAny<Lap>(), It.IsAny<CancellationToken>()), Times.Never);
         }
         [Test]
+        public async Task Import_EmptyLapsCachesEmptyResultsWithoutInventingATime()
+        {
+            var transaction = new Mock<IImportTransaction>();
+            unityMock.Setup(x => x.BeginImport("fast_lap", "42", It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            driverServiceMock.Setup(x => x.GetAllDriversSession(42, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new() });
+            var sectorsDao = new Mock<ILapFastSectorDao>();
+            unityMock.SetupGet(x => x.LapFastSectorDao).Returns(sectorsDao.Object);
+            sectorsDao.Setup(x => x.UpsertLapFastSectors(It.IsAny<List<LapFastSector>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            unityMock.Setup(x => x.StageImportWindow(It.IsAny<global::Dao.Cache.ImportWindow>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            unityMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            var result = await service.GetFastLapOfRaceBySessionKey(42);
+            Assert.That(result.HasSuccess, Is.False);
+            Assert.That(result.Item, Is.Null);
+            sectorsDao.Verify(x => x.UpsertLapFastSectors(It.Is<List<LapFastSector>>(v => v.Count == 0), It.IsAny<CancellationToken>()), Times.Once);
+            unityMock.Verify(x => x.StageImportWindow(It.Is<global::Dao.Cache.ImportWindow>(w => w.Payload == "[]"), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Test]
+        public async Task Import_ChoosesPositiveLapAndPersistsPartialMeasurementsAndSectors()
+        {
+            var transaction = new Mock<IImportTransaction>();
+            unityMock.Setup(x => x.BeginImport("fast_lap", "42", It.IsAny<CancellationToken>())).ReturnsAsync(transaction.Object);
+            driverServiceMock.Setup(x => x.GetAllDriversSession(42, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<Driver> { HasSuccess = true, Itens = new() { new() { DriverNumber = 1, LastName = "Driver" } } });
+            var laps = new List<LapListDto> { new() { SessionKey = 42, DriverNumber = 1, LapDuration = 0, DurationSector1 = 0 }, new() { SessionKey = 42, DriverNumber = 1, LapDuration = 90, DurationSector1 = 30, DurationSector2 = null, DurationSector3 = 0, I1Speed = 0 } };
+            lapClientMock.Setup(x => x.GetAllLapsSessionByDriver(42, 1, It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<LapListDto> { HasSuccess = true, Itens = laps });
+            var sectorsDao = new Mock<ILapFastSectorDao>();
+            unityMock.SetupGet(x => x.LapDao).Returns(lapDaoMock.Object);
+            unityMock.SetupGet(x => x.LapFastSectorDao).Returns(sectorsDao.Object);
+            mapperMock.Setup(x => x.Map<Lap>(laps[1])).Returns(new Lap { LapDuration = 90, DurationSector1 = 30, DurationSector2 = null, DurationSector3 = 0, I1Speed = 0 });
+            lapDaoMock.Setup(x => x.UpsertLap(It.IsAny<Lap>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            sectorsDao.Setup(x => x.UpsertLapFastSectors(It.IsAny<List<LapFastSector>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            unityMock.Setup(x => x.StageImportWindow(It.IsAny<global::Dao.Cache.ImportWindow>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            unityMock.Setup(x => x.Commit(It.IsAny<CancellationToken>())).ReturnsAsync(new Response { HasSuccess = true });
+            var result = await service.GetFastLapOfRaceBySessionKey(42);
+            Assert.That(result.HasSuccess, Is.True);
+            Assert.That(result.Item.LapDuration, Is.EqualTo(90));
+            lapDaoMock.Verify(x => x.UpsertLap(It.Is<Lap>(l => l.DurationSector2 == null && l.DurationSector3 == 0 && l.I1Speed == 0), It.IsAny<CancellationToken>()), Times.Once);
+            sectorsDao.Verify(x => x.UpsertLapFastSectors(It.Is<List<LapFastSector>>(v => v.Count == 1 && v[0].Sector == 1 && v[0].Observation == "Not all fast sectors were found."), It.IsAny<CancellationToken>()), Times.Once);
+            unityMock.Verify(x => x.StageImportWindow(It.IsAny<global::Dao.Cache.ImportWindow>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Test]
         public async Task GetFastLapOfRaceBySessionKeyDb_DaoFailure_ReturnsFailure()
         {
             // Arrange

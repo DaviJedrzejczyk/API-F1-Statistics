@@ -44,7 +44,7 @@ namespace Services.Impl
                     listFastSector.Add(new LapFastSector
                     {
                         DriverNumber = bestSector1.DriverNumber,
-                        Duration = bestSector1.Sector1Duration,
+                        Duration = bestSector1.Sector1Duration!.Value,
                         DriverName = driverName.Item,
                         Sector = 1,
                         SessionKey = sessionKey
@@ -60,7 +60,7 @@ namespace Services.Impl
                     listFastSector.Add(new LapFastSector
                     {
                         DriverNumber = bestSector2.DriverNumber,
-                        Duration = bestSector2.Sector2Duration,
+                        Duration = bestSector2.Sector2Duration!.Value,
                         DriverName = driverName.Item,
                         Sector = 2,
                         SessionKey = sessionKey
@@ -76,7 +76,7 @@ namespace Services.Impl
                     listFastSector.Add(new LapFastSector
                     {
                         DriverNumber = bestSector3.DriverNumber,
-                        Duration = bestSector3.Sector3Duration,
+                        Duration = bestSector3.Sector3Duration!.Value,
                         DriverName = driverName.Item,
                         Sector = 3,
                         SessionKey = sessionKey

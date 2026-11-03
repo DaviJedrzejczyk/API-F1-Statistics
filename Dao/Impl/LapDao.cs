@@ -21,7 +21,7 @@ namespace Dao.Impl
         {
             try
             {
-                Lap? lap = await _db.Laps.Where(x => x.SessionKey == sessionKey && x.IsFastLap).AsNoTracking().FirstOrDefaultAsync();
+                Lap? lap = await _db.Laps.Where(x => x.SessionKey == sessionKey && x.IsFastLap && x.LapDuration > 0).AsNoTracking().OrderBy(x => x.LapDuration).FirstOrDefaultAsync();
                 return ResponseFactory.CreateInstance().CreateSuccessSingleResponse(lap!);
             }
             catch (Exception ex)

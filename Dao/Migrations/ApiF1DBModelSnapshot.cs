@@ -166,19 +166,19 @@ namespace Dao.Migrations
                     b.Property<DateTime>("DateStart")
                         .HasColumnType("datetime2");
 
-                    b.Property<double>("DurationSector1")
+                    b.Property<double?>("DurationSector1")
                         .HasColumnType("float");
 
-                    b.Property<double>("DurationSector2")
+                    b.Property<double?>("DurationSector2")
                         .HasColumnType("float");
 
-                    b.Property<double>("DurationSector3")
+                    b.Property<double?>("DurationSector3")
                         .HasColumnType("float");
 
-                    b.Property<int>("I1Speed")
+                    b.Property<int?>("I1Speed")
                         .HasColumnType("int");
 
-                    b.Property<int>("I2Speed")
+                    b.Property<int?>("I2Speed")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsFastLap")
@@ -187,10 +187,10 @@ namespace Dao.Migrations
                     b.Property<bool>("IsPitOutLap")
                         .HasColumnType("bit");
 
-                    b.Property<double>("LapDuration")
+                    b.Property<double?>("LapDuration")
                         .HasColumnType("float");
 
-                    b.Property<int>("StSpeed")
+                    b.Property<int?>("StSpeed")
                         .HasColumnType("int");
 
                     b.HasKey("MeetingKey", "SessionKey", "DriverNumber", "LapNumber");
@@ -406,18 +406,12 @@ namespace Dao.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("SessionKey")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MeetingKey")
-                        .HasColumnType("int");
-
                     b.Property<string>("Category")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("DriverNumber")
                         .HasColumnType("int");
@@ -427,6 +421,9 @@ namespace Dao.Migrations
                         .HasColumnType("nvarchar(25)");
 
                     b.Property<int>("LapNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MeetingKey")
                         .HasColumnType("int");
 
                     b.Property<string>("Message")
@@ -441,6 +438,9 @@ namespace Dao.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("Sector")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SessionKey")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
