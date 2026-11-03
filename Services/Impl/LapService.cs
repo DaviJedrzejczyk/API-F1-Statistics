@@ -37,11 +37,11 @@ namespace Services.Impl
                 var key = sessionKey.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 var cached = await ImportWindowCache.Read<LapFastLapDto>(_unityOfWork, "fast_lap", key, cancellationToken);
                 var cachedSectors = await ImportWindowCache.Read<LapFastSector>(_unityOfWork, "fast_sectors", key, cancellationToken);
-                if (cached != null && cachedSectors != null) return LapWindowResult(cached);
+                if (cached != null && cached.All(x => x.LapDuration > 0) && cachedSectors != null) return LapWindowResult(cached);
                 await using var transaction = await _unityOfWork.BeginImport("fast_lap", key, cancellationToken);
                 cached = await ImportWindowCache.Read<LapFastLapDto>(_unityOfWork, "fast_lap", key, cancellationToken);
                 cachedSectors = await ImportWindowCache.Read<LapFastSector>(_unityOfWork, "fast_sectors", key, cancellationToken);
-                if (cached != null && cachedSectors != null) return LapWindowResult(cached);
+                if (cached != null && cached.All(x => x.LapDuration > 0) && cachedSectors != null) return LapWindowResult(cached);
                 var drivers = await _driverService.GetAllDriversSession(sessionKey, cancellationToken);
                 if (!drivers.HasSuccess || drivers.Itens == null)
                     return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(drivers.Message, drivers.Exception);
@@ -59,13 +59,13 @@ namespace Services.Impl
                 var sectors = new List<LapFastSector>();
                 for (int sector = 1; sector <= 3; sector++)
                 {
-                    double Duration(LapListDto x) => sector == 1 ? x.DurationSector1 : sector == 2 ? x.DurationSector2 : x.DurationSector3;
+                    double? Duration(LapListDto x) => sector == 1 ? x.DurationSector1 : sector == 2 ? x.DurationSector2 : x.DurationSector3;
                     var best = laps.Where(x => Duration(x) > 0).MinBy(Duration);
                     if (best == null) continue;
                     var driver = drivers.Itens.First(x => x.DriverNumber == best.DriverNumber);
                     if (string.IsNullOrEmpty(driver.LastName))
                         return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>("Driver name not found for fastest sector.");
-                    sectors.Add(new LapFastSector { SessionKey = sessionKey, DriverNumber = best.DriverNumber, DriverName = driver.LastName, Sector = sector, Duration = Duration(best) });
+                    sectors.Add(new LapFastSector { SessionKey = sessionKey, DriverNumber = best.DriverNumber, DriverName = driver.LastName, Sector = sector, Duration = Duration(best)!.Value });
                 }
                 if (sectors.Count < 3) foreach (var sector in sectors) sector.Observation = "Not all fast sectors were found.";
                 var result = new List<LapFastLapDto>();
@@ -74,7 +74,7 @@ namespace Services.Impl
                     fastest.IsFastLap = true;
                     var saved = await _unityOfWork.LapDao.UpsertLap(_mapper.Map<Lap>(fastest), cancellationToken);
                     if (!saved.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(saved.Message, saved.Exception);
-                    result.Add(new LapFastLapDto { SessionKey = sessionKey, MeetingKey = fastest.MeetingKey, DriverNumber = fastest.DriverNumber, LapDuration = fastest.LapDuration, IsFastLap = true });
+                    result.Add(new LapFastLapDto { SessionKey = sessionKey, MeetingKey = fastest.MeetingKey, DriverNumber = fastest.DriverNumber, LapDuration = fastest.LapDuration!.Value, IsFastLap = true });
                 }
                 var saveSectors = await _unityOfWork.LapFastSectorDao.UpsertLapFastSectors(sectors, cancellationToken);
                 if (!saveSectors.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureSingleResponse<LapFastLapDto>(saveSectors.Message, saveSectors.Exception);

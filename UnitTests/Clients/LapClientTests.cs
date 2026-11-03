@@ -56,6 +56,28 @@ namespace UnitTests.Impls
         }
 
         [Test]
+        public async Task GetAllLapsSessionByDriver_PreservesMissingZeroAndSegments()
+        {
+            var client = new Mock<IF1ApiClient>();
+            client.Setup(x => x.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SingleResponse<string> { HasSuccess = true, Item = "[{\"lap_duration\":0,\"duration_sector_1\":null,\"duration_sector_2\":0,\"i1_speed\":0,\"i2_speed\":null,\"segments_sector_1\":[0,null,2049],\"segments_sector_2\":[],\"segments_sector_3\":null},{}]" });
+            var result = await new LapClient(client.Object).GetAllLapsSessionByDriver(1, 2);
+            Assert.That(result.HasSuccess, Is.True);
+            var lap = result.Itens[0];
+            Assert.Multiple(() => {
+                Assert.That(lap.LapDuration, Is.EqualTo(0));
+                Assert.That(lap.DurationSector1, Is.Null);
+                Assert.That(lap.DurationSector2, Is.EqualTo(0));
+                Assert.That(lap.I1Speed, Is.EqualTo(0));
+                Assert.That(lap.I2Speed, Is.Null);
+                Assert.That(lap.SegmentsSector1, Is.EqualTo(new int?[] { 0, null, 2049 }));
+                Assert.That(lap.SegmentsSector2, Is.Empty);
+                Assert.That(lap.SegmentsSector3, Is.Null);
+                Assert.That(result.Itens[1].LapDuration, Is.Null);
+            });
+        }
+
+        [Test]
         public async Task GetAllLapsSessionByDriver_ApiReturnsFailure_ReturnsFailureDataResponse()
         {
             // Arrange

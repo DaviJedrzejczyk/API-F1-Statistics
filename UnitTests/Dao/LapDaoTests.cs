@@ -39,7 +39,7 @@ namespace UnitTests.Dao
         {
             // Arrange
             using var db = CreateInMemoryContext(Guid.NewGuid().ToString());
-            var lap = new Lap { SessionKey = 1, IsFastLap = true };
+            var lap = new Lap { SessionKey = 1, IsFastLap = true, LapDuration = 90 };
             await db.Laps.AddAsync(lap);
             await db.SaveChangesAsync();
 
@@ -54,6 +54,18 @@ namespace UnitTests.Dao
             Assert.IsNotNull(response.Item);
             Assert.That(response.Item.SessionKey, Is.EqualTo(1));
             Assert.That(response.Item.IsFastLap, Is.True);
+        }
+
+        [Test]
+        public async Task GetFastLapSessionBySessionKey_IgnoresInvalidLegacyTimes()
+        {
+            using var db = CreateInMemoryContext(Guid.NewGuid().ToString());
+            db.Laps.AddRange(new Lap { SessionKey = 1, LapNumber = 1, IsFastLap = true, LapDuration = 0 },
+                new Lap { SessionKey = 1, LapNumber = 2, IsFastLap = true, LapDuration = null },
+                new Lap { SessionKey = 1, LapNumber = 3, IsFastLap = true, LapDuration = 90 });
+            await db.SaveChangesAsync();
+            var result = await new LapDao(db).GetFastLapSessionBySessionKey(1);
+            Assert.That(result.Item!.LapDuration, Is.EqualTo(90));
         }
 
         [Test]

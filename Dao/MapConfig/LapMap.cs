@@ -24,26 +24,20 @@ namespace Dao.MapConfig
             builder.Property(x => x.DriverNumber)
                 .IsRequired();
 
-            builder.Property(x => x.DurationSector1)
-                .IsRequired();
+            builder.Property(x => x.DurationSector1);
 
-            builder.Property(x => x.DurationSector2)
-                .IsRequired();
+            builder.Property(x => x.DurationSector2);
 
-            builder.Property(x => x.DurationSector3)
-                .IsRequired();
+            builder.Property(x => x.DurationSector3);
 
-            builder.Property(x => x.I1Speed)
-                .IsRequired();
+            builder.Property(x => x.I1Speed);
 
-            builder.Property(x => x.I2Speed)
-                .IsRequired();
+            builder.Property(x => x.I2Speed);
 
             builder.Property(x => x.IsPitOutLap)
                 .IsRequired();
 
-            builder.Property(x => x.LapDuration)
-                .IsRequired();
+            builder.Property(x => x.LapDuration);
 
             builder.Property(x => x.LapNumber)
                 .IsRequired();
@@ -54,8 +48,7 @@ namespace Dao.MapConfig
             builder.Property(x => x.SessionKey)
                 .IsRequired();
 
-            builder.Property(x => x.StSpeed)
-                .IsRequired();
+            builder.Property(x => x.StSpeed);
 
             builder.Property(x => x.IsFastLap)
                 .IsRequired();
