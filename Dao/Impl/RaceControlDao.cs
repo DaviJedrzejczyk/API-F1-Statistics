@@ -19,7 +19,7 @@ namespace Dao.Impl
         {
             try
             {
-                var raceControls = await _db.RaceControls.Where(rc => rc.SessionKey == sessionKey && sessionFlags.Contains(rc.Flag)).AsNoTracking().ToListAsync();
+                var raceControls = await _db.RaceControls.Where(rc => rc.SessionKey == sessionKey && (sessionFlags.Length == 0 || sessionFlags.Contains(rc.Flag))).AsNoTracking().ToListAsync();
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(raceControls);
             }
             catch (Exception ex)

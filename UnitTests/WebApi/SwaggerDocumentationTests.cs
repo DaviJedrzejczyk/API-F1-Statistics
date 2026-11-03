@@ -51,6 +51,12 @@ namespace UnitTests.WebApi
                 "/api/Meeting/{meetingKey}",
                 "/api/Meeting/all-tracks/{year}",
                 "/api/Overtake/get-overtakes-session/{sessionKey}",
+                "/api/Pit/{sessionKey}",
+                "/api/Pit/{sessionKey}/import",
+                "/api/Stint/{sessionKey}",
+                "/api/Stint/{sessionKey}/import",
+                "/api/RaceControl/{sessionKey}",
+                "/api/RaceControl/{sessionKey}/import",
                 "/api/SessionResult/result",
                 "/api/Session/insert-sessions",
                 "/api/Session/{sessionKey}"
@@ -126,6 +132,20 @@ namespace UnitTests.WebApi
                 Assert.That(operation.Responses["400"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
                 Assert.That(operation.Responses["404"].Content["application/json"].Schema.Reference.Id, Is.EqualTo("ErrorViewModel"));
             }
+        }
+
+        [TestCase("Pit", "PitViewModel", "stop_duration")]
+        [TestCase("Stint", "StintViewModel", "tyre_age_at_start")]
+        [TestCase("RaceControl", "RaceControlViewModel", "qualifying_phase")]
+        public void Swagger_ResourceOperations_UseSnakeCaseViewModels(string resource, string model, string field)
+        {
+            foreach (var (suffix, method) in new[] { ("", OperationType.Get), ("/import", OperationType.Post) })
+            {
+                var response = _document.Paths[$"/api/{resource}/{{sessionKey}}{suffix}"].Operations[method].Responses["200"];
+                Assert.That(response.Content["application/json"].Schema.Items.Reference.Id, Is.EqualTo(model));
+            }
+            Assert.That(_document.Components.Schemas[model].Properties.Keys, Does.Contain(field));
+            Assert.That(_document.Components.Schemas[model].Properties.Keys, Does.Not.Contain("id"));
         }
 
         [Test]
