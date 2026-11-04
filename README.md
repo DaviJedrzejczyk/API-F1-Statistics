@@ -61,7 +61,7 @@ WebApi → Services → (Dao, ExternalApi) → Entities/Responses
 ### Pré-requisitos e validação local
 
 - SDK capaz de compilar `net8.0` (por exemplo, .NET 8 SDK) e runtime ASP.NET Core 8 para executar a API. Não há `global.json` fixando a versão do SDK.
-- SQL Server LocalDB no Windows, ou outra instância SQL Server acessível para executar a API. Build e testes unitários não precisam de LocalDB.
+- SQL Server LocalDB no Windows, ou outra instância SQL Server acessível para executar a API. Build e testes unitários não precisam de LocalDB; os testes de integração SQL Server precisam de uma instância acessível.
 - Git; ferramenta `dotnet-ef` 8.x para aplicar as migrations existentes.
 
 ```bash
@@ -72,7 +72,7 @@ dotnet build "API OpenF1.sln"
 dotnet test UnitTests/UnitTests.csproj
 ```
 
-Os projetos usam EF Core SQL Server/Design/Tools **8.0.19** e EF Core InMemory **8.0.30** nos testes. Os testes usam NUnit, Moq e banco InMemory; os clientes HTTP são simulados, sem precisar consultar OpenF1 ou um banco SQL Server.
+Os projetos usam EF Core SQL Server/Design/Tools **8.0.19** e EF Core InMemory **8.0.30** nos testes. Os testes unitários usam NUnit, Moq e banco InMemory; os clientes HTTP são simulados, sem consultar OpenF1. As suítes de integração SQL Server usam banco real quando `INTEGRATION_SQLSERVER_CONNECTION` está definida e são ignoradas quando ela está ausente.
 
 ### Configurar o banco antes de executar
 
@@ -117,7 +117,7 @@ Ao executar sem perfil, configure ambiente e URLs explicitamente; não presuma a
 
 ## 📡 Contratos HTTP
 
-As rotas são derivadas do **nome da classe do controller**, não do diretório: `Driver`, `Meeting`, `Session`, `SessionResult`, `CarData`, `Overtake` e `Laps`. Somente `Laps` é plural. Há **11 operações** mapeadas. `PitController` está vazio e `HomeController` não tem uma rota mapeada por `Program.cs`; nenhum dos dois oferece uma operação pública nesta configuração.
+As rotas são derivadas do **nome da classe do controller**, não do diretório: `Driver`, `Meeting`, `Session`, `SessionResult`, `CarData`, `Overtake`, `Laps`, `Pit`, `Stint` e `RaceControl`. Somente `Laps` é plural. Há **17 operações** mapeadas. `HomeController` não tem uma rota mapeada por `Program.cs` e não oferece uma operação pública nesta configuração.
 
 ### Parâmetros e binding
 
@@ -134,8 +134,11 @@ As rotas são derivadas do **nome da classe do controller**, não do diretório:
 | `GET /api/Laps/fast_sectors_session` | Query `sessionKey` (`int`) |
 | `GET /api/CarData/high-speed` | Query `sessionKey` e `minimumSpeed` (ambos `int`) |
 | `GET /api/Overtake/get-overtakes-session/{sessionKey}` | Rota `sessionKey` (`int`) |
+| `GET /api/Pit/{sessionKey}` e `POST /api/Pit/{sessionKey}/import` | Rota `sessionKey` (`int`) |
+| `GET /api/Stint/{sessionKey}` e `POST /api/Stint/{sessionKey}/import` | Rota `sessionKey` (`int`) |
+| `GET /api/RaceControl/{sessionKey}` e `POST /api/RaceControl/{sessionKey}/import` | Rota `sessionKey` (`int`); query `flags` (`string[]`, repetível, por exemplo `?flags=YELLOW&flags=GREEN`) |
 
-Os GETs não leem body. Nos POSTs, envie `Content-Type: application/json` e um objeto JSON. O nome **`meeting_key`** no body é definido por `JsonPropertyName`: `meetingKey` não é um alias e é ignorado, deixando o valor em `0`.
+Os GETs não leem body. Os POSTs de Meeting e Session recebem um objeto JSON com `Content-Type: application/json`; os POSTs de importação de Pit, Stint e RaceControl usam rota e query, sem body. O nome **`meeting_key`** no body de Session é definido por `JsonPropertyName`: `meetingKey` não é um alias e é ignorado, deixando o valor em `0`.
 
 Não há `[Required]`, `[BindRequired]` ou `[Range]` para esses números. Query omitida e propriedade numérica omitida de um objeto JSON válido (`{}`) chegam à action como `0`; isso não garante sucesso no serviço.
 
@@ -156,10 +159,13 @@ Esta tabela descreve os ramos implementados nos controllers. Todos os erros de r
 | `POST /api/Session/insert-sessions` | **200** — `SuccessViewModel` (`message: "Sessions inserted successfully."`) | **400** — `ErrorViewModel` com a mensagem do serviço na falha; **400** — `ErrorViewModel` com `The request could not be completed.` no `catch` |
 | `GET /api/Session/{sessionKey}` | **200** — `SuccessViewModel` com `message: "Success"`, sem dados da sessão | **404** — `ErrorViewModel` se a falha tem `Item == null`, inclusive quando o serviço devolve falha por exceção |
 | `GET /api/SessionResult/result` | **200** — `SessionResultListViewModel[]` | Se `HasSuccess == false` e `Itens == null`: **400** — `ErrorViewModel`; se `HasSuccess == false` e `Itens` está vazio: **404** — `ErrorViewModel`; falha com lista não vazia ainda retorna 200 |
-| `GET /api/Laps/fast_lap_session` | **200** — `LapFastLapDto`, ou corpo vazio quando o serviço tem sucesso sem volta salva | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço |
+| `GET /api/Laps/fast_lap_session` | **200** — `LapFastLapDto` | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço, inclusive quando não há volta válida |
 | `GET /api/Laps/fast_sectors_session` | **200** — `LapFastSectorViewModel[]`, inclusive `[]` | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço |
 | `GET /api/CarData/high-speed` | **200** — `SessionDriverSpeedDTO[]` | **400** — `ErrorViewModel` se `HasSuccess == false` e `Itens == null`, ou se `HasSuccess == false` com exceção; **404** — `ErrorViewModel` se `HasSuccess == false` com lista vazia; falha com lista não vazia e sem exceção retorna 200 |
 | `GET /api/Overtake/get-overtakes-session/{sessionKey}` | **200** — `OvertakeCountViewModel` | **400** — `ErrorViewModel` quando `HasSuccess == false`; sucesso com lista vazia não é tratado e gera **500** (ver limitações) |
+| `GET /api/Pit/{sessionKey}` e `POST /api/Pit/{sessionKey}/import` | **200** — `PitViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
+| `GET /api/Stint/{sessionKey}` e `POST /api/Stint/{sessionKey}/import` | **200** — `StintViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
+| `GET /api/RaceControl/{sessionKey}` e `POST /api/RaceControl/{sessionKey}/import` | **200** — `RaceControlViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
 
 Nas rotas de voltas, qualquer falha do serviço vira **404**; não há um ramo 400 próprio nesses controllers.
 
@@ -171,7 +177,9 @@ Exceções não tratadas em `/api` retornam **HTTP 500** com `ErrorViewModel` e 
 - **Sessions:** o POST importa sessões do meeting e retorna apenas confirmação. O GET consulta o par meeting/sessão no banco e retorna somente `SuccessViewModel` com `message: "Success"`, **não `SessionViewModel`**. O serviço devolve item nulo nas falhas, portanto o ramo 404 (`Session not found.`) prevalece, inclusive em falhas de consulta.
 - **Drivers:** a consulta pode importar e persistir pilotos. O serviço considera completa uma lista de 22 pilotos; se houver menos, consulta OpenF1 e pode devolver apenas os novos pilotos. Quando não há novos pilotos, o serviço devolve sucesso interno com `Itens == null`, e o controller responde **400** `ErrorViewModel` com a mensagem `All drivers already in database.`. Não é garantido que cada 200 contenha o grid completo.
 - **SessionResult:** consulta o banco e, quando necessário, importa resultados de OpenF1. A resposta pública usa duração numérica e gap textual também para classificação, não os arrays do DTO externo. As falhas criadas pela fábrica normalmente deixam `Itens` nulo, levando a **HTTP 400**; lista vazia em falha leva a **HTTP 404**. Ambos com `ErrorViewModel` cujo `status_code` coincide com o status HTTP. Se um wrapper de falha trouxer lista não vazia, a action ainda retorna 200.
-- **Laps:** `fast_lap_session` busca a volta salva ou consulta pilotos/voltas externas e pode gravar a volta e os melhores setores. Se o serviço não encontrar volta, a action retorna **200 sem corpo** (`Ok(null)`), e não 404. `fast_sectors_session` **somente lê setores já persistidos**, podendo responder `200 []` se não existirem. Consultar `SessionResult/result` não calcula os setores. A consulta de volta mais rápida pode calculá-los, mas, se a volta já estiver salva, retorna cedo sem recompor setores ausentes. A lista de setores pode ser parcial, com a informação em `observation`.
+- **Laps:** `fast_lap_session` usa as janelas de cache completas de volta e setores; se alguma faltar ou expirar, consulta pilotos/voltas externas, calcula os melhores tempos válidos e pode gravar a volta e os setores. Sem volta de duração positiva, retorna **404** `ErrorViewModel` com `No laps found for the given session key.`. `fast_sectors_session` **somente lê setores já persistidos**, podendo responder `200 []` se não existirem. Consultar `SessionResult/result` não calcula os setores. A lista de setores pode ser parcial, com a informação em `observation`.
+- **Pit, Stint e RaceControl:** os GETs leem registros persistidos; os POSTs de importação consultam OpenF1 quando não há janela de cache válida, validam os dados da sessão, persistem novos registros e retornam os registros da janela importada. Em RaceControl, a combinação de `flags` compõe a chave do cache; os mesmos valores em outra ordem compartilham a janela.
+- **Resiliência e cache:** chamadas a OpenF1 passam por limite de taxa e até três tentativas, com até 30 segundos por tentativa; erros transitórios usam espera progressiva e respeitam `Retry-After`. Janelas de importação completas ficam em cache persistido por cinco minutos, inclusive janelas vazias. Dentro desse período, uma importação repetida pode devolver os dados da janela sem nova consulta externa.
 - **CarData:** usa `minimumSpeed` como limite inclusivo (`speed >= minimumSpeed`), combina dados de pilotos e velocidades e ordena por velocidade decrescente. Pode buscar e salvar telemetria e pilotos. As mensagens de falha do serviço incluem `Drivers must be inserted.` e `Not found the maximum speed of the drivers`; a segunda ocorre com lista nula e responde 400.
 - **Overtake:** retorna a **contagem**, não uma lista com os detalhes das ultrapassagens. O serviço pode importar e salvar dados, filtrando eventos próximos de pit stops e durante intervalos das bandeiras consultadas. Quando o serviço tem sucesso mas a lista filtrada fica vazia, a action acessa `Itens[0]` sem verificação e a exceção vira **500** `An unexpected error occurred.`; não há resposta 200 com contagem zero.
 
@@ -241,7 +249,7 @@ Exemplo de **HTTP 415** para `POST /api/Session/insert-sessions` com `Content-Ty
 
 ### Respostas de sucesso sem dados
 
-Os sucessos de consulta usam o objeto ou array listado na tabela de dados. Algumas respostas são apenas confirmação com `SuccessViewModel`, e algumas podem não ter corpo, como descrito nas limitações de `Laps`.
+Os sucessos de consulta usam o objeto ou array listado na tabela de dados. Algumas respostas são apenas confirmação com `SuccessViewModel`; as listagens de Pit, Stint, RaceControl e setores podem ser arrays vazios.
 
 ### Wrapper interno e exceções
 
@@ -261,6 +269,9 @@ Os links apontam para as definições dos contratos. `int` e `double` são núme
 | [`LapFastSectorViewModel`](WebApi/ViewModels/LapViews/LapFastSectorViewModel.cs) | `session_key`, `driver_number`, `sector`: int; `duration`: double; `driver_name`, `observation`: string ou null |
 | [`SessionDriverSpeedDTO`](Entities/Dtos/SessionDriverSpeedDTO.cs) | `session_key`, `driver_number`, `speed`: int; `driver_name`, `headshot_url`, `team_colour`, `team_name`: string |
 | [`OvertakeCountViewModel`](WebApi/ViewModels/OvertakeViews/OvertakeCountViewModel.cs) | `meeting_key`, `session_key`, `numbers_of_overtakes`: int |
+| [`PitViewModel`](WebApi/ViewModels/PitViews/PitViewModel.cs) | `date`: DateTime; `driver_number`, `lap_number`, `meeting_key`, `session_key`: int; `lane_duration`, `pit_duration`: double; `stop_duration`: double ou null |
+| [`StintViewModel`](WebApi/ViewModels/StintViews/StintViewModel.cs) | `compound`: string; `driver_number`, `meeting_key`, `session_key`, `stint_number`, `tyre_age_at_start`: int; `lap_start`, `lap_end`: int ou null |
+| [`RaceControlViewModel`](WebApi/ViewModels/RaceControlViews/RaceControlViewModel.cs) | `date`: DateTime; `category`, `flag`, `message`, `scope`: string; `lap_number`, `meeting_key`, `session_key`: int; `driver_number`, `qualifying_phase`, `sector`: int ou null |
 
 Exemplo **ilustrativo** do objeto de volta mais rápida (sem wrapper):
 
@@ -305,6 +316,14 @@ curl -i "http://localhost:5050/api/Laps/fast_sectors_session?sessionKey=9056" -H
 # Velocidades e contagem de ultrapassagens
 curl -i "http://localhost:5050/api/CarData/high-speed?sessionKey=9056&minimumSpeed=300" -H "Accept: application/json"
 curl -i "http://localhost:5050/api/Overtake/get-overtakes-session/9056" -H "Accept: application/json"
+
+# Ler dados persistidos e importar janelas de pit stops, stints e race control
+curl -i "http://localhost:5050/api/Pit/9056" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/Pit/9056/import" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/Stint/9056" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/Stint/9056/import" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/RaceControl/9056?flags=YELLOW&flags=GREEN" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/RaceControl/9056/import?flags=YELLOW&flags=GREEN" -H "Accept: application/json"
 ```
 
 Substitua `1234` e `9056` por um meeting e uma sessão correspondentes dos seus dados. A API não expõe uma listagem pública das sessões de um meeting; o POST importa sessões, mas não devolve a lista nem suas chaves.
@@ -342,7 +361,14 @@ Os testes existentes em `UnitTests/WebApi` cobrem:
 - `ApiErrorResponseRegressionTests`: sobe os controllers reais sobre HTTP com `ApiErrorTestHost` (Kestrel em `127.0.0.1` com porta livre), usando `ISessionService`, `IMeetingService` e `IMapper` simulados e sem hosted services. Verifica 400 de binding, 404 de rota, 405 de método, 415 de mídia, 500 sem texto de exceção e o formato `ErrorViewModel` nesses casos.
 - `SwaggerDocumentationTests`: gera o Swagger a partir dos controllers, sem serviços de negócio nem worker. Verifica as rotas, os resumos XML, os schemas de erro baseados em `ErrorViewModel` e as descrições dos ramos 400/404 de `SessionResult`.
 
-Esses testes não consultam OpenF1, não usam banco real e não inicializam o worker. Eles não cobrem todos os ramos de cada action nem a execução contra dados reais.
+Esses testes de `UnitTests/WebApi` não consultam OpenF1, não usam banco real e não inicializam o worker. As suítes em `UnitTests/Integration` aplicam migrations e exercitam persistência e HTTP sobre SQL Server real com clientes externos de teste. Elas exigem `INTEGRATION_SQLSERVER_CONNECTION`; sem essa variável, o NUnit as marca como ignoradas. A CI fornece SQL Server 2022 e executa `dotnet test` com essa variável configurada. Para executá-las localmente, configure uma instância SQL Server de teste acessível:
+
+```powershell
+$env:INTEGRATION_SQLSERVER_CONNECTION = 'Server=localhost,1433;User Id=sa;Password=<senha>;Encrypt=False;TrustServerCertificate=True'
+dotnet test UnitTests/UnitTests.csproj
+```
+
+Os testes não cobrem todos os ramos de cada action nem a execução contra dados reais de OpenF1.
 
 ---
 
@@ -369,7 +395,7 @@ public class MyService : IMyService
 - Há avisos preexistentes de nulabilidade e de análise de testes no build; eles não são uma garantia de ausência de falhas em execução.
 - A conexão LocalDB versionada contém um caminho absoluto da máquina do autor e precisa ser configurada em outra máquina.
 - `GET /api/Session/{sessionKey}` retorna apenas confirmação (`message: "Success"`), sem os dados da sessão.
-- `GET /api/Laps/fast_lap_session` responde 200 sem corpo quando não há volta salva e o serviço não a encontra; o cliente deve tratar o corpo vazio.
+- `GET /api/Laps/fast_lap_session` responde 404 quando não encontra uma volta com duração positiva, mesmo que a importação da janela tenha concluído sem erros.
 - `GET /api/Overtake/get-overtakes-session/{sessionKey}` gera 500 quando o serviço tem sucesso com lista filtrada vazia, pois a action acessa `Itens[0]`.
 - `GET /api/Laps/fast_sectors_session` lê somente setores persistidos e pode retornar `200 []`.
 - `GET /api/CarData/high-speed` e `SessionResult` dependem de listas não nulas em alguns ramos; falhas que deixam lista nula são tratadas como 400, mas não há cobertura para todos os caminhos.
@@ -398,7 +424,7 @@ Desenvolvido por **Davi Jedrzejczyk**
 ## 🎯 Próximas Funcionalidades Planejadas
 
 - Mais estatísticas de pilotos e equipes
-- Análise de pit stops
+- Análises adicionais de pit stops
 - Comparação de performance histórica
 - Dashboard com visualizações
 - Integração com mais fontes de dados F1.
