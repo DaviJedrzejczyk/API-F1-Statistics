@@ -1,0 +1,6 @@
+[
+  {"date_start":"2024-07-07T14:01:05Z","driver_number":22,"lap_number":1,"meeting_key":1100,"session_key":2200,"lap_duration":0},
+  {"date_start":"2024-07-07T14:03:05Z","driver_number":22,"lap_number":2,"meeting_key":1100,"session_key":2200,"lap_duration":89.75,"segments_sector_1":[2049,null,0]},
+  {"date_start":"2024-07-07T14:05:05Z","driver_number":22,"lap_number":3,"meeting_key":1100,"session_key":2200,"lap_duration":null},
+  {"date_start":"2024-07-07T14:07:05Z","driver_number":22,"lap_number":4,"meeting_key":1100,"session_key":2200,"lap_duration":93.1}
+]

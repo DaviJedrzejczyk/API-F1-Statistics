@@ -1,0 +1,4 @@
+[
+  {"category":"Other","date":"2024-07-07T14:04:00Z","driver_number":22,"flag":"","lap_number":2,"meeting_key":1100,"session_key":2200,"message":"LAP TIME DELETED - TRACK LIMITS","scope":"Driver"},
+  {"category":"Flag","date":"2024-07-07T14:06:00Z","driver_number":null,"flag":"YELLOW","lap_number":3,"meeting_key":1100,"session_key":2200,"message":"YELLOW FLAG","scope":"Sector","sector":2}
+]
