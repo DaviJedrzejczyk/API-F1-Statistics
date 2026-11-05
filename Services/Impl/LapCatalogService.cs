@@ -165,7 +165,7 @@ public sealed class LapCatalogService : ILapCatalogService
         bool confirm, CancellationToken cancellationToken)
     {
         if (request?.Selections == null || request.Selections.Count != 3 ||
-            request.Selections.Any(x => x.DriverNumber <= 0 || x.LapNumber <= 0) ||
+            request.Selections.Any(x => x is null || x.DriverNumber <= 0 || x.LapNumber <= 0) ||
             request.Selections.Select(x => x.DriverNumber).Distinct().Count() != 3)
             throw new LapCatalogException(400, "Exactly three distinct driver and lap selections are required.");
         var drivers = request.Selections.Select(x => x.DriverNumber).ToArray();
