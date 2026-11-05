@@ -2,6 +2,7 @@
 using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Services.Interfaces;
+using Services.Models;
 using WebApi.Config;
 using WebApi.ViewModels;
 
@@ -17,6 +18,7 @@ namespace WebApi.Controllers
         private readonly ILapFastSectorService _lapFastSectorService;
         private readonly ILapService _lapService;
         private readonly IMapper _mapper;
+        private readonly ILapCatalogService _catalog;
 
         /// <summary>
         /// Creates a new instance of <see cref="LapsController"/>.
@@ -24,11 +26,101 @@ namespace WebApi.Controllers
         /// <param name="lapFastSectorService">Service used to retrieve the fastest sectors.</param>
         /// <param name="mapper">AutoMapper instance for mapping sectors to view models.</param>
         /// <param name="lapService">Service used to retrieve the fastest lap.</param>
-        public LapsController(ILapFastSectorService lapFastSectorService, IMapper mapper, ILapService lapService)
+        public LapsController(ILapFastSectorService lapFastSectorService, IMapper mapper, ILapService lapService, ILapCatalogService catalog)
         {
             _lapFastSectorService = lapFastSectorService;
             _mapper = mapper;
             _lapService = lapService;
+            _catalog = catalog;
+        }
+
+        // Retains direct construction used by existing controller tests.
+        public LapsController(ILapFastSectorService lapFastSectorService, IMapper mapper, ILapService lapService)
+            : this(lapFastSectorService, mapper, lapService, null!) { }
+
+        /// <summary>Imports all laps for exactly three drivers of a completed historical session.</summary>
+        /// <param name="sessionKey">Historical session key.</param>
+        /// <param name="request">Exactly three distinct driver numbers.</param>
+        /// <param name="lapNumber">Optional lap number filter.</param>
+        /// <param name="compound">Optional tyre compound filter.</param>
+        /// <param name="hasAlerts">Optional alert presence filter.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        [HttpPost("catalog/{sessionKey:int}")]
+        [ProducesResponseType(typeof(LapCatalogResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ImportCatalog(int sessionKey, [FromBody] LapCatalogRequest request,
+            [FromQuery] int? lapNumber, [FromQuery] string? compound, [FromQuery] bool? hasAlerts,
+            CancellationToken cancellationToken)
+        {
+            try { return Ok(await _catalog.Get(sessionKey, request.DriverNumbers, lapNumber, compound, hasAlerts, true, cancellationToken)); }
+            catch (LapCatalogException ex) { return StatusCode(ex.StatusCode, new ErrorViewModel(ex.StatusCode, ex.Message)); }
+        }
+
+        /// <summary>Reads a persisted three-driver lap catalog with optional filters.</summary>
+        /// <param name="sessionKey">Historical session key.</param>
+        /// <param name="driverNumbers">Exactly three distinct driver numbers.</param>
+        /// <param name="lapNumber">Optional lap number filter.</param>
+        /// <param name="compound">Optional tyre compound filter.</param>
+        /// <param name="hasAlerts">Optional alert presence filter.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        [HttpGet("catalog/{sessionKey:int}")]
+        [ProducesResponseType(typeof(LapCatalogResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetCatalog(int sessionKey, [FromQuery] int[] driverNumbers,
+            [FromQuery] int? lapNumber, [FromQuery] string? compound, [FromQuery] bool? hasAlerts,
+            CancellationToken cancellationToken)
+        {
+            try { return Ok(await _catalog.Get(sessionKey, driverNumbers, lapNumber, compound, hasAlerts, false, cancellationToken)); }
+            catch (LapCatalogException ex) { return StatusCode(ex.StatusCode, new ErrorViewModel(ex.StatusCode, ex.Message)); }
+        }
+
+        /// <summary>Previews three independently chosen laps without saving the selection.</summary>
+        /// <param name="sessionKey">Historical session key.</param>
+        /// <param name="request">One driver and lap number per selection.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        [HttpPost("catalog/{sessionKey:int}/preview")]
+        [ProducesResponseType(typeof(LapSelectionResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> PreviewSelection(int sessionKey, [FromBody] LapSelectionRequest request,
+            CancellationToken cancellationToken)
+        {
+            try { return Ok(await _catalog.Select(sessionKey, request, false, cancellationToken)); }
+            catch (LapCatalogException ex) { return StatusCode(ex.StatusCode, new ErrorViewModel(ex.StatusCode, ex.Message)); }
+        }
+
+        /// <summary>Confirms and persists a previewed three-lap selection.</summary>
+        /// <param name="sessionKey">Historical session key.</param>
+        /// <param name="request">One driver and lap number per selection.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        [HttpPost("catalog/{sessionKey:int}/confirm")]
+        [ProducesResponseType(typeof(LapSelectionResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ConfirmSelection(int sessionKey, [FromBody] LapSelectionRequest request,
+            CancellationToken cancellationToken)
+        {
+            try { return Ok(await _catalog.Select(sessionKey, request, true, cancellationToken)); }
+            catch (LapCatalogException ex) { return StatusCode(ex.StatusCode, new ErrorViewModel(ex.StatusCode, ex.Message)); }
+        }
+
+        /// <summary>Reopens the persisted selection for a session.</summary>
+        /// <param name="sessionKey">Historical session key.</param>
+        /// <param name="cancellationToken">Request cancellation token.</param>
+        [HttpGet("catalog/{sessionKey:int}/selection")]
+        [ProducesResponseType(typeof(LapSelectionResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorViewModel), StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetSelection(int sessionKey, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await _catalog.GetConfirmed(sessionKey, cancellationToken);
+                return result == null ? NotFound(new ErrorViewModel(404, "No confirmed selection for this session.")) : Ok(result);
+            }
+            catch (LapCatalogException ex) { return StatusCode(ex.StatusCode, new ErrorViewModel(ex.StatusCode, ex.Message)); }
         }
 
 
