@@ -26,6 +26,7 @@ namespace WebApi.Controllers
         /// <param name="lapFastSectorService">Service used to retrieve the fastest sectors.</param>
         /// <param name="mapper">AutoMapper instance for mapping sectors to view models.</param>
         /// <param name="lapService">Service used to retrieve the fastest lap.</param>
+        [Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructor]
         public LapsController(ILapFastSectorService lapFastSectorService, IMapper mapper, ILapService lapService, ILapCatalogService catalog)
         {
             _lapFastSectorService = lapFastSectorService;
