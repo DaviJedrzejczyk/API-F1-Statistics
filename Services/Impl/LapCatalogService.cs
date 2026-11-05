@@ -175,14 +175,17 @@ public sealed class LapCatalogService : ILapCatalogService
             ?? throw new LapCatalogException(400, $"Lap {x.LapNumber} is not cataloged for driver {x.DriverNumber}.")).ToList();
         if (confirm)
         {
+            var key = sessionKey.ToString(CultureInfo.InvariantCulture);
+            await using var transaction = await _unit.BeginImport("lap_selection", key, cancellationToken);
             await _unit.StageImportWindow(new Dao.Cache.ImportWindow
             {
-                Dataset = "lap_selection", WindowKey = sessionKey.ToString(CultureInfo.InvariantCulture),
+                Dataset = "lap_selection", WindowKey = key,
                 CompletedAtUtc = DateTimeOffset.UtcNow, ExpiresAtUtc = DateTimeOffset.UtcNow.AddYears(10),
                 IsComplete = true, Payload = JsonSerializer.Serialize(request.Selections)
             }, cancellationToken);
             var committed = await _unit.Commit(cancellationToken);
             if (!committed.HasSuccess) throw new LapCatalogException(503, "Unable to save the selection.");
+            await transaction.CommitAsync(cancellationToken);
         }
         return new LapSelectionResponse(sessionKey, selected, confirm, false,
             "Telemetry comparison is unavailable in this release.");
