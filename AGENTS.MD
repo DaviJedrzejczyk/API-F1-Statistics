@@ -15,6 +15,9 @@ F1 Statistics API is an ASP.NET Core application built with .NET 8, designed to 
 Before implementing a task:
 
 - Consult `README.md` for project context.
+- Before developing or modifying C# code, read `.codex/dev/DEV.md`.
+- Before creating or modifying unit tests, read `.codex/tests/TESTS.md`.
+- Before writing or updating documentation, read `.codex/docs/DOCS.md`.
 - Inspect the relevant existing implementation.
 - Identify the services, interfaces, entities and tests affected.
 - Follow the current implementation style whenever applicable.
