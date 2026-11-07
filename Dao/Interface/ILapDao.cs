@@ -25,5 +25,6 @@ namespace Dao.Interface
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> SaveLap(Lap lap);
         Task<Response> UpsertLap(Lap lap, CancellationToken cancellationToken);
+        Task<DataResponse<Lap>> GetSessionLaps(int sessionKey, int[] driverNumbers, CancellationToken cancellationToken);
     }
 }

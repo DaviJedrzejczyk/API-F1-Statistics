@@ -57,5 +57,26 @@ namespace Dao.Impl
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex) { return ResponseFactory.CreateInstance().CreateFailureResponse(ex); }
         }
+
+        public async Task<DataResponse<Lap>> GetSessionLaps(int sessionKey, int[] driverNumbers, CancellationToken cancellationToken)
+        {
+            try
+            {
+                List<Lap> laps = await _db.Laps.AsNoTracking()
+                    .Where(lap => lap.SessionKey == sessionKey && driverNumbers.Contains(lap.DriverNumber))
+                    .OrderBy(lap => lap.DriverNumber).ThenBy(lap => lap.LapNumber)
+                    .ToListAsync(cancellationToken);
+
+                return ResponseFactory.CreateInstance().CreateSuccessDataResponse(laps);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception exception)
+            {
+                return ResponseFactory.CreateInstance().CreateFailureDataResponse<Lap>(exception);
+            }
+        }
     }
 }

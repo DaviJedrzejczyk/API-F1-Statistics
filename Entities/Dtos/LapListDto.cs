@@ -6,7 +6,7 @@ namespace Entities.Dtos
     public class LapListDto
     {
         [JsonPropertyName("date_start")]
-        public DateTime DateStart { get; set; }
+        public DateTime? DateStart { get; set; }
         
         [JsonPropertyName("driver_number")]
         public int DriverNumber { get; set; }
@@ -27,7 +27,7 @@ namespace Entities.Dtos
         public int? I2Speed { get; set; }
         
         [JsonPropertyName("is_pit_out_lap")]
-        public bool IsPitOutLap { get; set; }
+        public bool? IsPitOutLap { get; set; }
         
         [JsonPropertyName("lap_duration")]
         public double? LapDuration { get; set; }

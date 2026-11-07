@@ -15,6 +15,26 @@ namespace UnitTests.Impls
     public class LapClientTests
     {
         [Test]
+        public async Task GetAllLapsSessionByDriver_NullAndAbsentStartAndPitOutRemainUnknown()
+        {
+            Mock<IF1ApiClient> client = new();
+            client.Setup(client => client.Get("laps?", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new SingleResponse<string>
+                {
+                    HasSuccess = true,
+                    Item = "[{\"date_start\":null,\"is_pit_out_lap\":null},{},{\"is_pit_out_lap\":false}]"
+                });
+
+            DataResponse<LapListDto> response = await new LapClient(client.Object).GetAllLapsSessionByDriver(100, 1);
+
+            Assert.That(response.HasSuccess, Is.True);
+            Assert.That(response.Itens[0].DateStart, Is.Null);
+            Assert.That(response.Itens[0].IsPitOutLap, Is.Null);
+            Assert.That(response.Itens[1].IsPitOutLap, Is.Null);
+            Assert.That(response.Itens[2].IsPitOutLap, Is.False);
+        }
+
+        [Test]
         public void Constructor_WithDependency_CreatesInstance()
         {
             // Arrange
