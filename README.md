@@ -187,6 +187,109 @@ Vários GETs acima têm efeitos de escrita no banco. Os exemplos dependem de dad
 
 ---
 
+## Catálogo histórico de voltas e seleção de três pilotos (v2.0.0 em desenvolvimento)
+
+A R06 inicia o fluxo da API v2.0.0 para consultar os catálogos de voltas de exatamente três pilotos de uma sessão e salvar uma seleção independente para cada piloto. Esta funcionalidade está em desenvolvimento; não representa uma versão publicada. As rotas antigas `GET /api/Laps/fast_lap_session` e `GET /api/Laps/fast_sectors_session` continuam disponíveis e sem alteração.
+
+### Pré-requisitos e regras
+
+Antes de usar o catálogo, importe a sessão com `POST /api/Session/insert-sessions` e os pilotos com `GET /api/Driver/drivers-session?sessionKey={sessionKey}`. A sessão precisa existir no banco, não estar cancelada e ter terminado há pelo menos 30 minutos. O catálogo aceita exatamente três números de pilotos distintos, positivos e participantes daquela sessão. Uma volta rápida já persistida pela rota antiga não comprova que o catálogo completo do piloto foi importado.
+
+### Rotas da R06
+
+| Método e rota | Uso | Entrada |
+| --- | --- | --- |
+| `POST /api/Laps/{sessionKey}/catalog/import` | Importa ou repara catálogos ausentes/incompletos e tenta obter stints, pit stops e race control; retorna os três catálogos. | JSON `{"driver_numbers":[1,16,44]}` |
+| `GET /api/Laps/{sessionKey}/catalog` | Reabre catálogos persistidos sem consultar OpenF1. | Query `driverNumbers` repetida três vezes; filtros opcionais `lapNumber`, `compound`, `hasAlerts`. |
+| `POST /api/Laps/{sessionKey}/selection/preview` | Salva uma prévia com uma volta escolhida para cada um dos três pilotos. | JSON `{"selections":[{"driver_number":1,"lap_number":12},{"driver_number":16,"lap_number":15},{"driver_number":44,"lap_number":9}]}` |
+| `POST /api/Laps/{sessionKey}/selection/{previewId}/confirm` | Confirma a prévia persistida indicada pelo GUID retornado. | `previewId` da resposta de prévia. |
+| `GET /api/Laps/{sessionKey}/selection/{previewId}` | Reabre uma prévia ou seleção confirmada pelo GUID, sem chamada externa. | GUID retornado pela prévia. |
+| `GET /api/Laps/{sessionKey}/selection` | Reabre a confirmação mais recente da sessão, sem chamada externa. | Nenhuma. |
+
+Exemplo de leitura com filtros (query repetida para cada piloto):
+
+```bash
+curl -i "http://localhost:5050/api/Laps/9056/catalog?driverNumbers=1&driverNumbers=16&driverNumbers=44&compound=SOFT&hasAlerts=false" \
+  -H "Accept: application/json"
+```
+
+`lapNumber` restringe ao número exato da volta, `compound` compara o composto sem diferenciar maiúsculas/minúsculas e `hasAlerts` aceita `true` ou `false`. Cada filtro é aplicado ao catálogo de cada piloto **antes** da sugestão. Assim, para escolher com critérios diferentes por piloto, faça consultas separadas e use as voltas desejadas no corpo da prévia. `hasAlerts=false` significa que nenhuma das fontes consultadas identificou um alerta; não afirma validade oficial da volta.
+
+Exemplo resumido de resposta do catálogo (**HTTP 200**, corpo direto, sem wrapper):
+
+```json
+{
+  "sessionKey": 9056,
+  "meetingKey": 1234,
+  "drivers": [
+    {
+      "driverNumber": 1,
+      "importComplete": true,
+      "incompleteReason": null,
+      "totalLaps": 1,
+      "laps": [{"driverNumber":1,"lapNumber":12,"duration":90.123,"compound":"SOFT","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true}],
+      "suggestedLapNumber": 12,
+      "noSuggestionReason": null,
+      "manualSelectionAllowed": true
+    },
+    {
+      "driverNumber": 16,
+      "importComplete": true,
+      "incompleteReason": null,
+      "totalLaps": 1,
+      "laps": [{"driverNumber":16,"lapNumber":15,"duration":91.456,"compound":"MEDIUM","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true}],
+      "suggestedLapNumber": 15,
+      "noSuggestionReason": null,
+      "manualSelectionAllowed": true
+    },
+    {
+      "driverNumber": 44,
+      "importComplete": true,
+      "incompleteReason": null,
+      "totalLaps": 1,
+      "laps": [{"driverNumber":44,"lapNumber":9,"duration":92.789,"compound":"HARD","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true}],
+      "suggestedLapNumber": 9,
+      "noSuggestionReason": null,
+      "manualSelectionAllowed": true
+    }
+  ],
+  "comparisonAvailable": false,
+  "comparisonUnavailableReason": "Map and telemetry comparison are not available in this release."
+}
+```
+
+O exemplo usa uma volta por piloto para manter o corpo curto; `totalLaps` conta as voltas descritas antes dos filtros; `laps` contém as voltas filtradas. A sugestão é a menor duração positiva elegível, com desempate pelo número da volta. Sem sugestão, `noSuggestionReason` explica que nenhuma volta filtrada tem duração positiva sem pit in/out ou exclusão de tempo identificados. A seleção manual continua disponível.
+
+Exemplo de prévia (**HTTP 200**):
+
+```json
+{
+  "previewId": "a5a56ca1-1556-416b-9a78-1b8db911d049",
+  "sessionKey": 9056,
+  "selections": [
+    {"driverNumber":1,"lapNumber":12,"duration":90.123,"compound":"SOFT","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true},
+    {"driverNumber":16,"lapNumber":15,"duration":91.456,"compound":"MEDIUM","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true},
+    {"driverNumber":44,"lapNumber":9,"duration":92.789,"compound":"HARD","isPitOutLap":false,"alerts":[],"unavailableData":["official_lap_validity_not_provided"],"suggestedEligible":true}
+  ],
+  "confirmed": false,
+  "comparisonAvailable": false,
+  "comparisonUnavailableReason": "Map and telemetry comparison are not available in this release."
+}
+```
+
+A resposta real inclui em `selections` os três objetos completos das voltas escolhidas, inclusive alertas e dados ausentes. Depois de revisar a prévia, envie o `previewId` para a rota de confirmação. A confirmação salva a seleção mais recente da sessão; chamadas repetidas são aceitas. A prévia e a confirmação são persistidas para reabertura posterior.
+
+### Persistência, dados ausentes e limites
+
+Os registros normalizados de voltas são gravados no banco pela camada DAO existente. Snapshots duráveis por piloto e snapshots das fontes auxiliares são salvos em `F1_IMPORT_WINDOWS`; eles não expiram no cache de cinco minutos. A importação usa o bloqueio já compartilhado com a gravação antiga de volta rápida e não apaga voltas previamente persistidas quando uma resposta do OpenF1 encolhe. GET de catálogo e GET de seleção apenas leem esses dados. Falhas de enriquecimento podem ser tentadas novamente em uma importação explícita posterior.
+
+Uma resposta de origem completa, sem erros, pode comprovar cobertura mesmo quando não contém voltas. Identidades inválidas ou duplicadas falham; lacunas na sequência ou uma resposta menor que dados já armazenados são mantidas como incompletas e podem ser reparadas em nova importação. O OpenF1 não expõe aqui uma prova de total ou paginação que permita detectar uma omissão final não reportada pela origem. Campos ausentes permanecem nulos quando possível e seus códigos aparecem em `unavailableData`, por exemplo `lap_duration`, `compound_not_identified`, `pit_out_status`, `lap_start_time` e `duration_sector_1`/`2`/`3`. Fontes auxiliares indisponíveis também são informadas, como `stints`, `pit` ou `race_control`; intervalos de stint incompletos podem aparecer como `stint_intervals_incomplete`.
+
+O composto só é atribuído quando há exatamente um stint com limites válidos que cobre a volta. Alertas podem indicar `pit_out`, `pit_in` ou eventos de race control. A exclusão de tempo (`time_deleted`) só é associada quando a mensagem identifica o piloto e informa explicitamente o número da volta; `race_control.lap_number` isoladamente representa a volta atual da sessão, não necessariamente a volta cujo tempo foi excluído. Uma reintegração posterior remove a inelegibilidade por exclusão, mas o histórico de eventos é preservado. Alertas comuns são exibidos, mas não excluem por si só uma sugestão. A API não informa validade oficial da volta.
+
+Nesta versão, comparação de mapa ou telemetria não está disponível: `comparisonAvailable` é `false` e `comparisonUnavailableReason` informa essa limitação. A seleção não depende desses dados. IDs nos exemplos são ilustrativos e dependem de sessões/pilotos já importados.
+
+Erros de negócio usam `ErrorViewModel` (`status_code`, `message`): **400** para sessão fora das regras, pilotos inválidos/não participantes ou seleções inválidas; **404** para sessão ou seleção inexistente; **409** quando o catálogo não foi importado ou o estado persistido é inconsistente; **502** para identidades inválidas/duplicadas devolvidas pela origem; **503** quando os dados de banco, a origem ou a persistência estão indisponíveis. Erros inesperados continuam sujeitos ao tratamento geral de `/api` descrito acima.
 ## 📦 Formatos dos corpos
 
 Não existe um wrapper único para todas as respostas HTTP. Os sucessos de consulta retornam diretamente um objeto ou array, conforme a matriz. Os nomes JSON dos ViewModels/DTOs públicos usam os atributos `JsonPropertyName` (em geral, `snake_case`).
