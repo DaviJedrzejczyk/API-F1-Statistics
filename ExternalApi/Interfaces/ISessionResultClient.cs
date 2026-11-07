@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface ISessionResultClient
     {
         Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey);
+        Task<DataResponse<SessionResultDto>> GetSessionResultApi(int sessionKey, CancellationToken cancellationToken);
     }
 }

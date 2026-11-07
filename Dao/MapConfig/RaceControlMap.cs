@@ -11,12 +11,8 @@ namespace Dao.MapConfig
         {
             builder.ToTable("F1_RACE_CONTROLS");
 
-            builder.HasKey(x => new
-            {
-                x.Date,
-                x.SessionKey,
-                x.MeetingKey
-            });
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Id).UseIdentityColumn();
 
             builder.Property(x => x.Category)
             .HasMaxLength(50)

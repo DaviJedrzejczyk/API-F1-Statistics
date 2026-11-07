@@ -1,10 +1,11 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Entities.Class;
 using Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Services.Interfaces;
 using Shared.Responses;
+using WebApi.Config;
 using WebApi.Controllers.Drivers;
 using WebApi.ViewModels;
 
@@ -36,7 +37,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             var dataResponse = new DataResponse<Driver> { Message = "err", HasSuccess = false, Exception = new System.Exception("x"), Itens = null! };
-            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(dataResponse);
+            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(dataResponse);
 
             var controller = new DriverController(serviceMock.Object, mapperMock.Object);
 
@@ -50,7 +51,8 @@ namespace UnitTests.WebApi
             Assert.IsNotNull(bad.Value);
             var vm = (ErrorViewModel)bad.Value!;
             Assert.That(vm.StatusCode, Is.EqualTo(400));
-            Assert.That(vm.Message, Is.EqualTo("err"));
+            Assert.That(vm.Message, Is.EqualTo(ApiErrorMessages.RequestFailed));
+            Assert.That(vm.Message, Does.Not.Contain("x"));
         }
 
         [Test]
@@ -61,7 +63,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             var dataResponse = new DataResponse<Driver> { Message = "noitems", HasSuccess = true, Exception = null!, Itens = null! };
-            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(dataResponse);
+            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(dataResponse);
 
             var controller = new DriverController(serviceMock.Object, mapperMock.Object);
 
@@ -86,7 +88,7 @@ namespace UnitTests.WebApi
             var mapperMock = new Mock<IMapper>();
 
             var dataResponse = new DataResponse<Driver> { Message = "none", HasSuccess = true, Exception = null!, Itens = new List<Driver>() };
-            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(dataResponse);
+            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(dataResponse);
 
             var controller = new DriverController(serviceMock.Object, mapperMock.Object);
 
@@ -113,7 +115,7 @@ namespace UnitTests.WebApi
             var driver = new Driver { DriverKey = 1, BroadcastName = "B", DriverNumber = 44, FirstName = "F", FullName = "Full", HeadshotUrl = "url", LastName = "L", MeetingKey = 10, NameAcronym = "NA", SessionKey = 20, TeamColour = "red", TeamName = "Team" };
             var drivers = new List<Driver> { driver };
             var dataResponse = new DataResponse<Driver> { Message = "ok", HasSuccess = true, Exception = null!, Itens = drivers };
-            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>())).ReturnsAsync(dataResponse);
+            serviceMock.Setup(s => s.GetAllDriversSession(It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(dataResponse);
 
             var mapped = new List<DriverListViewModel> { new DriverListViewModel { BroadcastName = "B", DriverNumber = 44, FirstName = "F", FullName = "Full", HeadshotUrl = "url", LastName = "L", MeetingKey = 10, NameAcronym = "NA", SessionKey = 20, TeamColour = "red", TeamName = "Team" } };
             mapperMock.Setup(m => m.Map<List<DriverListViewModel>>(It.IsAny<object>())).Returns(mapped);

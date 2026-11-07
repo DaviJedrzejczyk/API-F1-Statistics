@@ -16,12 +16,16 @@ namespace Dao.Impl
         }
 
         public async Task<Response> InsertDrivers(List<Driver> drivers)
+            => await InsertDrivers(drivers, CancellationToken.None);
+
+        public async Task<Response> InsertDrivers(List<Driver> drivers, CancellationToken cancellationToken)
         {
             try
             {
-                await _db.Drivers.AddRangeAsync(drivers);
+                await _db.Drivers.AddRangeAsync(drivers, cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Drivers inserted successfully.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);
@@ -54,12 +58,16 @@ namespace Dao.Impl
             }
         }
         public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey)
+            => await GetAllDriversSession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                List<Driver> drivers = await _db.Drivers.Where(x => x.SessionKey == sessionKey).AsNoTracking().ToListAsync();
+                List<Driver> drivers = await _db.Drivers.Where(x => x.SessionKey == sessionKey).AsNoTracking().ToListAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse<Driver>(drivers);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Driver>(ex);

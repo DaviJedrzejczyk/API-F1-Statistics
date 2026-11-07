@@ -16,6 +16,7 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> SaveQualifyResult(List<SessionResultQualify> sessionResultQualifiess);
+        Task<Response> SaveQualifyResult(List<SessionResultQualify> sessionResultQualifiess, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta os resultados de classificação de uma sessão, ordenados por fase e diferença para o líder.
@@ -23,5 +24,6 @@ namespace Dao.Interface
         /// <param name="sessionKey">Chave da sessão consultada.</param>
         /// <returns>Uma tarefa que retorna uma resposta com a lista de resultados ordenada por fase e diferença para o líder, ou uma indicação de falha em caso de erro.</returns>
         Task<DataResponse<SessionResultQualify>> GetQualifyingResultBySessionKey(int sessionKey);
+        Task<DataResponse<SessionResultQualify>> GetQualifyingResultBySessionKey(int sessionKey, CancellationToken cancellationToken);
     }
 }

@@ -15,6 +15,7 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> InsertDrivers(List<Driver> drivers);
+        Task<Response> InsertDrivers(List<Driver> drivers, CancellationToken cancellationToken);
 
         /// <summary>
         /// Marca o piloto para remoção no contexto.
@@ -37,6 +38,7 @@ namespace Dao.Interface
         /// <param name="sessionKey">Chave da sessão consultada.</param>
         /// <returns>Uma tarefa que retorna uma resposta com a lista de pilotos da sessão, ou uma indicação de falha em caso de erro.</returns>
         Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey);
+        Task<DataResponse<Driver>> GetAllDriversSession(int sessionKey, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta o sobrenome de um piloto em uma sessão.

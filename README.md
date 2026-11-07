@@ -58,329 +58,326 @@ WebApi → Services → (Dao, ExternalApi) → Entities/Responses
 
 ## 🚀 Como Buildar e Executar
 
-### Pré-requisitos
+### Pré-requisitos e validação local
 
-- **.NET 8 SDK** instalado
-- **SQL Server** ou **SQL Server Express** (LocalDB)
-- Git
+- SDK capaz de compilar `net8.0` (por exemplo, .NET 8 SDK) e runtime ASP.NET Core 8 para executar a API. Não há `global.json` fixando a versão do SDK.
+- SQL Server LocalDB no Windows, ou outra instância SQL Server acessível para executar a API. Build e testes unitários não precisam de LocalDB; os testes de integração SQL Server precisam de uma instância acessível.
+- Git; ferramenta `dotnet-ef` 8.x para aplicar as migrations existentes.
 
-### Passos para Build
-
-1. **Clone o repositório**:
 ```bash
 git clone https://github.com/DaviJedrzejczyk/API-F1-Statistics.git
 cd API-F1-Statistics
-```
-
-2. **Restore das dependências**:
-```bash
 dotnet restore "API OpenF1.sln"
-```
-
-3. **Build da solução**:
-```bash
 dotnet build "API OpenF1.sln"
-```
-
-4. **Executar testes** (opcional):
-```bash
 dotnet test UnitTests/UnitTests.csproj
 ```
 
-### Como Executar a API
+Os projetos usam EF Core SQL Server/Design/Tools **8.0.19** e EF Core InMemory **8.0.30** nos testes. Os testes unitários usam NUnit, Moq e banco InMemory; os clientes HTTP são simulados, sem consultar OpenF1. As suítes de integração SQL Server usam banco real quando `INTEGRATION_SQLSERVER_CONNECTION` está definida e são ignoradas quando ela está ausente.
 
-Execute a API a partir da raiz do repositório:
+### Configurar o banco antes de executar
+
+A chave é `ConnectionStrings:F1DBLocal`. A configuração versionada em [WebApi/appsettings.json](WebApi/appsettings.json) usa `(LocalDB)\MSSQLLocalDB` e anexa um arquivo em `C:\Users\Djedr\Documents\F1DBLocal.mdf`, específico da máquina do autor. Sobrescreva-a para o seu ambiente; `appsettings.Development.json` não fornece outra conexão.
+
+Exemplo para um banco de desenvolvimento no LocalDB, em **PowerShell**, na mesma sessão em que serão executados os comandos seguintes:
+
+```powershell
+$env:ConnectionStrings__F1DBLocal = 'Server=(localdb)\MSSQLLocalDB;Database=F1Statistics;Trusted_Connection=True;TrustServerCertificate=True'
+```
+
+Em Linux ou outros ambientes, use `ConnectionStrings__F1DBLocal` com uma conexão para uma instância **SQL Server** acessível; LocalDB é específico do Windows. A aplicação usa `UseSqlServer`, portanto mudar apenas a conexão não troca o provedor de banco.
+
+A API não cria o esquema nem aplica migrations automaticamente. Para preparar o banco de desenvolvimento escolhido, a partir da raiz:
 
 ```bash
-dotnet run --project WebApi/WebApi.csproj
+# Se dotnet-ef ainda não estiver instalado:
+dotnet tool install --global dotnet-ef --version 8.0.19
+# Aplica as migrations de Dao usando a configuração da WebApi:
+dotnet ef database update --project Dao/Dao.csproj --startup-project WebApi/WebApi.csproj
 ```
 
-A API iniciará em:
-- **HTTP**: `http://localhost:5050`
-- **HTTPS**: `https://localhost:7066`
+### Perfis de execução e Swagger
 
-### Acessar a Documentação Interativa
+Selecione explicitamente o perfil de [launchSettings.json](WebApi/Properties/launchSettings.json):
 
-Após iniciar a API, acesse o Swagger em:
+| Comando | Endereços configurados |
+| --- | --- |
+| `dotnet run --project WebApi/WebApi.csproj --launch-profile http` | `http://localhost:5050` |
+| `dotnet run --project WebApi/WebApi.csproj --launch-profile https` | `https://localhost:7066` e `http://localhost:5050` |
 
-```
-http://localhost:5050/swagger
-```
+Para HTTPS local, configure/confie no certificado de desenvolvimento (`dotnet dev-certs https --trust`). O pipeline usa redirecionamento HTTPS; com o perfil `https`, use diretamente `https://localhost:7066` nos clientes. O perfil `http` não abre a porta 7066.
 
-Aqui você pode visualizar todos os endpoints disponíveis e testar as requisições.
+Ambos os perfis definem `ASPNETCORE_ENVIRONMENT=Development`. Somente nesse ambiente estão disponíveis:
+
+- Swagger UI: `/swagger` (por exemplo, `http://localhost:5050/swagger` no perfil `http`).
+- Documento OpenAPI: `/swagger/v1/swagger.json`.
+
+Ao executar sem perfil, configure ambiente e URLs explicitamente; não presuma as portas acima nem a disponibilidade do Swagger. `Program.cs` registra `SessionUpdateWorker` em todos os ambientes: ele tenta atualizar sessões às segundas-feiras, usando banco e, quando necessário, OpenF1. Iniciar a API pode, portanto, executar trabalho além das requisições HTTP.
 
 ---
 
-## 📡 Endpoints Disponíveis
+## 📡 Contratos HTTP
 
-### 🏎️ **Drivers** (`/api/drivers`)
+As rotas são derivadas do **nome da classe do controller**, não do diretório: `Driver`, `Meeting`, `Session`, `SessionResult`, `CarData`, `Overtake`, `Laps`, `Pit`, `Stint` e `RaceControl`. Somente `Laps` é plural. Há **17 operações** mapeadas. `HomeController` não tem uma rota mapeada por `Program.cs` e não oferece uma operação pública nesta configuração.
 
-**GET** `/api/drivers/drivers-session?sessionKey={sessionKey}`
-- Retorna todos os pilotos de uma sessão específica
-- **Parâmetros**: 
-  - `sessionKey` (int): Identificador da sessão
-- **Respostas**:
-  - `200 OK`: Lista de pilotos
-  - `400 Bad Request`: Erro ao buscar pilotos
-  - `404 Not Found`: Sessão não encontrada
+### Parâmetros e binding
 
----
+| Operação | Entrada |
+| --- | --- |
+| `GET /api/Driver/drivers-session` | Query `sessionKey` (`int`) |
+| `POST /api/Meeting/tracks-season` | Body JSON `{"year":2024}` (`MeetingYearViewModel`) |
+| `GET /api/Meeting/{meetingKey}` | Rota `meetingKey` (`int`) |
+| `GET /api/Meeting/all-tracks/{year}` | Rota `year` (`int`) |
+| `POST /api/Session/insert-sessions` | Body JSON `{"meeting_key":1234}` (`SessionMeetingKeyViewModel`) |
+| `GET /api/Session/{sessionKey}` | Rota `sessionKey` (`int`) e query `meetingkey` (`int`) |
+| `GET /api/SessionResult/result` | Query `sessionKey` (`int`) |
+| `GET /api/Laps/fast_lap_session` | Query `sessionKey` (`int`) |
+| `GET /api/Laps/fast_sectors_session` | Query `sessionKey` (`int`) |
+| `GET /api/CarData/high-speed` | Query `sessionKey` e `minimumSpeed` (ambos `int`) |
+| `GET /api/Overtake/get-overtakes-session/{sessionKey}` | Rota `sessionKey` (`int`) |
+| `GET /api/Pit/{sessionKey}` e `POST /api/Pit/{sessionKey}/import` | Rota `sessionKey` (`int`) |
+| `GET /api/Stint/{sessionKey}` e `POST /api/Stint/{sessionKey}/import` | Rota `sessionKey` (`int`) |
+| `GET /api/RaceControl/{sessionKey}` e `POST /api/RaceControl/{sessionKey}/import` | Rota `sessionKey` (`int`); query `flags` (`string[]`, repetível, por exemplo `?flags=YELLOW&flags=GREEN`) |
 
-### 🏁 **Meetings/Corridas** (`/api/meetings`)
+Os GETs não leem body. Os POSTs de Meeting e Session recebem um objeto JSON com `Content-Type: application/json`; os POSTs de importação de Pit, Stint e RaceControl usam rota e query, sem body. O nome **`meeting_key`** no body de Session é definido por `JsonPropertyName`: `meetingKey` não é um alias e é ignorado, deixando o valor em `0`.
 
-**POST** `/api/meetings/tracks-season`
-- Insere todos os circuitos de uma determinada temporada no banco de dados
-- **Body**:
-  ```json
-  {
-    "year": 2024
-  }
-  ```
-- **Respostas**:
-  - `200 OK`: Circuitos inseridos com sucesso
-  - `400 Bad Request`: Erro na inserção
+Não há `[Required]`, `[BindRequired]` ou `[Range]` para esses números. Query omitida e propriedade numérica omitida de um objeto JSON válido (`{}`) chegam à action como `0`; isso não garante sucesso no serviço.
 
-**GET** `/api/meetings/{meetingKey}`
-- Busca informações de uma corrida específica
-- **Parâmetros**:
-  - `meetingKey` (int): Identificador da corrida
-- **Respostas**:
-  - `200 OK`: Dados da corrida
-  - `404 Not Found`: Corrida não encontrada
+Falhas de binding são tratadas pela factory de `ApiErrorContracts` e retornam **HTTP 400** com `ErrorViewModel` e a mensagem `The request is invalid.`. Isso inclui valor não convertível para `int` em query ou rota, JSON malformado e body obrigatório ausente nos POSTs. Não há teste dedicado para binding de query/rota; o comportamento dos bodies é coberto pelos testes de regressão.
 
-**GET** `/api/meetings/all-tracks/{year}`
-- Retorna todos os circuitos de uma temporada
-- **Parâmetros**:
-  - `year` (int): Ano da temporada (ex: 2024)
-- **Respostas**:
-  - `200 OK`: Lista de circuitos
-  - `400 Bad Request`: Erro ao buscar circuitos
+Um tipo de mídia não aceito nos POSTs (por exemplo, `text/plain`) retorna **HTTP 415** com `ErrorViewModel` e `The request content type is not supported.`. Segmentos de rota precisam existir para a URL corresponder à operação; rota inexistente sob `/api` retorna **HTTP 404**, e método HTTP não permitido retorna **HTTP 405**, ambos com `ErrorViewModel`.
 
----
+### Matriz de respostas das actions
 
-### 📋 **Sessions** (`/api/sessions`)
+Esta tabela descreve os ramos implementados nos controllers. Todos os erros de rota, método, mídia, binding e as exceções não tratadas listados acima também se aplicam. Os erros tratados pela action usam `ErrorViewModel` (`status_code` e `message`) e, quando o serviço não expõe exceção, a mensagem vem do serviço; quando há exceção, a mensagem é `The request could not be completed.`. **O status HTTP e o campo `status_code` são iguais nas respostas emitidas pelos controllers.**
 
-**POST** `/api/sessions/insert-sessions`
-- Insere todas as sessões de uma corrida no banco de dados
-- **Body**:
-  ```json
-  {
-    "meetingKey": 1234
-  }
-  ```
-- **Respostas**:
-  - `200 OK`: Sessões inseridas com sucesso
-  - `400 Bad Request`: Erro na inserção
+| Operação | HTTP de sucesso e corpo | Erros tratados pela action |
+| --- | --- | --- |
+| `GET /api/Driver/drivers-session` | **200** — `DriverListViewModel[]` | **400** — `ErrorViewModel` se houver exceção no wrapper ou `Itens == null` (inclusive sucesso interno sem novos pilotos); **404** — `ErrorViewModel` se a lista estiver vazia |
+| `POST /api/Meeting/tracks-season` | **200** — `SuccessViewModel` (`status_code: 200`) | **400** — `ErrorViewModel` com a mensagem do serviço na falha; **400** — `ErrorViewModel` com `The request could not be completed.` no `catch` |
+| `GET /api/Meeting/{meetingKey}` | **200** — `MeetingViewModel` | **404** — `ErrorViewModel` se `Item == null`, com a mensagem do serviço ou `The request could not be completed.` quando há exceção; **400** — `ErrorViewModel` no `catch` |
+| `GET /api/Meeting/all-tracks/{year}` | **200** — `MeetingViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` com a mensagem do serviço (`Year must be between 2023 and the current year.` ou `Invalid year format.`) se `HasSuccess == false`; **400** — `ErrorViewModel` no `catch` |
+| `POST /api/Session/insert-sessions` | **200** — `SuccessViewModel` (`message: "Sessions inserted successfully."`) | **400** — `ErrorViewModel` com a mensagem do serviço na falha; **400** — `ErrorViewModel` com `The request could not be completed.` no `catch` |
+| `GET /api/Session/{sessionKey}` | **200** — `SuccessViewModel` com `message: "Success"`, sem dados da sessão | **404** — `ErrorViewModel` se a falha tem `Item == null`, inclusive quando o serviço devolve falha por exceção |
+| `GET /api/SessionResult/result` | **200** — `SessionResultListViewModel[]` | Se `HasSuccess == false` e `Itens == null`: **400** — `ErrorViewModel`; se `HasSuccess == false` e `Itens` está vazio: **404** — `ErrorViewModel`; falha com lista não vazia ainda retorna 200 |
+| `GET /api/Laps/fast_lap_session` | **200** — `LapFastLapDto` | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço, inclusive quando não há volta válida |
+| `GET /api/Laps/fast_sectors_session` | **200** — `LapFastSectorViewModel[]`, inclusive `[]` | **404** — `ErrorViewModel` em qualquer falha retornada pelo serviço |
+| `GET /api/CarData/high-speed` | **200** — `SessionDriverSpeedDTO[]` | **400** — `ErrorViewModel` se `HasSuccess == false` e `Itens == null`, ou se `HasSuccess == false` com exceção; **404** — `ErrorViewModel` se `HasSuccess == false` com lista vazia; falha com lista não vazia e sem exceção retorna 200 |
+| `GET /api/Overtake/get-overtakes-session/{sessionKey}` | **200** — `OvertakeCountViewModel` | **400** — `ErrorViewModel` quando `HasSuccess == false`; sucesso com lista vazia não é tratado e gera **500** (ver limitações) |
+| `GET /api/Pit/{sessionKey}` e `POST /api/Pit/{sessionKey}/import` | **200** — `PitViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
+| `GET /api/Stint/{sessionKey}` e `POST /api/Stint/{sessionKey}/import` | **200** — `StintViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
+| `GET /api/RaceControl/{sessionKey}` e `POST /api/RaceControl/{sessionKey}/import` | **200** — `RaceControlViewModel[]`, inclusive `[]` | **400** — `ErrorViewModel` se o serviço falhar ou devolver lista nula |
 
-**GET** `/api/sessions/{sessionKey}?meetingkey={meetingKey}`
-- Busca uma sessão específica
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-  - `meetingKey` (int): Identificador da corrida
-- **Respostas**:
-  - `200 OK`: Dados da sessão
-  - `404 Not Found`: Sessão não encontrada
+Nas rotas de voltas, qualquer falha do serviço vira **404**; não há um ramo 400 próprio nesses controllers.
 
----
+Exceções não tratadas em `/api` retornam **HTTP 500** com `ErrorViewModel` e a mensagem `An unexpected error occurred.`; o texto da exceção não é exposto e a exceção é registrada no log.
 
-### 🏆 **Session Results** (`/api/sessionresults`)
+### Comportamento dos serviços e limitações atuais
 
-**GET** `/api/sessionresults/result?sessionKey={sessionKey}`
-- Retorna os resultados de uma sessão (posições finais, tempos, etc)
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-- **Respostas**:
-  - `200 OK`: Resultados da sessão
-  - `404 Not Found`: Resultados não encontrados
+- **Meetings:** os GETs leem o banco; não importam dados automaticamente. A listagem valida `year` com quatro dígitos, entre 2023 e o ano atual do servidor, filtra `MeetingName` contendo `Grand Prix` e ordena por `DateStart`. Uma lista vazia retorna `200 []`. A inserção busca OpenF1, ignora meetings já existentes e também retorna 200 quando não há novos registros; não aplica a mesma validação de ano do GET. Chave de meeting menor ou igual a zero resulta em **404** `ErrorViewModel` com `Meeting key must be greater than 0`, não em 400 de validação.
+- **Sessions:** o POST importa sessões do meeting e retorna apenas confirmação. O GET consulta o par meeting/sessão no banco e retorna somente `SuccessViewModel` com `message: "Success"`, **não `SessionViewModel`**. O serviço devolve item nulo nas falhas, portanto o ramo 404 (`Session not found.`) prevalece, inclusive em falhas de consulta.
+- **Drivers:** a consulta pode importar e persistir pilotos. O serviço considera completa uma lista de 22 pilotos; se houver menos, consulta OpenF1 e pode devolver apenas os novos pilotos. Quando não há novos pilotos, o serviço devolve sucesso interno com `Itens == null`, e o controller responde **400** `ErrorViewModel` com a mensagem `All drivers already in database.`. Não é garantido que cada 200 contenha o grid completo.
+- **SessionResult:** consulta o banco e, quando necessário, importa resultados de OpenF1. A resposta pública usa duração numérica e gap textual também para classificação, não os arrays do DTO externo. As falhas criadas pela fábrica normalmente deixam `Itens` nulo, levando a **HTTP 400**; lista vazia em falha leva a **HTTP 404**. Ambos com `ErrorViewModel` cujo `status_code` coincide com o status HTTP. Se um wrapper de falha trouxer lista não vazia, a action ainda retorna 200.
+- **Laps:** `fast_lap_session` usa as janelas de cache completas de volta e setores; se alguma faltar ou expirar, consulta pilotos/voltas externas, calcula os melhores tempos válidos e pode gravar a volta e os setores. Sem volta de duração positiva, retorna **404** `ErrorViewModel` com `No laps found for the given session key.`. `fast_sectors_session` **somente lê setores já persistidos**, podendo responder `200 []` se não existirem. Consultar `SessionResult/result` não calcula os setores. A lista de setores pode ser parcial, com a informação em `observation`.
+- **Pit, Stint e RaceControl:** os GETs leem registros persistidos; os POSTs de importação consultam OpenF1 quando não há janela de cache válida, validam os dados da sessão, persistem novos registros e retornam os registros da janela importada. Em RaceControl, a combinação de `flags` compõe a chave do cache; os mesmos valores em outra ordem compartilham a janela.
+- **Resiliência e cache:** chamadas a OpenF1 passam por limite de taxa e até três tentativas, com até 30 segundos por tentativa; erros transitórios usam espera progressiva e respeitam `Retry-After`. Janelas de importação completas ficam em cache persistido por cinco minutos, inclusive janelas vazias. Dentro desse período, uma importação repetida pode devolver os dados da janela sem nova consulta externa.
+- **CarData:** usa `minimumSpeed` como limite inclusivo (`speed >= minimumSpeed`), combina dados de pilotos e velocidades e ordena por velocidade decrescente. Pode buscar e salvar telemetria e pilotos. As mensagens de falha do serviço incluem `Drivers must be inserted.` e `Not found the maximum speed of the drivers`; a segunda ocorre com lista nula e responde 400.
+- **Overtake:** retorna a **contagem**, não uma lista com os detalhes das ultrapassagens. O serviço pode importar e salvar dados, filtrando eventos próximos de pit stops e durante intervalos das bandeiras consultadas. Quando o serviço tem sucesso mas a lista filtrada fica vazia, a action acessa `Itens[0]` sem verificação e a exceção vira **500** `An unexpected error occurred.`; não há resposta 200 com contagem zero.
+
+Vários GETs acima têm efeitos de escrita no banco. Os exemplos dependem de dados disponíveis na instância configurada e em OpenF1; os identificadores ilustrativos não garantem um resultado de sucesso.
 
 ---
 
-### ⚡ **Laps/Voltas** (`/api/laps`)
+## 📦 Formatos dos corpos
 
-**GET** `/api/laps/fast_lap_session?sessionKey={sessionKey}`
-- Retorna a volta mais rápida de uma sessão
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-- **Respostas**:
-  - `200 OK`: Dados da volta mais rápida
-  - `404 Not Found`: Volta mais rápida não encontrada
+Não existe um wrapper único para todas as respostas HTTP. Os sucessos de consulta retornam diretamente um objeto ou array, conforme a matriz. Os nomes JSON dos ViewModels/DTOs públicos usam os atributos `JsonPropertyName` (em geral, `snake_case`).
 
-**GET** `/api/laps/fast_sectors_session?sessionKey={sessionKey}`
-- Retorna os setores mais rápidos de uma sessão
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-- **Respostas**:
-  - `200 OK`: Lista de setores mais rápidos
-  - `404 Not Found`: Setores não encontrados
+### Confirmações e erros com ViewModel
 
-> **Nota**: Este endpoint requer que a sessão já esteja no banco de dados. Use primeiro `/api/sessionresults/result` se necessário.
+Exemplo de sucesso de `POST /api/Session/insert-sessions` (**HTTP 200**):
 
----
-
-### 🚗 **Car Data** (`/api/cardatas`)
-
-**GET** `/api/cardatas/high-speed?sessionKey={sessionKey}&minimumSpeed={minimumSpeed}`
-- Retorna os dados de velocidade máxima dos carros durante uma sessão
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-  - `minimumSpeed` (int): Velocidade mínima para filtro
-- **Respostas**:
-  - `200 OK`: Lista de velocidades máximas
-  - `404 Not Found`: Dados não encontrados
-
----
-
-### 🏎️ **Overtakes** (`/api/overtakes`)
-
-**GET** `/api/overtakes/get-overtakes-session/{sessionKey}`
-- Retorna a quantidade e detalhes de ultrapassagens durante uma sessão
-- **Parâmetros**:
-  - `sessionKey` (int): Identificador da sessão
-- **Respostas**:
-  - `200 OK`: Contagem de ultrapassagens
-  - `400 Bad Request`: Erro ao buscar ultrapassagens
-
----
-
-## 💻 Como Consumir a API
-
-### Exemplo com cURL
-
-1. **Obter todos os circuitos de 2024**:
-```bash
-curl -X GET "http://localhost:5050/api/meetings/all-tracks/2024" \
-  -H "Content-Type: application/json"
-```
-
-2. **Inserir circuitos de 2024 no banco**:
-```bash
-curl -X POST "http://localhost:5050/api/meetings/tracks-season" \
-  -H "Content-Type: application/json" \
-  -d '{"year": 2024}'
-```
-
-3. **Obter sessões de uma corrida**:
-```bash
-curl -X POST "http://localhost:5050/api/sessions/insert-sessions" \
-  -H "Content-Type: application/json" \
-  -d '{"meetingKey": 1234}'
-```
-
-4. **Obter resultados de uma sessão**:
-```bash
-curl -X GET "http://localhost:5050/api/sessionresults/result?sessionKey=9056" \
-  -H "Content-Type: application/json"
-```
-
-5. **Obter volta mais rápida**:
-```bash
-curl -X GET "http://localhost:5050/api/laps/fast_lap_session?sessionKey=9056" \
-  -H "Content-Type: application/json"
-```
-
-### Exemplo com .http File
-
-O projeto inclui um arquivo `WebApi.http` para testar endpoints com extensões como REST Client do VS Code.
-
-### Exemplo com Postman
-
-1. Importe a URL base: `http://localhost:5050`
-2. Use os endpoints listados acima
-3. As respostas seguem um padrão de wrapper:
 ```json
 {
-  "statusCode": 200,
-  "message": "Sucesso",
-  "item": {},
-  "itens": [],
-  "hasSuccess": true,
-  "exception": null
+  "status_code": 200,
+  "message": "Sessions inserted successfully."
 }
 ```
 
----
-
-## 🔄 Fluxo de Uso Típico
-
-Para obter e analisar dados de uma corrida, siga este fluxo:
-
-1. **Obter circuitos do ano**:
-   ```
-   GET /api/meetings/all-tracks/2024
-   ```
-
-2. **Inserir sessões de uma corrida específica**:
-   ```
-   POST /api/sessions/insert-sessions
-   Body: {"meetingKey": 1234}
-   ```
-
-3. **Obter resultados da sessão**:
-   ```
-   GET /api/sessionresults/result?sessionKey=9056
-   ```
-
-4. **Analisar performance**:
-   ```
-   GET /api/laps/fast_lap_session?sessionKey=9056
-   GET /api/laps/fast_sectors_session?sessionKey=9056
-   GET /api/cardatas/high-speed?sessionKey=9056&minimumSpeed=300
-   GET /api/overtakes/get-overtakes-session/9056
-   ```
-
----
-
-## ⚙️ Configuração
-
-### Banco de Dados
-
-O projeto usa **SQL Server LocalDB** por padrão. A string de conexão está em `WebApi/appsettings.json`:
+Exemplo de sessão não encontrada no GET (**HTTP 404**):
 
 ```json
-"ConnectionStrings": {
-  "F1DBLocal": "Data Source=(LocalDB)\\MSSQLLocalDB;AttachDbFilename=C:\\Users\\Djedr\\Documents\\F1DBLocal.mdf;..."
+{
+  "status_code": 404,
+  "message": "Session not found."
 }
 ```
 
-**Para ambientes Linux/Cloud**: Configure a variável de ambiente `ConnectionStrings__F1DBLocal` com uma string de conexão válida.
+A mensagem depende do serviço ou das constantes de `ApiErrorMessages`. Como o `status_code` do corpo sempre acompanha o status HTTP, ele pode ser usado para leitura, mas o status HTTP continua sendo a fonte de verdade.
 
-### Swagger
+### Erros de `/api` (`ErrorViewModel`)
 
-O Swagger está habilitado apenas em **Development**. Para testar com ele, execute:
+Todas as respostas de erro das actions e do middleware de `/api` usam o mesmo formato, com `status_code` e `message` em `snake_case`. Exemplo de **HTTP 404** para uma rota inexistente sob `/api`:
 
-```bash
-dotnet run --project WebApi/WebApi.csproj
+```json
+{
+  "status_code": 404,
+  "message": "The requested resource was not found."
+}
 ```
 
-E acesse: `http://localhost:5050/swagger`
+Mensagens reais usadas pelo código:
+
+| Origem | HTTP | `message` |
+| --- | --- | --- |
+| Rota inexistente em `/api` | 404 | `The requested resource was not found.` |
+| Método não permitido em rota existente | 405 | `The HTTP method is not allowed for this route.` |
+| Mídia não suportada no body | 415 | `The request content type is not supported.` |
+| Binding inválido, JSON malformado ou body ausente | 400 | `The request is invalid.` |
+| Falha de serviço sem exceção | 400, 404 | Mensagem do serviço, por exemplo `Session not found.` ou `Year must be between 2023 and the current year.` |
+| Falha de serviço com exceção, ou `catch` da action | 400 ou 404 | `The request could not be completed.` |
+| Exceção não tratada | 500 | `An unexpected error occurred.` |
+
+O middleware normaliza somente respostas `/api` com erro sem corpo ou com `application/problem+json`. Erros fora de `/api` (por exemplo, Swagger) mantêm o formato padrão do ASP.NET Core.
+
+Exemplo de **HTTP 415** para `POST /api/Session/insert-sessions` com `Content-Type: text/plain`:
+
+```json
+{
+  "status_code": 415,
+  "message": "The request content type is not supported."
+}
+```
+
+### Respostas de sucesso sem dados
+
+Os sucessos de consulta usam o objeto ou array listado na tabela de dados. Algumas respostas são apenas confirmação com `SuccessViewModel`; as listagens de Pit, Stint, RaceControl e setores podem ser arrays vazios.
+
+### Wrapper interno e exceções
+
+Os wrappers `Response`, `SingleResponse<T>` e `DataResponse<T>` são usados apenas entre as camadas e não aparecem no corpo público. Os corpos de erro não expõem o texto de exceções.
+
+
+### Dados retornados com HTTP 200
+
+Os links apontam para as definições dos contratos. `int` e `double` são números JSON; `DateTimeOffset` é uma string de data/hora ISO 8601 com offset. Textos podem refletir valores ausentes da origem, mesmo em propriedades declaradas não anuláveis.
+
+| Tipo público | Campos JSON e tipos |
+| --- | --- |
+| [`DriverListViewModel`](WebApi/ViewModels/DriversViews/DriverListViewModel.cs) | `driver_number`, `meeting_key`, `session_key`: int; `broadcast_name`, `first_name`, `full_name`, `headshot_url`, `last_name`, `name_acronym`, `team_colour`, `team_name`: string |
+| [`MeetingViewModel`](WebApi/ViewModels/MeetingsViews/MeetingViewModel.cs) | `circuit_key`, `country_key`, `meeting_key`, `year`: int; `date_start`, `date_end`: DateTimeOffset; `is_cancelled`: bool; `circuit_info_url`, `circuit_image`, `circuit_short_name`, `circuit_type`, `country_code`, `country_flag`, `country_name`, `gmt_offset`, `location`, `meeting_name`, `meeting_official_name`: string |
+| [`SessionResultListViewModel`](WebApi/ViewModels/SessionResultsViews/SessionResultListViewModel.cs) | `dnf`, `dns`, `dsq`: bool; `driver_number`, `number_of_laps`, `meeting_key`, `position`, `session_key`: int; `duration`, `points`: double; `gap_to_leader`, `compound`: string |
+| [`LapFastLapDto`](Entities/Dtos/LapFastLapDto.cs) | `driver_number`, `session_key`, `meeting_key`: int; `duration`: double (propriedade C# `LapDuration`); `is_fast_lap`: bool |
+| [`LapFastSectorViewModel`](WebApi/ViewModels/LapViews/LapFastSectorViewModel.cs) | `session_key`, `driver_number`, `sector`: int; `duration`: double; `driver_name`, `observation`: string ou null |
+| [`SessionDriverSpeedDTO`](Entities/Dtos/SessionDriverSpeedDTO.cs) | `session_key`, `driver_number`, `speed`: int; `driver_name`, `headshot_url`, `team_colour`, `team_name`: string |
+| [`OvertakeCountViewModel`](WebApi/ViewModels/OvertakeViews/OvertakeCountViewModel.cs) | `meeting_key`, `session_key`, `numbers_of_overtakes`: int |
+| [`PitViewModel`](WebApi/ViewModels/PitViews/PitViewModel.cs) | `date`: DateTime; `driver_number`, `lap_number`, `meeting_key`, `session_key`: int; `lane_duration`, `pit_duration`: double; `stop_duration`: double ou null |
+| [`StintViewModel`](WebApi/ViewModels/StintViews/StintViewModel.cs) | `compound`: string; `driver_number`, `meeting_key`, `session_key`, `stint_number`, `tyre_age_at_start`: int; `lap_start`, `lap_end`: int ou null |
+| [`RaceControlViewModel`](WebApi/ViewModels/RaceControlViews/RaceControlViewModel.cs) | `date`: DateTime; `category`, `flag`, `message`, `scope`: string; `lap_number`, `meeting_key`, `session_key`: int; `driver_number`, `qualifying_phase`, `sector`: int ou null |
+
+Exemplo **ilustrativo** do objeto de volta mais rápida (sem wrapper):
+
+```json
+{
+  "driver_number": 1,
+  "duration": 90.123,
+  "session_key": 9056,
+  "meeting_key": 1234,
+  "is_fast_lap": true
+}
+```
 
 ---
 
-## 🧪 Testes
+## 💻 Exemplos de consumo
 
-Execute os testes unitários com:
+Os comandos a seguir usam **Bash/cURL**, o perfil `http` e `Accept: application/json`. Em PowerShell, use `curl.exe` e adapte a sintaxe de continuação/aspas, ou use o Swagger. Com o perfil `https`, troque a URL base por `https://localhost:7066`.
 
 ```bash
+# Importar meetings do ano (POST com body)
+curl -i -X POST "http://localhost:5050/api/Meeting/tracks-season" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"year":2024}'
+
+# Consultar meetings já persistidos
+curl -i "http://localhost:5050/api/Meeting/all-tracks/2024" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/Meeting/1234" -H "Accept: application/json"
+
+# Importar sessões: a propriedade JSON é meeting_key
+curl -i -X POST "http://localhost:5050/api/Session/insert-sessions" -H "Accept: application/json" -H "Content-Type: application/json" -d '{"meeting_key":1234}'
+
+# Verificar uma sessão: sucesso retorna mensagem, não os dados da sessão
+curl -i "http://localhost:5050/api/Session/9056?meetingkey=1234" -H "Accept: application/json"
+
+# Consultar pilotos e resultados
+curl -i "http://localhost:5050/api/Driver/drivers-session?sessionKey=9056" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/SessionResult/result?sessionKey=9056" -H "Accept: application/json"
+
+# Buscar/calcular a volta mais rápida, depois ler setores persistidos
+curl -i "http://localhost:5050/api/Laps/fast_lap_session?sessionKey=9056" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/Laps/fast_sectors_session?sessionKey=9056" -H "Accept: application/json"
+
+# Velocidades e contagem de ultrapassagens
+curl -i "http://localhost:5050/api/CarData/high-speed?sessionKey=9056&minimumSpeed=300" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/Overtake/get-overtakes-session/9056" -H "Accept: application/json"
+
+# Ler dados persistidos e importar janelas de pit stops, stints e race control
+curl -i "http://localhost:5050/api/Pit/9056" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/Pit/9056/import" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/Stint/9056" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/Stint/9056/import" -H "Accept: application/json"
+curl -i "http://localhost:5050/api/RaceControl/9056?flags=YELLOW&flags=GREEN" -H "Accept: application/json"
+curl -i -X POST "http://localhost:5050/api/RaceControl/9056/import?flags=YELLOW&flags=GREEN" -H "Accept: application/json"
+```
+
+Substitua `1234` e `9056` por um meeting e uma sessão correspondentes dos seus dados. A API não expõe uma listagem pública das sessões de um meeting; o POST importa sessões, mas não devolve a lista nem suas chaves.
+
+Para Postman, importe `/swagger/v1/swagger.json` do ambiente Development ou crie as requisições conforme a matriz. O arquivo versionado [WebApi/WebApi.http](WebApi/WebApi.http) ainda contém o exemplo de template `weatherforecast`, que não existe nesta API. Use, por exemplo, este conteúdo no seu cliente REST:
+
+```http
+@WebApi_HostAddress = http://localhost:5050
+
+GET {{WebApi_HostAddress}}/api/Meeting/all-tracks/2024
+Accept: application/json
+
+###
+
+POST {{WebApi_HostAddress}}/api/Session/insert-sessions
+Content-Type: application/json
+Accept: application/json
+
+{"meeting_key":1234}
+```
+
+---
+
+## 🧪 Testes e conferência de contratos
+
+```bash
+dotnet build "API OpenF1.sln"
 dotnet test UnitTests/UnitTests.csproj
 ```
 
-Os testes usam:
-- **NUnit** como framework de testes
-- **Moq** para mocking
-- **EF Core InMemory** para testes de dados
+A auditoria de contratos deve considerar as actions em `WebApi/Controllers`, os atributos JSON de `WebApi/ViewModels` e `Entities/Dtos`, os mapeamentos de `AutoMapperConfig`, a configuração de `Program.cs` e os retornos dos serviços/DAOs. Os metadados de Swagger descrevem as respostas, mas não alteram os status nem os corpos emitidos pelo código.
+
+Os testes existentes em `UnitTests/WebApi` cobrem:
+
+- `ApiErrorResponseRegressionTests`: sobe os controllers reais sobre HTTP com `ApiErrorTestHost` (Kestrel em `127.0.0.1` com porta livre), usando `ISessionService`, `IMeetingService` e `IMapper` simulados e sem hosted services. Verifica 400 de binding, 404 de rota, 405 de método, 415 de mídia, 500 sem texto de exceção e o formato `ErrorViewModel` nesses casos.
+- `SwaggerDocumentationTests`: gera o Swagger a partir dos controllers, sem serviços de negócio nem worker. Verifica as rotas, os resumos XML, os schemas de erro baseados em `ErrorViewModel` e as descrições dos ramos 400/404 de `SessionResult`.
+
+Esses testes de `UnitTests/WebApi` não consultam OpenF1, não usam banco real e não inicializam o worker. As suítes em `UnitTests/Integration` aplicam migrations e exercitam persistência e HTTP sobre SQL Server real com clientes externos de teste. Elas exigem `INTEGRATION_SQLSERVER_CONNECTION`; sem essa variável, o NUnit as marca como ignoradas. A CI fornece SQL Server 2022 e executa `dotnet test` com essa variável configurada. Para executá-las localmente, configure uma instância SQL Server de teste acessível:
+
+```powershell
+$env:INTEGRATION_SQLSERVER_CONNECTION = 'Server=localhost,1433;User Id=sa;Password=<senha>;Encrypt=False;TrustServerCertificate=True'
+dotnet test UnitTests/UnitTests.csproj
+```
+
+Os testes não cobrem todos os ramos de cada action nem a execução contra dados reais de OpenF1.
 
 ---
 
 ## 📚 Convenções de Código
 
-### Injeção de Dependência
+### Injeção de dependência
 
-Novas classes de serviço, DAO ou cliente externo devem:
-1. Ser decoradas com `[IncludeDependencyInjection]`
-2. Ter uma interface com nome correspondente
-3. O Scrutor as registrará automaticamente
+Classes de serviço, DAO ou cliente externo são descobertas pelo Scrutor nos assemblies `Services`, `Dao` e `ExternalApi` quando decoradas com `[IncludeDependencyInjection]`. São registradas na interface de nome correspondente, com lifetime transient:
 
-**Exemplo**:
 ```csharp
 [IncludeDependencyInjection]
 public class MyService : IMyService
@@ -389,29 +386,20 @@ public class MyService : IMyService
 }
 ```
 
-### Respostas
+### Wrappers internos
 
-As respostas seguem um padrão wrapper:
-- `Response`: Resposta genérica sem dados
-- `SingleResponse<T>`: Uma entidade
-- `DataResponse<T>`: Lista de entidades
-
-Propriedades comuns:
-- `HasSuccess`: Indica sucesso da operação
-- `Message`: Mensagem descritiva
-- `Exception`: Exceção capturada (se houver)
-- `Item`: Entidade única
-- `Itens`: Lista de entidades
-
----
+`Response` contém `Message`, `HasSuccess` e `Exception`; `SingleResponse<T>` acrescenta `Item`; `DataResponse<T>` acrescenta `Itens`. Esses tipos são usados entre as camadas. A API projeta seu conteúdo para os corpos descritos acima e nunca devolve esses wrappers ao cliente.
 
 ## 🐛 Problemas Conhecidos
 
-1. **Aviso de Nullable Reference Types**: A solução emite warnings relacionados a tipos nulos. Isso é pré-existente e não afeta a funcionalidade.
-
-2. **LocalDB no Windows**: A string de conexão padrão é específica para Windows. Em outros ambientes, configure manualmente.
-
-3. **Swagger em Development**: Swagger só funciona no perfil de desenvolvimento.
+- Há avisos preexistentes de nulabilidade e de análise de testes no build; eles não são uma garantia de ausência de falhas em execução.
+- A conexão LocalDB versionada contém um caminho absoluto da máquina do autor e precisa ser configurada em outra máquina.
+- `GET /api/Session/{sessionKey}` retorna apenas confirmação (`message: "Success"`), sem os dados da sessão.
+- `GET /api/Laps/fast_lap_session` responde 404 quando não encontra uma volta com duração positiva, mesmo que a importação da janela tenha concluído sem erros.
+- `GET /api/Overtake/get-overtakes-session/{sessionKey}` gera 500 quando o serviço tem sucesso com lista filtrada vazia, pois a action acessa `Itens[0]`.
+- `GET /api/Laps/fast_sectors_session` lê somente setores persistidos e pode retornar `200 []`.
+- `GET /api/CarData/high-speed` e `SessionResult` dependem de listas não nulas em alguns ramos; falhas que deixam lista nula são tratadas como 400, mas não há cobertura para todos os caminhos.
+- Swagger só está habilitado em Development; `WebApi/WebApi.http` ainda contém o exemplo de template `weatherforecast`, não as rotas reais.
 
 ---
 
@@ -436,7 +424,7 @@ Desenvolvido por **Davi Jedrzejczyk**
 ## 🎯 Próximas Funcionalidades Planejadas
 
 - Mais estatísticas de pilotos e equipes
-- Análise de pit stops
+- Análises adicionais de pit stops
 - Comparação de performance histórica
 - Dashboard com visualizações
-- Integração com mais fontes de dados F1
+- Integração com mais fontes de dados F1.

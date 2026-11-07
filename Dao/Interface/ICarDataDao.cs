@@ -16,6 +16,7 @@ namespace Dao.Interface
         /// <returns>Uma tarefa que retorna uma resposta indicando o sucesso ou a falha da operação.</returns>
         /// <remarks>A alteração é persistida ao executar <see cref="IUnityOfWork.Commit"/>.</remarks>
         Task<Response> SaveCarDatas(List<CarData> data);
+        Task<Response> SaveCarDatas(List<CarData> data, CancellationToken cancellationToken);
 
         /// <summary>
         /// Consulta a telemetria da sessão com velocidade maior ou igual ao limite informado.
@@ -24,5 +25,6 @@ namespace Dao.Interface
         /// <param name="minimunSpeed">Velocidade mínima, em km/h, incluída na consulta.</param>
         /// <returns>Uma tarefa que retorna uma resposta com os dados de telemetria que atendem ao filtro, ou uma indicação de falha em caso de erro.</returns>
         Task<DataResponse<CarData>> GetHighSpeedSessionDatabase(int sessionKey, int minimunSpeed);
+        Task<DataResponse<CarData>> GetHighSpeedSessionDatabase(int sessionKey, int minimunSpeed, CancellationToken cancellationToken);
     }
 }

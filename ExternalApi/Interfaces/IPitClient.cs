@@ -6,5 +6,6 @@ namespace ExternalApi.Interfaces
     public interface IPitClient
     {
         Task<DataResponse<Pit>> GetAllPitsSession(int sessionKey);
+        Task<DataResponse<Pit>> GetAllPitsSession(int sessionKey, CancellationToken cancellationToken);
     }
 }

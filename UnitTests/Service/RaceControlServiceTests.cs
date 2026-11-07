@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625
+#pragma warning disable CS8625
 #pragma warning disable NUnit2005
 using Moq;
 using Dao.Interface;
@@ -24,131 +24,35 @@ namespace UnitTests.Service
         }
 
         [Test]
-        public async Task GetRaceControlsBySessionFlags_DbReturnsFailure_ReturnsFailureDataResponse()
+        public async Task GetRaceControlsBySessionFlags_UsesCompleteWindowAndOrdersEvents()
         {
-            // Arrange
-            var mockRace = new Mock<IRaceControlClient>();
-            var mockDao = new Mock<IRaceControlDao>();
-            var mockUow = new Mock<IUnityOfWork>();
-
-            var dbFailure = new DataResponse<RaceControl>("db fail", false, null!, null);
-            mockDao.Setup(d => d.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                   .ReturnsAsync(dbFailure);
-            mockUow.Setup(u => u.RaceControlDao).Returns(mockDao.Object);
-
-            var service = new RaceControlService(mockRace.Object, mockUow.Object);
-
-            // Act
-            var result = await service.GetRaceControlsBySessionFlags(1, new[] { "YELLOW" });
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("db fail", result.Message);
-        }
-
-        [Test]
-        public async Task GetRaceControlsBySessionFlags_DbReturnsItems_ReturnsMappedDtos()
-        {
-            // Arrange
-            var mockRace = new Mock<IRaceControlClient>();
-            var mockDao = new Mock<IRaceControlDao>();
-            var mockUow = new Mock<IUnityOfWork>();
-
+            var race = new Mock<IRaceControlClient>();
+            var uow = new Mock<IUnityOfWork>();
             var now = DateTime.UtcNow;
-            var rc1 = new RaceControl { Sector = 1, Flag = "YELLOW", Date = now };
-            var rc2 = new RaceControl { Sector = 1, Flag = "CLEAR", Date = now.AddSeconds(10) };
-            var list = new List<RaceControl> { rc1, rc2 };
-
-            var dbSuccess = new DataResponse<RaceControl>("ok", true, null!, list);
-            mockDao.Setup(d => d.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                   .ReturnsAsync(dbSuccess);
-            mockUow.Setup(u => u.RaceControlDao).Returns(mockDao.Object);
-
-            var service = new RaceControlService(mockRace.Object, mockUow.Object);
-
-            // Act
-            var result = await service.GetRaceControlsBySessionFlags(1, new[] { "YELLOW" });
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.HasSuccess);
-            Assert.IsNotNull(result.Itens);
-            Assert.AreEqual(1, result.Itens.Count);
-            var dto = result.Itens[0];
-            Assert.AreEqual(rc1.Sector, dto.Sector);
-            Assert.AreEqual(rc1.Flag, dto.Flag);
-            Assert.AreEqual(rc1.Date, dto.DateStart);
-            Assert.AreEqual(rc2.Date, dto.DateEnd);
+            var events = new List<RaceControl> {
+                new() { SessionKey = 1, Sector = 1, Flag = "CLEAR", Date = now.AddSeconds(10) },
+                new() { SessionKey = 1, Sector = 1, Flag = "YELLOW", Date = now }
+            };
+            uow.Setup(x => x.GetImportWindow("race_control", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new global::Dao.Cache.ImportWindow { IsComplete = true, CompletedAtUtc = DateTimeOffset.UtcNow.AddMinutes(-1), ExpiresAtUtc = DateTimeOffset.UtcNow.AddMinutes(1), Payload = System.Text.Json.JsonSerializer.Serialize(events) });
+            var result = await new RaceControlService(race.Object, uow.Object).GetRaceControlsBySessionFlags(1, new[] { "YELLOW", "CLEAR" });
+            Assert.That(result.HasSuccess, Is.True);
+            Assert.That(result.Itens.Single().DateEnd, Is.EqualTo(now.AddSeconds(10)));
+            race.Verify(x => x.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Test]
-        public async Task GetRaceControlsBySessionFlags_DbEmpty_ApiReturnsItems_ReturnsMappedDtos()
+        public async Task GetRaceControlsBySessionFlags_UpstreamFailureDoesNotCommit()
         {
-            // Arrange
-            var mockRace = new Mock<IRaceControlClient>();
-            var mockDao = new Mock<IRaceControlDao>();
-            var mockUow = new Mock<IUnityOfWork>();
-
-            var now = DateTime.UtcNow;
-            var rc1 = new RaceControl { Sector = 2, Flag = "DOUBLE YELLOW", Date = now };
-            var rc2 = new RaceControl { Sector = 2, Flag = "CLEAR", Date = now.AddSeconds(5) };
-            var apiList = new List<RaceControl> { rc1, rc2 };
-
-            var dbSuccessEmpty = new DataResponse<RaceControl>("ok", true, null, new List<RaceControl>());
-            mockDao.Setup(d => d.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                   .ReturnsAsync(dbSuccessEmpty);
-            mockUow.Setup(u => u.RaceControlDao).Returns(mockDao.Object);
-
-            var apiSuccess = new DataResponse<RaceControl>("ok", true, null, apiList);
-            mockRace.Setup(r => r.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                    .ReturnsAsync(apiSuccess);
-
-            var service = new RaceControlService(mockRace.Object, mockUow.Object);
-
-            // Act
-            var result = await service.GetRaceControlsBySessionFlags(5, new[] { "DOUBLE YELLOW" });
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.HasSuccess);
-            Assert.IsNotNull(result.Itens);
-            Assert.AreEqual(1, result.Itens.Count);
-            var dto = result.Itens[0];
-            Assert.AreEqual(rc1.Sector, dto.Sector);
-            Assert.AreEqual(rc1.Flag, dto.Flag);
-            Assert.AreEqual(rc1.Date, dto.DateStart);
-            Assert.AreEqual(rc2.Date, dto.DateEnd);
+            var race = new Mock<IRaceControlClient>();
+            var uow = new Mock<IUnityOfWork>();
+            uow.Setup(x => x.GetImportWindow(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync((global::Dao.Cache.ImportWindow?)null);
+            race.Setup(x => x.GetRaceControlsBySessionFlags(1, It.IsAny<string[]>(), It.IsAny<CancellationToken>())).ReturnsAsync(new DataResponse<RaceControl> { HasSuccess = false, Message = "upstream failed" });
+            var result = await new RaceControlService(race.Object, uow.Object).GetRaceControlsBySessionFlags(1, new[] { "YELLOW" });
+            Assert.That(result.HasSuccess, Is.False);
+            Assert.That(result.Message, Is.EqualTo("upstream failed"));
+            uow.Verify(x => x.Commit(It.IsAny<CancellationToken>()), Times.Never);
         }
-
-        [Test]
-        public async Task GetRaceControlsBySessionFlags_DbEmpty_ApiReturnsNoItems_ReturnsFailure()
-        {
-            // Arrange
-            var mockRace = new Mock<IRaceControlClient>();
-            var mockDao = new Mock<IRaceControlDao>();
-            var mockUow = new Mock<IUnityOfWork>();
-
-            var dbSuccessEmpty = new DataResponse<RaceControl>("ok", true, null, new List<RaceControl>());
-            mockDao.Setup(d => d.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                   .ReturnsAsync(dbSuccessEmpty);
-            mockUow.Setup(u => u.RaceControlDao).Returns(mockDao.Object);
-
-            var apiEmpty = new DataResponse<RaceControl>("ok", true, null, new List<RaceControl>());
-            mockRace.Setup(r => r.GetRaceControlsBySessionFlags(It.IsAny<int>(), It.IsAny<string[]>()))
-                    .ReturnsAsync(apiEmpty);
-
-            var service = new RaceControlService(mockRace.Object, mockUow.Object);
-
-            // Act
-            var result = await service.GetRaceControlsBySessionFlags(7, new[] { "YELLOW" });
-
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.IsFalse(result.HasSuccess);
-            Assert.AreEqual("No race controls found for the specified session.", result.Message);
-        }
-
         [Test]
         public async Task GetRaceControlsBySessionFlagsDb_DaoThrows_ReturnsFailureDataResponse()
         {

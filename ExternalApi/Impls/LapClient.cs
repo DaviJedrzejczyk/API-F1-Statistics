@@ -15,10 +15,13 @@ namespace ExternalApi.Impls
             _f1ApiClient = f1ApiClient;
         }
         public async Task<DataResponse<LapListDto>> GetAllLapsSessionByDriver(int sessionKey, int driverNumber)
+            => await GetAllLapsSessionByDriver(sessionKey, driverNumber, CancellationToken.None);
+
+        public async Task<DataResponse<LapListDto>> GetAllLapsSessionByDriver(int sessionKey, int driverNumber, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<string> response = await _f1ApiClient.Get("laps?", "session_key=" + sessionKey + "&driver_number=" + driverNumber);
+                SingleResponse<string> response = await _f1ApiClient.Get("laps?", "session_key=" + sessionKey + "&driver_number=" + driverNumber, cancellationToken);
                 if (!response.HasSuccess) 
                     return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapListDto>(response.Message, response.Exception);
 
@@ -29,6 +32,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(lapList);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<LapListDto>(ex);

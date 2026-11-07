@@ -16,6 +16,21 @@ namespace UnitTests.Impls
     public class DriverClientTests
     {
         [Test]
+        public void GetAllDriversSessionSelected_PropagatesCancellation()
+        {
+            using var source = new CancellationTokenSource();
+            source.Cancel();
+            var api = new Mock<IF1ApiClient>();
+            api.Setup(a => a.Get("drivers?", "session_key=2", source.Token))
+                .Returns(Task.FromCanceled<SingleResponse<string>>(source.Token));
+            var client = new DriverClient(api.Object, new Mock<IMapper>().Object);
+
+            Assert.CatchAsync<OperationCanceledException>(async () =>
+                await client.GetAllDriversSessionSelected(new DriverInsertDTO { SessionKey = 2 }, source.Token));
+            api.VerifyAll();
+        }
+
+        [Test]
         public async Task GetAllDriversSessionSelected_WhenApiReturnsFailure_ReturnsFailureResponse()
         {
             // Arrange

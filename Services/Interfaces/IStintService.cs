@@ -9,6 +9,7 @@ namespace Services.Interfaces
         Task<DataResponse<Stint>> GetStintsBySessionKeyApi(int sessionKey);
         Task<DataResponse<Stint>> GetStintsBySessionKeyDb(int sessionKey);
         Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey);
+        Task<DataResponse<Stint>> GetStintsBySessionKey(int sessionKey, CancellationToken cancellationToken);
         Task<Response> SaveStints(List<Stint> stints);
     }
 }

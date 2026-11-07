@@ -35,7 +35,7 @@ namespace WebApi.BackgroundServices
 
                             var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
 
-                            var response = await sessionService.UpdateRecentSession();
+                            var response = await sessionService.UpdateRecentSession(stoppingToken);
                             if(response.HasSuccess)
                                LogResponse(response);
                             else
@@ -48,6 +48,7 @@ namespace WebApi.BackgroundServices
 
                         break;
                     }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { throw; }
                     catch (Exception ex)
                     {
                         tryCount++;

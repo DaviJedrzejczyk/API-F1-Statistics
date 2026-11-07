@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using WebApi.Config;
 using WebApi.ViewModels;
 using WebApi.Controllers.Sessions;
 using Moq;
@@ -22,7 +23,7 @@ namespace UnitTests.WebApi
         {
             // Arrange
             var serviceMock = new Mock<ISessionService>();
-            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>()))
+            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Response("ok", true, null)));
 
             var controller = new SessionController(serviceMock.Object);
@@ -36,7 +37,7 @@ namespace UnitTests.WebApi
             var success = (SuccessViewModel)ok.Value!;
             Assert.AreEqual(200, success.StatusCode);
             Assert.AreEqual("ok", success.Message);
-            serviceMock.Verify(s => s.InsertSessions(1), Times.Once());
+            serviceMock.Verify(s => s.InsertSessions(1, It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [Test]
@@ -44,7 +45,7 @@ namespace UnitTests.WebApi
         {
             // Arrange
             var serviceMock = new Mock<ISessionService>();
-            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>()))
+            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(new Response("fail", false, null)));
 
             var controller = new SessionController(serviceMock.Object);
@@ -61,11 +62,11 @@ namespace UnitTests.WebApi
         }
 
         [Test]
-        public async Task SessionController_InsertSessionsInDataBase_ServiceThrowsException_ReturnsBadRequestWithMessage()
+        public async Task SessionController_InsertSessionsInDataBase_ServiceThrowsException_ReturnsBadRequestWithGenericMessage()
         {
             // Arrange
             var serviceMock = new Mock<ISessionService>();
-            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>()))
+            serviceMock.Setup(s => s.InsertSessions(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromException<Response>(new Exception("boom")));
 
             var controller = new SessionController(serviceMock.Object);
@@ -76,8 +77,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
             var bad = (BadRequestObjectResult)result;
-            var message = (string)bad.Value!;
-            Assert.AreEqual("boom", message);
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.AreEqual(400, error.StatusCode);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
@@ -92,9 +94,9 @@ namespace UnitTests.WebApi
             // Assert
             Assert.IsInstanceOf(typeof(BadRequestObjectResult), result);
             var bad = (BadRequestObjectResult)result;
-            Assert.IsInstanceOf(typeof(string), bad.Value);
-            var msg = (string)bad.Value!;
-            Assert.IsNotEmpty(msg);
+            var error = (ErrorViewModel)bad.Value!;
+            Assert.AreEqual(400, error.StatusCode);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
@@ -103,7 +105,7 @@ namespace UnitTests.WebApi
             // Arrange
             var serviceMock = new Mock<ISessionService>();
             var resp = new SingleResponse<Entities.Class.Session>() { Message = "no item", HasSuccess = false, Exception = null, Item = default! };
-            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>()))
+            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(resp));
 
             var controller = new SessionController(serviceMock.Object);
@@ -125,7 +127,7 @@ namespace UnitTests.WebApi
             // Arrange
             var serviceMock = new Mock<ISessionService>();
             var resp = new SingleResponse<Session>() { Message = "bad", HasSuccess = false, Exception = new Exception("x"), Item = new Session() };
-            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>()))
+            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(resp));
 
             var controller = new SessionController(serviceMock.Object);
@@ -138,7 +140,7 @@ namespace UnitTests.WebApi
             var bad = (BadRequestObjectResult)result;
             var error = (ErrorViewModel)bad.Value!;
             Assert.AreEqual(400, error.StatusCode);
-            Assert.AreEqual("bad", error.Message);
+            Assert.AreEqual(ApiErrorMessages.RequestFailed, error.Message);
         }
 
         [Test]
@@ -147,7 +149,7 @@ namespace UnitTests.WebApi
             // Arrange
             var serviceMock = new Mock<ISessionService>();
             var resp = new SingleResponse<Entities.Class.Session>("ok session", true, null, new Entities.Class.Session());
-            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>()))
+            serviceMock.Setup(s => s.GetSessionByMeetingKeySessionKey(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(resp));
 
             var controller = new SessionController(serviceMock.Object);

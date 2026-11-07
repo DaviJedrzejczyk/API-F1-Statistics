@@ -17,12 +17,16 @@ namespace Dao.Impl
         }
 
         public async Task<DataResponse<Pit>> GetAllPitsBySessionKey(int sessionKey)
+            => await GetAllPitsBySessionKey(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Pit>> GetAllPitsBySessionKey(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                List<Pit> pits = await _db.Pits.Where(x => x.SessionKey ==  sessionKey).AsNoTracking().ToListAsync();
+                List<Pit> pits = await _db.Pits.Where(x => x.SessionKey ==  sessionKey).AsNoTracking().ToListAsync(cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(pits);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>(ex);
@@ -30,12 +34,16 @@ namespace Dao.Impl
         }
 
         public async Task<Response> SavePits(List<Pit> pits)
+            => await SavePits(pits, CancellationToken.None);
+
+        public async Task<Response> SavePits(List<Pit> pits, CancellationToken cancellationToken)
         {
             try
             {
-                await _db.Pits.AddRangeAsync(pits);
+                await _db.Pits.AddRangeAsync(pits, cancellationToken);
                 return ResponseFactory.CreateInstance().CreateSuccessResponse("Success to insert all pits.");
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureResponse(ex);

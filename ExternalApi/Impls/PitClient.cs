@@ -20,10 +20,13 @@ namespace ExternalApi.Impls
         }
 
         public async Task<DataResponse<Pit>> GetAllPitsSession(int sessionKey)
+            => await GetAllPitsSession(sessionKey, CancellationToken.None);
+
+        public async Task<DataResponse<Pit>> GetAllPitsSession(int sessionKey, CancellationToken cancellationToken)
         {
             try
             {
-                SingleResponse<string> response = await _client.Get("pit?", $"session_key={sessionKey}");
+                SingleResponse<string> response = await _client.Get("pit?", $"session_key={sessionKey}", cancellationToken);
                 if (!response.HasSuccess) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>("Error to search the pits with this session key.");
 
                 if (response.Item == null || response.Item == string.Empty) return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>("The session dosen't contains pits.");
@@ -34,6 +37,7 @@ namespace ExternalApi.Impls
 
                 return ResponseFactory.CreateInstance().CreateSuccessDataResponse(_mapper.Map<List<Pit>>(pits));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 return ResponseFactory.CreateInstance().CreateFailureDataResponse<Pit>(ex);

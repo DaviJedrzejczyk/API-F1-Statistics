@@ -8,6 +8,7 @@ namespace Services.Interfaces
     public interface ILapService
     {
         Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKey(int sessionKey);
+        Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKey(int sessionKey, CancellationToken cancellationToken);
         Task<SingleResponse<LapFastLapDto>> GetFastLapOfRaceBySessionKeyDb(int sessionKey);
         Task<Response> SaveLap(Lap lap);
     }
